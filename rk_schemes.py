@@ -1,49 +1,70 @@
 from manimlib import *
 
 
-class RungeKutta(Scene):
-    # ODE parameters
-    t_zero = -0.5
-    u_zero = 1.
-    # dudt = lambda self, u, t: -sin(u) * t
-    # u_exact = lambda t:
-    dudt = lambda self, u, t: -u * t
-    u_exact = lambda self, t: self.u_zero * math.exp(-(t * t - self.t_zero * self.t_zero) / 2.)
+def u_exact_example_1(t, u_zero, t_zero):
+    return u_zero * np.exp(-(t * t - t_zero * t_zero) / 2.)
 
-    # RK4 parameters
-    scheme_idx = 0
-    dt = 1.5
-    all_schemes = {
+
+def u_exact_example_2(t, u_zero, t_zero):
+    q = 1.5 * (u_zero + u_zero ** 3 / 3. + (t ** 3 - t_zero ** 3) / 3.)
+    hyp = np.hypot(q, 0 * q + 1.)
+    return np.cbrt(q + hyp) + np.cbrt(q - hyp)
+
+
+odes = {
+    "case_1": (-0.5, 1., 1.5,
+               [-1., 2., -1., 2.],
+               (lambda self, u, t: -u * t),
+               (lambda self, t: u_exact_example_1(t, self.u_zero, self.t_zero)),
+               r"-ut",
+               r"U \exp(-\frac{{t^2-T^2}}{{2}})"),
+    "case_2": (-1.75, -0.25, 2.,
+               [-2., 2., -1., 3.],
+               (lambda self, u, t: t * t / (1. + u * u)),
+               (lambda self, t: u_exact_example_2(t, self.u_zero, self.t_zero)),
+               r"{ {{t^2}} \over {{1}} + {{u^2}} }",
+               r"\textrm{root}\left(\frac{u^3-U}{3} + u - U + \frac{T^3-t^3}{3}\right)"),
+}
+
+all_schemes = {
         "Euler": ([0.], [1.]),
         "RK2C": ([0., 0.5], [0., 1.0]),
         "Heun": ([0.0, 1.0], [0.5, 0.5]),
         "Heun 3": ([0., 1. / 3., 2. / 3.], [1. / 4., 0., 3. / 4.]),
         "RK4C": ([0., 0.5, 0.5, 1.], [1. / 6., 1. / 3., 1. / 3., 1. / 6.])
     }
-    scheme_name = "Euler"
+
+
+class RungeKutta(Scene):
+    # ODE parameters
+    t_zero, u_zero, dt, ax_limits, dudt, u_exact, dudt_name, analytic_name = odes["case_2"]
+
+    # RK4 parameters
+    scheme_name = "RK4C"
     alphas, gammas = all_schemes[scheme_name]
 
     # Display parameters
     ftz = 40
-    offset = 0.2
-    y_positions = np.linspace(2. - offset, -1. + offset, 5)
-    box_x_pos = 2.6
+    offset = (ax_limits[3] - ax_limits[2]) * 0.05
+    y_positions = np.linspace(ax_limits[3] - offset, ax_limits[2] + offset, 5)
+    box_x_pos = ax_limits[1] + (ax_limits[1] - ax_limits[0]) * 0.2
     colors = [RED, "#61AFEF", GOLD, GREEN]
     axes, gauss_graph = None, None
 
     def construct(self):
         animate_ode_intro = False
+        animate_rk_intro = True
         self.setup_axes(animate=animate_ode_intro)
         self.display_ode_info(animate=animate_ode_intro)
         self.display_ut_zero(animate=animate_ode_intro)
         self.display_vector_field(animate=animate_ode_intro)
         self.display_analytical(animate=animate_ode_intro)
-        self.display_scheme_info(animate=True)
+        self.display_scheme_info(animate=animate_rk_intro)
         self.do_rk_scheme()
 
     def setup_axes(self, animate=True):
         # Create coordinate axes
-        self.axes = Axes((-1., 2., 1.), (-1., 2., 1.), height=7, width=10)
+        self.axes = Axes((*self.ax_limits[:2], 1.), (*self.ax_limits[2:], 1.), height=7, width=10)
         self.axes.add_coordinate_labels(font_size=20, num_decimal_places=0)
         self.axes.to_corner(DL)
         if animate:
@@ -54,12 +75,12 @@ class RungeKutta(Scene):
     def display_ode_info(self, animate=True):
         # Create vector field equation box
         equations_src = [
-            Tex(r"\frac{\textrm{d}u}{\textrm{d}t}", "=", "f", "(", "u", ",", "t", ")", font_size=self.ftz),
+            Tex(r"{ {{\text{d}u}} \over {{\text{d}t}} }", "=", "f", "(", "u", ",", "t", ")", font_size=self.ftz),
             Tex(r"t_0", "=", "T", font_size=self.ftz),
             Tex("u", "(", r"t_0", ")", "=", "U", font_size=self.ftz)
         ]
-        equations_dst = [
-            Tex(r"\frac{\textrm{d}u}{\textrm{d}t}", "=", "-", "u", "t", font_size=self.ftz),
+        equations_dst = [  # r"\frac{\textrm{d}u}{\textrm{d}t}"
+            Tex(r"{ {{\text{d}u}} \over {{\text{d}t}} }", "=", self.dudt_name, font_size=self.ftz),
             Tex(r"t_0", "=", str(self.t_zero), font_size=self.ftz),
             Tex("u", "(", "t_0", ")", "=", str(self.u_zero), font_size=self.ftz)
         ]
@@ -79,7 +100,8 @@ class RungeKutta(Scene):
                     run_time=2.
                 )
             self.wait(1)
-            self.play(TransformMatchingShapes(equations_src[0], equations_dst[0]), run_time=2.)
+            # self.play(TransformMatchingShapes(equations_src[0], equations_dst[0]), run_time=2.)
+            self.play(TransformMatchingTex(equations_src[0], equations_dst[0], ), run_time=2.)
             for eq_src, eq_dst, y_pos in zip(equations_src[1:], equations_dst[1:], self.y_positions[1:]):
                 self.play(TransformMatchingTex(eq_src, eq_dst), run_time=2.)
         else:
@@ -87,6 +109,9 @@ class RungeKutta(Scene):
 
     def display_ut_zero(self, animate=True):
         # Add initial value
+        if np.abs(self.t_zero) < 1e-10 or np.abs(self.u_zero) < 1e-10:
+            return
+
         dot_t, dot_u = Dot(), Dot()
         dot_t.move_to(self.axes.c2p(self.t_zero, 0.))
         dot_u.move_to(self.axes.c2p(0., self.u_zero))
@@ -112,9 +137,9 @@ class RungeKutta(Scene):
         # Vector field display
         vector_field = VectorField(
             lambda x, y: np.array([1., self.dudt(y, x)]), self.axes,
-            step_multiple=0.2,
+            step_multiple=(self.ax_limits[1] - self.ax_limits[0]) / 15.,
             magnitude_range=(0, 4.),
-            length_func=lambda norm: 0.15 * sigmoid(norm),
+            length_func=lambda norm: (self.ax_limits[1] - self.ax_limits[0]) / 20. * sigmoid(norm),
         )
         # self.add(vector_field.set_opacity(0.25))
         if animate:
@@ -133,10 +158,10 @@ class RungeKutta(Scene):
     def display_analytical(self, animate=True):
         self.gauss_graph = self.axes.get_graph(
             function=self.u_exact,
-            x_range=(self.t_zero, 2., 0.01),
+            x_range=(self.t_zero, self.ax_limits[1], (self.ax_limits[1] - self.t_zero) / 200),
             color=YELLOW,
         )
-        gauss_label = self.axes.get_graph_label(self.gauss_graph, Tex(r"U \exp(-\frac{{t^2-T^2}}{{2}})"))
+        gauss_label = self.axes.get_graph_label(self.gauss_graph, Tex(self.analytic_name))
         # self.add(gauss_label, self.gauss_graph)
         if animate:
             self.play(
@@ -226,8 +251,7 @@ class RungeKutta(Scene):
             )
 
             # slope_k UPDATE
-
-            slope_k = self.dudt(t_pos.get_value(), u_pos.get_value())
+            slope_k = self.dudt(u_pos.get_value(), t_pos.get_value())
 
             f_always(
                 dot3.move_to,
@@ -271,8 +295,8 @@ class RungeKutta(Scene):
                 dot_1st, dot_2nd = (dot2, dot3) if slope_k > 0. else (dot3, dot2)
                 arrows[k] = Arrow(dot_1st, dot_2nd, tip_width_ratio=6).set_color(color)
                 arrows[k].set_points_by_ends(
-                    self.axes.c2p(self.axes.p2c(dot2.get_center())[0], arrow_base),
-                    self.axes.c2p(self.axes.p2c(dot2.get_center())[0], arrow_base + slope_k * self.dt * gamma_k),
+                    self.axes.c2p(*self.axes.p2c(dot2.get_center())),
+                    self.axes.c2p(*self.axes.p2c(dot3.get_center())),
                 )
                 self.play(
                     FadeIn(arrows[k]),
