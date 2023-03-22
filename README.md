@@ -1,1 +1,1 @@
-# Animations with MANIM
+# Explanatory math videos with `manim` and `matplotlib`
