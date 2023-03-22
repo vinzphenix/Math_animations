@@ -32,7 +32,7 @@ all_schemes = {
         "Heun": ([0.0, 1.0], [0.5, 0.5]),
         "Heun 3": ([0., 1. / 3., 2. / 3.], [1. / 4., 0., 3. / 4.]),
         "RK4C": ([0., 0.5, 0.5, 1.], [1. / 6., 1. / 3., 1. / 3., 1. / 6.])
-    }
+}
 
 
 class RungeKutta(Scene):
@@ -52,15 +52,14 @@ class RungeKutta(Scene):
     axes, gauss_graph = None, None
 
     def construct(self):
-        animate_ode_intro = False
-        animate_rk_intro = True
+        animate_ode_intro = True
         self.setup_axes(animate=animate_ode_intro)
-        self.display_ode_info(animate=animate_ode_intro)
-        self.display_ut_zero(animate=animate_ode_intro)
+        # self.display_ode_info(animate=animate_ode_intro)
+        # self.display_ut_zero(animate=animate_ode_intro)
         self.display_vector_field(animate=animate_ode_intro)
-        self.display_analytical(animate=animate_ode_intro)
-        self.display_scheme_info(animate=animate_rk_intro)
-        self.do_rk_scheme()
+        # self.display_analytical(animate=animate_ode_intro)
+        # self.display_scheme_info(animate=True)
+        # self.do_rk_scheme()
 
     def setup_axes(self, animate=True):
         # Create coordinate axes
@@ -144,7 +143,7 @@ class RungeKutta(Scene):
         # self.add(vector_field.set_opacity(0.25))
         if animate:
             self.play(
-                LaggedStartMap(GrowArrow, vector_field, lag_ratio=0.01),
+                LaggedStartMap(GrowArrow, vector_field, lag_ratio=1.),
                 run_time=2.
             )
             self.wait(3.)
@@ -204,7 +203,7 @@ class RungeKutta(Scene):
     def do_rk_scheme(self):
         # Runge Kutta scheme
         arrow_base_pos, arrow_base_neg = self.u_zero, self.u_zero
-        arrows = [None for _ in self.gammas]
+        arrows = [Arrow(DOWN, UP, tip_width_ratio=6).set_color(color) for color in self.colors]
         t_stack = self.t_zero + self.dt
 
         t_pos = ValueTracker(self.t_zero)
@@ -344,7 +343,7 @@ class RungeKutta(Scene):
         du_arrow = Arrow(dot_1st, dot_2nd, tip_width_ratio=4)
         du_arrow.set_points_by_ends(self.axes.c2p(t_stack, self.u_zero), self.axes.c2p(t_stack, u_next))
 
-        fades_to_do = [FadeOut(arrow) for arrow in arrows if arrow is not None]
+        fades_to_do = [FadeOut(arrow) for arrow in arrows]
         nb_nnz_gamma = len([g for g in self.gammas if g > 0.])
         run_time_merge_arrows = 4. if nb_nnz_gamma > 1 else 1.
         self.play(
