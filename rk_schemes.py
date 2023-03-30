@@ -54,12 +54,12 @@ class RungeKutta(Scene):
     def construct(self):
         animate_ode_intro = True
         self.setup_axes(animate=animate_ode_intro)
-        # self.display_ode_info(animate=animate_ode_intro)
-        # self.display_ut_zero(animate=animate_ode_intro)
+        self.display_ode_info(animate=animate_ode_intro)
+        self.display_ut_zero(animate=animate_ode_intro)
         self.display_vector_field(animate=animate_ode_intro)
-        # self.display_analytical(animate=animate_ode_intro)
-        # self.display_scheme_info(animate=True)
-        # self.do_rk_scheme()
+        self.display_analytical(animate=animate_ode_intro)
+        self.display_scheme_info(animate=True)
+        self.do_rk_scheme()
 
     def setup_axes(self, animate=True):
         # Create coordinate axes
