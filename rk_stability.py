@@ -13,8 +13,8 @@ class Stability(Scene):
     ftz = 40
     offset = (ax_limits[3] - ax_limits[2]) * 0.10
     y_positions = np.linspace(ax_limits[3] - offset, ax_limits[2] + offset, 5)
-    # box_x_pos = ax_limits[1] + (ax_limits[1] - ax_limits[0]) * 0.5
-    box_x_pos = FRAME_WIDTH / 2.
+    box_x_pos = ax_limits[1] + (ax_limits[1] - ax_limits[0]) * 0.5
+    # box_x_pos = FRAME_WIDTH / 2.
     time_per_symb = 0.2
 
     kwargs_tex = {
@@ -25,6 +25,7 @@ class Stability(Scene):
             r"\left({ {{\partial f}} \over {{\partial u}} }\right)_{u_0}": RED,
             "\lambda": RED,
             "G": BLUE,
+            r"\varphi": BLUE,
             # "\Delta t": GREEN
         }
     }
@@ -34,15 +35,18 @@ class Stability(Scene):
     remaining_eq = None
 
     def construct(self) -> None:
-        order = 3
-        animate_intro = False
+        order = 0
+        animate_intro = True
+        compute_phase = False
         self.setup_axes()
         self.derive_linear_ode(animate=animate_intro)
-        self.derive_amplification(animate=animate_intro)
-        self.display_rk_amplification(order=order, animate=True)
+        self.derive_amplification(animate=animate_intro, phase=compute_phase)
+        self.display_rk_amplification(order=order, animate=True, phase=compute_phase)
         self.display_axes(animate=True)
-        self.level_sets(order=order)
-
+        if not compute_phase:
+            self.level_sets(order=order)
+        else:
+            self.level_sets_phase(order=order)
         return
 
     def setup_axes(self):
@@ -149,7 +153,7 @@ class Stability(Scene):
         self.remaining_eq = [LHS[-1], equals[-1], RHS[-1]]
         return
 
-    def derive_amplification(self, animate=True):
+    def derive_amplification(self, animate=True, phase=False):
         n = 5
         kwargs = self.kwargs_tex
 
@@ -158,21 +162,28 @@ class Stability(Scene):
         for i in range(1, n):
             equals[i].next_to(equals[i - 1], DOWN, buff=LARGE_BUFF)
 
+        math_symbol = "G" if not phase else r"\varphi"
+
+        _2nd_lhs_str = r"{ {{ v(t_{i+1}) }} \over {{v(t_i)}} }"
+        _2nd_rhs_str = r"{ {{\exp\left[\lambda (t_i + \Delta t)\right] }} \over {{\exp[\lambda t_i] }} }"
+        last_rhs_str = r"e^{\Re(\lambda \Delta t)}" if not phase else r"\lambda \Delta t_{{\text{{mod}}}}"
+        extra_left, extra_right = (r"\left| ", r"\right| ") if not phase else (r"\angle ", "")
+        last_operation = r"\cdot" if not phase else r"+"
+
         LHS = [
             Tex(r"v(t)", **kwargs),
-            Tex(r"{ {{ v(t_{i+1}) }} \over {{v(t_i)}} }", **kwargs),
+            Tex(_2nd_lhs_str, **kwargs),
             None,
             None,
-            Tex(r"G", **kwargs),
+            Tex(math_symbol, **kwargs),
         ]
         RHS = [
             Tex(r"\exp(\lambda t)", **kwargs),
-            Tex(r"{ {{\exp\left[\lambda (t_i + \Delta t)\right] }} \over {{\exp[\lambda t_i] }} }", **kwargs),
-            Tex(r"\left| e^{\lambda \Delta t} \right|", **kwargs),
-            Tex(r"\left| e^{\Re(\lambda \Delta t)}\right| \cdot"
-                r" \left|e^{\imath \Im(\lambda \Delta t)} \right|",
-                **kwargs),
-            Tex(r"e^{\Re(\lambda \Delta t)}", **kwargs)
+            Tex(_2nd_rhs_str, **kwargs),
+            Tex(extra_left + r"e^{\lambda \Delta t}" + extra_right, **kwargs),
+            Tex(extra_left + r"e^{\Re(\lambda \Delta t)}" + extra_right + last_operation +
+                extra_left + r"e^{\imath \Im(\lambda \Delta t)}" + extra_right, **kwargs),
+            Tex(last_rhs_str, **kwargs)
         ]
         others = []
 
@@ -193,31 +204,31 @@ class Stability(Scene):
                 self.wait(1.)
 
                 if i == 1:  # display |.| and G :=
-                    new_lhs = Tex(r"\left| { {{ v(t_{i+1}) }} \over {{v(t_i)}} } \right|", **kwargs).move_to(lhs)
-                    new_rhs = Tex(r"\left| { {{\exp\left[\lambda (t_i + \Delta t)\right] }}"
-                                  r" \over {{\exp[\lambda t_i]}} } \right|", **kwargs).move_to(rhs)
+                    new_lhs = Tex(extra_left + _2nd_lhs_str + extra_right, **kwargs).move_to(lhs)
+                    new_rhs = Tex(extra_left + _2nd_rhs_str + extra_right, **kwargs).move_to(rhs)
                     eq_left = Tex(":=", **kwargs).next_to(new_lhs, LEFT)
-                    var_left = Tex("G", **kwargs).next_to(eq_left, LEFT)
+                    var_left = Tex(math_symbol, **kwargs).next_to(eq_left, LEFT)
                     others += [new_lhs, new_rhs, eq_left, var_left]
-                    self.play(
-                        FadeOut(lhs), FadeOut(rhs),
-                        FadeIn(new_lhs), FadeIn(new_rhs),
-                        run_time=2. * 1.
-                    )
-                    self.play(Write(eq_left), run_time=1.)
-                    self.play(Write(var_left), run_time=1., )
+                    if not phase:
+                        self.play(FadeOut(lhs), FadeOut(rhs), FadeIn(new_lhs), FadeIn(new_rhs), run_time=2.)
+                    else:
+                        self.play(TransformMatchingTex(lhs, new_lhs), TransformMatchingTex(rhs, new_rhs), run_time=2.)
+                    self.play(Write(eq_left), run_time=1.,)
+                    self.play(Write(var_left), run_time=1.,)
                     self.wait(1.)
 
         rect = Rectangle(2.75, 1.25)
         eq_g = [
-            Tex(r"G", **kwargs),
+            Tex(math_symbol, **kwargs),
             Tex(r"=", **kwargs),
-            Tex(r"e^{\Re (\lambda \Delta t)}", **kwargs),
+            Tex(last_rhs_str, **kwargs),
         ]
 
         eq_g[1].move_to(self.axes.c2p(self.box_x_pos, self.y_positions[1])).shift(0.5 * LEFT)
         eq_g[0].next_to(eq_g[1], LEFT)
-        eq_g[2].next_to(eq_g[1], RIGHT).align_to(eq_g[0], DOWN)
+        eq_g[2].next_to(eq_g[1], RIGHT)
+        if not phase:
+            eq_g[2].align_to(eq_g[0], DOWN)
         rect.move_to(self.axes.c2p(self.box_x_pos, self.y_positions[1]))
         rect.set_fill(BLACK, opacity=0.5).set_stroke(WHITE, 2)
 
@@ -244,19 +255,22 @@ class Stability(Scene):
             self.remove(*[eq for eq in to_be_removed if eq is not None])
         return
 
-    def display_rk_amplification(self, order, animate=True):
+    def display_rk_amplification(self, order, animate=True, phase=False):
         if order < 1:
             return
 
-        terms = [r"G_{{ \text{{RK{:d} }} }} = \left|1".format(order), r"+\lambda \Delta t"] + \
+        symbol_str = "G" if not phase else r"\varphi"
+        extra_left, extra_right = (r"\left| ", r"\right| ") if not phase else (r"\angle ", "")
+
+        terms = [symbol_str + r"_{{ \text{{RK{:d} }} }} = ".format(order) + extra_left + r"1 + \lambda \Delta t"] + \
                 ["+{{ {{ (\lambda \Delta t)^{:d}}} \over {{ {:d}\;!}} }}".format(i, i) for i in
                  range(2, min(order, 6) + 1)]
-        terms += [r" + ... \right|"] if order > 6 else [r"\right|"]
+        terms += [r" + ..." + extra_right] if order > 6 else [extra_right]
 
         eq_g = Tex(r"".join(terms), font_size=self.ftz)  # .center().to_edge(UP).shift(2. * LEFT)
         eq_small_g = Tex(
-            r"G_{{ \text{{RK{:d} }} }} = \left|\sum_{{i=0}}^{{ {:d} }}"
-            r" {{ {{(\lambda \Delta t)^i}} \over {{i !}} }}\right|".format(order, order),
+            symbol_str + r"_{{ \text{{RK{:d} }} }} =".format(order) + extra_left +
+            r"\sum_{{i=0}}^{{ {:d} }}".format(order) + r" {{ {{(\lambda \Delta t)^i}} \over {{i !}} }}" + extra_right,
             font_size=self.ftz * 7 // 10, tex_to_color_map={str(order): GREEN}
         )
         eq_small_g.move_to(self.axes.c2p(self.box_x_pos, self.y_positions[3]))
@@ -267,6 +281,7 @@ class Stability(Scene):
 
         if animate:
             self.play(Write(eq_g), run_time=((1 + order) * 0.5)),
+            self.wait(1.)
             self.play(DrawBorderThenFill(rect), TransformMatchingTex(eq_g, eq_small_g), run_time=2.)
             self.wait(1.)
         else:
@@ -289,7 +304,6 @@ class Stability(Scene):
         else:  # otherwise analytical solution
             G = np.exp(z)
         G_data = np.abs(G)
-        # G_data = np.angle(G)
 
         # Create label of G level set value
         g_tracker = ValueTracker(0.)
@@ -418,5 +432,100 @@ class Stability(Scene):
                 rect.animate.set_fill(rgba_to_color(color_fill)),
                 run_time=3.
             )
+
+        return
+
+    def level_sets_phase(self, order=1):
+        nx = int(self.delta_x / 0.05)
+        ny = int(self.delta_y / 0.05)
+        x_1d = np.linspace(*self.ax_limits[:2], nx)
+        y_1d = np.linspace(*self.ax_limits[2:], ny)
+        sigma, omega = np.meshgrid(x_1d, y_1d)
+        z = sigma + 1j * omega
+
+        # Compute G
+        if order > 0:  # numerical solution
+            G = np.ones_like(z)
+            for i in range(1, order + 1):
+                G += np.power(z, i) / np.math.factorial(i)
+        else:  # otherwise analytical solution
+            G = np.exp(z)
+        phi_data = np.degrees(np.angle(G))
+
+        # Compute level set in the z domain
+        n_levels = 36
+        levels = np.linspace(180., -180., n_levels, endpoint=False)[::-1]
+        res = plt.contour(sigma, omega, phi_data, levels=levels, )
+
+        # Create label of G level set value
+        phi_tracker = ValueTracker(levels[0])
+        phi_str = r"\varphi_{{ \text{{RK{:d} }} }}".format(order) if order > 0 else r"\varphi"
+        text_phi, number_phi, unit_phi = label_phi = VGroup(
+            Tex(phi_str, "=", font_size=self.ftz),
+            DecimalNumber(levels[0], show_ellipsis=False, include_sign=True,
+                          num_decimal_places=0, font_size=self.ftz),
+            Tex(r"^\circ", font_size=self.ftz)
+        )
+
+        root_color = WHITE
+        label_phi.arrange(RIGHT, buff=SMALL_BUFF).move_to(self.axes.c2p(self.box_x_pos, self.y_positions[4]))
+        number_phi.shift(0.075 * UP)
+        unit_phi.shift(0.20 * UP)
+        rect = Rectangle(2.75, 1.25)
+        rect.move_to(self.axes.c2p(self.box_x_pos, self.y_positions[4]))
+        rect.set_fill(root_color, opacity=0.5).set_stroke(WHITE, 2)
+
+        # Show the zeros of G(z)
+        roots = np.roots([1. / np.math.factorial(i) for i in range(order + 1)][::-1])
+        root_pts = [Dot(self.axes.c2p(root.real, root.imag)).set_color(root_color) for root in roots]
+        self.play(
+            *[ShowCreation(root_pt) for root_pt in root_pts],
+            run_time=1.
+        )
+        self.play(
+            DrawBorderThenFill(rect), Write(label_phi), run_time=2.
+        )
+
+        # Create color arrays
+        colors = plt.get_cmap("hsv")(np.linspace(0., 1., n_levels))
+        all_level_sets = res.allsegs
+        f_always(number_phi.set_value, lambda: phi_tracker.get_value())
+        f_always(rect.set_fill, lambda: rgba_to_color(plt.get_cmap("hsv")((phi_tracker.get_value() + 180.) / 360.)))
+
+        # Display each level set
+        for level_value, color, these_level_sets in zip(levels, colors, all_level_sets):
+            curves = []
+            width = 2 * DEFAULT_STROKE_WIDTH if np.abs(level_value) < 1.e-3 else DEFAULT_STROKE_WIDTH
+
+            for this_level_set in these_level_sets:
+                coords = this_level_set
+                t_array, dt = np.linspace(0., 1., coords.shape[0], retstep=True)
+                spline_x = CubicSpline(t_array, coords[::-1, 0])
+                spline_y = CubicSpline(t_array, coords[::-1, 1])
+
+                level_func = lambda t: (spline_x(t), spline_y(t))
+                # w = 2. if idx_level == len(levels_small) else 1.
+                curves += [
+                    self.axes.get_parametric_curve(
+                        level_func, color=rgba_to_color(color), t_range=(0., 1., dt),
+                    ).set_stroke(width=width)
+                ]
+
+            current_run_time = 0.25
+            self.play(
+                phi_tracker.animate.set_value(level_value),
+                run_time=current_run_time / 2.
+            )
+            self.play(
+                AnimationGroup(*[Write(curve) for curve in curves]),
+                run_time=current_run_time
+            )
+            self.wait(current_run_time / 2.)
+        self.wait()
+
+        self.play(
+            FadeOut(rect),
+            FadeOut(label_phi)
+        )
 
         return
