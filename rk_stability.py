@@ -35,8 +35,8 @@ class Stability(Scene):
     remaining_eq = None
 
     def construct(self) -> None:
-        order = 0
-        animate_intro = True
+        order = 3
+        animate_intro = False
         compute_phase = False
         self.setup_axes()
         self.derive_linear_ode(animate=animate_intro)

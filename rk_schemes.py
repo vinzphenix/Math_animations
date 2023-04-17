@@ -37,7 +37,7 @@ all_schemes = {
 
 class RungeKutta(Scene):
     # ODE parameters
-    t_zero, u_zero, dt, ax_limits, dudt, u_exact, dudt_name, analytic_name = odes["case_2"]
+    t_zero, u_zero, dt, ax_limits, dudt, u_exact, dudt_name, analytic_name = odes["case_1"]
 
     # RK4 parameters
     scheme_name = "RK4C"
@@ -52,13 +52,14 @@ class RungeKutta(Scene):
     axes, gauss_graph = None, None
 
     def construct(self):
-        animate_ode_intro = True
+        animate_ode_intro = False
+        animate_vector_field = False
         self.setup_axes(animate=animate_ode_intro)
         self.display_ode_info(animate=animate_ode_intro)
         self.display_ut_zero(animate=animate_ode_intro)
-        self.display_vector_field(animate=animate_ode_intro)
-        self.display_analytical(animate=animate_ode_intro)
-        self.display_scheme_info(animate=True)
+        self.display_vector_field(animate=animate_vector_field)
+        self.display_analytical(animate=animate_vector_field)
+        self.display_scheme_info(animate=False)
         self.do_rk_scheme()
 
     def setup_axes(self, animate=True):
@@ -131,6 +132,8 @@ class RungeKutta(Scene):
                 FadeOut(hline),
             )
             self.wait(1.)
+        # else:
+        #     self.play(FadeIn(dot_0, scale=0.5))
 
     def display_vector_field(self, animate=True):
         # Vector field display
@@ -143,10 +146,10 @@ class RungeKutta(Scene):
         # self.add(vector_field.set_opacity(0.25))
         if animate:
             self.play(
-                LaggedStartMap(GrowArrow, vector_field, lag_ratio=1.),
+                LaggedStartMap(GrowArrow, vector_field, lag_ratio=0.05),
                 run_time=2.
             )
-            self.wait(3.)
+            self.wait(2.)
             self.play(
                 vector_field.animate.set_opacity(0.25)
             )
