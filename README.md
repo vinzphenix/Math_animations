@@ -7,9 +7,6 @@
 ### Stability region
 ![Example 1 gif](videos/runge_kutta_stability/rk_stability.gif)
 
-## Polynomial basis
-### Lagrange / B-splines
-Interactive widget showing the basis functions with `matplotlib`
-
-## Polynomial basis
-Interactive widget displaying B-splines in the x-y plane, with `matplotlib`
+## B-splines
+- Interactive widget showing the basis functions with `matplotlib`
+- Interactive widget drawing B-splines in the x-y plane with `matplotlib`
