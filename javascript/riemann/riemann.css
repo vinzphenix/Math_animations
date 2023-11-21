@@ -179,6 +179,8 @@ input[type=checkbox] {
 .checkbox { 
     position: relative;
     width: 8vw;
+    font-size: var(--font_size);
+    /*height: 1vw;*/
     left: 0.5vw;
     display: flex;
     /* justify-content: space-between; */

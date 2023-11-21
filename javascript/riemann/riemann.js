@@ -906,7 +906,7 @@ function compute_locus(which, qs) {
     let x_end = (entropy_fix) ? qs[0] : q_max[0];
     n_step = Math.ceil((x_end - 0.) / dx);
     dx = (x_end - 0.) / n_step;
-    for (i = 0; i <= n_step; i++) {
+    for (i = 1; i <= n_step; i++) {
         x = map_x(i * dx, 0., x_end);
         y = x * qs[1] / qs[0] + sign * 2. * x * (Math.sqrt(qs[0]) - Math.sqrt(x));
         pts_integral.push([x, y]);
@@ -916,7 +916,7 @@ function compute_locus(which, qs) {
     let x_start = (entropy_fix) ? qs[0] : 0.;
     n_step = Math.ceil((q_max[0] - x_start) / dx);
     dx = (q_max[0] - x_start) / n_step;
-    for (i = 0; i <= n_step; i ++) {
+    for (i = 1; i <= n_step; i ++) {
         x = map_x(i * dx, x_start, q_max[0]);  // denser near 0.
         y = x * qs[1] / qs[0] - sign * (x - qs[0]) * Math.sqrt(0.5 * x * (1. + x / qs[0]));
         pts_hugoniot.push([x, y]);
