@@ -1062,6 +1062,7 @@ function draw_characteristic(ctx, tsfm, which) {
     let xi, t_max;
     let x, y;
     let dist_to_hoover, ref_dist;
+    let [xh, th] = hoover_position;
 
     let pts_intersection_1 = [];
     let pts_intersection_2 = [];
@@ -1092,7 +1093,7 @@ function draw_characteristic(ctx, tsfm, which) {
             ctx.lineTo(x, y);
             ctx.resetTransform();
             dist_to_hoover = dist_pt_segment(hoover_position, [xi, 0.], [x, y]);
-            ctx.lineWidth = (dist_to_hoover < ref_dist) ? bold : normal;
+            ctx.lineWidth = ((xh <= speeds[0] * th) && (dist_to_hoover < ref_dist)) ? bold : normal;
             ctx.stroke();
         }
     }
@@ -1122,7 +1123,7 @@ function draw_characteristic(ctx, tsfm, which) {
             ctx.lineTo(x, y);
             ctx.resetTransform();
             dist_to_hoover = dist_pt_segment(hoover_position, [xi, 0.], [x, y]);
-            ctx.lineWidth = (dist_to_hoover < ref_dist) ? bold : normal;
+            ctx.lineWidth = ((speeds[3] * th <= xh) && (dist_to_hoover < ref_dist)) ? bold : normal;
             ctx.stroke();
         }
     }
@@ -1165,7 +1166,7 @@ function draw_characteristic(ctx, tsfm, which) {
             }
             ctx.resetTransform();
             dist_to_hoover = dist_pt_segment(hoover_position, [x0, t0], [x, y]);
-            ctx.lineWidth = (dist_to_hoover < ref_dist) ? bold : normal;
+            ctx.lineWidth = ((speeds[1] * th <= xh) && (xh <= speeds[2] * th) && (dist_to_hoover < ref_dist)) ? bold : normal;
             ctx.stroke();
         }
     }

@@ -10,63 +10,58 @@
     </head>
 
     <body>
-        
-        <div class="form" style="margin-top: 1%;">
-            <p>Duration </p>
-            <input type="number" style="left: 70%; width: 25%;" id="input_T">
-        </div>
-
-        <div class="slider" style="margin-top: 4%;" id="slider_t" value=0.0>
-            <p id="text_t">t = 0.00</p>
-            <input type="range" min="0" max="1" step="0.01" value=0.0 id="range_t"/>
-        </div>
-
-        <div class="slider" style="margin-top: 2%;" id="slider_speed">
-            <p id="text_speed">Speed /2</p>
-            <input type="range" min="-4" max="4" value="-1" step="1" id="range_speed"/>
-        </div>
-
-        <div class="container" style="margin-top: 3%;">
-            <div class="btn play" id="button_play">
-              <span class="bar bar-1"></span>
-              <span class="bar bar-2"></span>
+        <div class="inputs">
+            <div class="form">
+                <p>Duration </p>
+                <input type="number" style="left: 70%; width: 25%;" id="input_T">
             </div>
-            <div class="btn stop" id="button_stop">
-                <span class="square"></span>
-              </div>
+                <div class="slider" style="margin-bottom: 0vh" id="slider_t" value=0.0>
+                <p id="text_t">t = 0.00</p>
+                <input type="range" min="0" max="1" step="0.01" value=0.0 id="range_t"/>
+            </div>
+            <div class="slider" style="margin-top: 0vh;" id="slider_speed">
+                <p id="text_speed">Speed /2</p>
+                <input type="range" min="-4" max="4" value="-1" step="1" id="range_speed"/>
+            </div>
+            <div class="container">
+                <div class="btn play" id="button_play">
+                    <span class="bar bar-1"></span>
+                  <span class="bar bar-2"></span>
+                </div>
+                <div class="btn stop" id="button_stop">
+                    <span class="square"></span>
+                </div>
+            </div>
+            <div class="form" style="margin-bottom: 1vh;">
+                <!-- <p>&#966;L </p> -->
+                <p>hL </p>
+                <input type="number" id="phi_L">
+            </div>
+            <div class="form" style="margin-top: 1vh">
+                <p>huL </p>
+                <input type="number" id="u_L">
+            </div>
+            <div class="form" style="margin-bottom: 1vh;">
+                <p>hR </p>
+                <input type="number" id="phi_R">
+            </div>
+            <div class="form" style="margin-top: 1vh">
+                <p>huR </p>
+                <input type="number" id="u_R">
+            </div>
+            <div class="checkbox" style="margin-top: 5vh; margin-bottom: 1vh;">
+                <input type="checkbox" id="1_char" name="1char">
+                <label for="1char">1-&#967;</label>
+            </div>
+            <div class="checkbox" style="margin-top: 1vh;">
+                <input type="checkbox" id="2_char" name="2char">
+                <label for="2char">2-&#967;</label>
+            </div>
+            <div class="checkbox" style="">
+                <input type="checkbox" id="entropy" name="entropy">
+                <label for="entropy" style="text-align: center; vertical-align: middle;">Entropy fix</label>
+            </div>
         </div>
-        
-        <div class="form" style="margin-top: 4%;">
-            <!-- <p>&#966;L </p> -->
-            <p>hL </p>
-            <input type="number" id="phi_L">
-        </div>
-        <div class="form" style="margin-top: 1.5%">
-            <p>huL </p>
-            <input type="number" id="u_L">
-        </div>
-        <div class="form" style="margin-top: 2%;">
-            <p>hR </p>
-            <input type="number" id="phi_R">
-        </div>
-        <div class="form" style="margin-top: 1.5%">
-            <p>huR </p>
-            <input type="number" id="u_R">
-        </div>
-        <div class="checkbox" style="margin-top: 5vw;">
-            <input type="checkbox" id="1_char" name="1char">
-            <label for="1char">1-&#967;</label>
-        </div>
-        <div class="checkbox" style="margin-top: 0.5%;">
-            <input type="checkbox" id="2_char" name="2char">
-            <label for="2char">2-&#967;</label>
-        </div>
-        <div class="checkbox" style="margin-top: 1.5%;">
-            <input type="checkbox" id="entropy" name="entropy">
-            <label for="entropy" style="text-align: center; vertical-align: middle;">Entropy<br>fix</label>
-        </div>
-        
-
 
         <div>
             <canvas id="canvas1Axes", style="position: absolute; z-index: 0"></canvas>
@@ -103,7 +98,7 @@
             const border = 2.;
             const sep_o = Math.floor(Math.min(window.innerHeight, window.innerWidth) * 0.01);
             const sep_i = Math.floor(Math.min(window.innerHeight, window.innerWidth) * 0.01);
-            const widths = [0.1, 0.5, 0.4];
+            const widths = [0.15, 0.50, 0.35];
             const heights_lf = [0.5, 0.5];
             const heights_rg = [0.5, 0.5];
 
