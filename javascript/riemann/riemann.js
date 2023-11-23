@@ -4,6 +4,13 @@ const ORANGE = "#fa7e19";
 const BLUE = "#2d70b3";
 const RED = "#c74440";
 const GREEN = "#388c46";
+const COLORS = [
+    "#2e3440", "#3b4252", "#434c5e", "#4c566a", 
+    "#d8dee9", "#e5e9f0", "#eceff4", 
+    "#8fbcbb", "#88c0d0", "#81a1c1", "#5e81ac",
+    "#bf616a", "#d08770", "#ebcb8b", "#a3be8c", "#b48ead",
+    "#76c783", "#4a83ff", "#8194ff",
+]
 
 const origin_shift = 0.05;  // percentage of width
 const dot_state_radius = 10 * LW;  // same as locus dot size
@@ -114,9 +121,9 @@ function handle_inputs(canvas1, canvas2, canvas3, canvas4, canvas3A) {
     canvas2.addEventListener('mouseup', (e) => {
         drag_flag = -1;
     });
-    canvas2.addEventListener('mouseout', (e) => {
-        drag_flag = -1;
-    });
+    // canvas2.addEventListener('mouseout', (e) => {
+    //     drag_flag = -1;
+    // });
     
     // Display hoovered characteristics as bold
     canvas3.addEventListener('mousemove', function(e){
@@ -338,7 +345,8 @@ function mouse_move_state(event, canvas, canvas_xt, canvas_flux) {
         let x = event.offsetX - tsfm2[4];
         let y = event.offsetY - tsfm2[5];
 
-        if (x < 0.) return;
+        console.log(canvas.width, event.offsetX);
+        if ((x < 0.) || (canvas.width <= event.offsetX)) return;
         
         // Transform from back to state space
         det = 1. / (tsfm2[0] * tsfm2[3] - tsfm2[1] * tsfm2[2]);
@@ -477,7 +485,8 @@ function setup_animation() {
     for (v = 0; v < 2; v++) {
         velocity = velocities[v] * x_max / 10.;
         sign = (v == 0) ? -1. : 1.;
-        color = (v == 0) ? BLUE : ORANGE;
+        // color = (v == 0) ? BLUE : ORANGE;
+        color = (v == 0) ? COLORS[13] : COLORS[18];
         draw_arrow(
             ctx, 
             tsfm1[0] * (sign * x_max/2. - velocity/2.) + tsfm1[4],
@@ -578,7 +587,8 @@ function draw_physics(positions, pts_1_wave, pts_2_wave) {
 
     ctx.save();
     ctx.setTransform(...tsfm1);
-    ctx.fillStyle = "#5e8cd1";
+    // ctx.fillStyle = "#5e8cd1";
+    ctx.fillStyle = COLORS[10];
 
     ctx.beginPath();
     ctx.moveTo(-x_max, ql[0]);
@@ -633,12 +643,14 @@ function color_waves(pts_1_wave, pts_2_wave) {
             ctx.lineTo(pts_wave[w][0][0], 0.);
             ctx.closePath();
             ctx.resetTransform();
-            ctx.fillStyle = "#ffffff80";
+            // ctx.fillStyle = "#ffffff80";
+            ctx.fillStyle = COLORS[5] + "80";
             ctx.fill();
         } else {
             ctx.resetTransform();
             ctx.lineWidth = 5 + LW;
-            ctx.strokeStyle = "#000000";
+            // ctx.strokeStyle = "#000000";
+            ctx.strokeStyle = COLORS[6];
             ctx.stroke();
         }
     }
@@ -651,7 +663,8 @@ function draw_speed_lines(t) {
 
     ctx.save();
     ctx.lineWidth = 1. * LW;
-    ctx.strokeStyle = "#535353";
+    // ctx.strokeStyle = "#535353";
+    ctx.strokeStyle = COLORS[9];
 
     for (i = 0; i < x_speed_lines.length; i++) {
         // RK2
@@ -672,111 +685,6 @@ function draw_speed_lines(t) {
 /**
  * 
  */
-
-function find_middle_state_bissect(ql, qr) {
-    /**
-     * Bissection method to find middle state
-     */
-
-    function f1(x) {
-        if (x < ql[0]) {  // 1-integral curve
-            return x * ql[1]/ql[0] + 2. * x * (Math.sqrt(ql[0]) - Math.sqrt(x));
-        }
-        else {  // 1-hugoniot locus
-            return x * ql[1]/ql[0] - (x - ql[0]) * (Math.sqrt(0.5 * x * (1. + x / ql[0])));
-        }
-    }
-    function f2(x) {
-        if (x < qr[0]) {  // 2-integral curve
-            return x * qr[1]/qr[0] - 2. * x * (Math.sqrt(qr[0]) - Math.sqrt(x));
-        }
-        else {  // 2-hugoniot locus
-            return x * qr[1]/qr[0] + (x - qr[0]) * (Math.sqrt(0.5 * x * (1. + x / qr[0])));;
-        }
-    }
-    function f(x) {
-        return f1(x) - f2(x);
-    }
-    function df(x) {
-        res = ql[1]/ql[0] - qr[1]/qr[0];
-        if (x < ql[0]) {
-            res += +2. * Math.sqrt(ql[0]) - 3. * Math.sqrt(x);
-        } else {
-            res += -0.5 * (4. * x * x + ql[0] * x - ql[0] * ql[0]) / Math.sqrt(2. * x * ql[0] * (ql[0] + x));
-        }
-        if (x < qr[0]) {
-            res -= -2. * Math.sqrt(qr[0]) - 3. * Math.sqrt(x);
-        } else {
-            res -= +0.5 * (4. * x * x + qr[0] * x - qr[0] * qr[0]) / Math.sqrt(2. * x * qr[0] * (qr[0] + x));
-        }
-        return res;
-    }
-    
-    if (
-        (ql[0] < EPS && Math.abs(ql[1]) < EPS) || 
-        (qr[0] < EPS && Math.abs(qr[1]) < EPS) ||
-        (ql[1]/ql[0] + 2. * Math.sqrt(ql[0]) < qr[1]/qr[0] - 2. * Math.sqrt(qr[0])) 
-        ) {  // Dry middle state
-            console.log("Middle state is dry !");
-            return [0., 0.];
-    }
-
-    let x_min = ql[0];
-    let x_max = qr[0];
-    let f_min = f(x_min);
-    let f_max = f(x_max);
-    let n = 0;
-
-    if (Math.abs(f_min) < EPS) {
-        return [ql[0], ql[1]];
-    } 
-    else if (Math.abs(f_max) < EPS) {
-        return [qr[0], qr[1]];
-    } 
-    else if (f_min * f_max < 0.) {  // RS or SR
-        x_min = Math.min(ql[0], qr[0]);
-        x_max = Math.max(ql[0], qr[0]);
-    } else if (f_min < 0.){  // RR
-        // x_min = EPS/2.;
-        // x_max = Math.min(ql[0], qr[0]) + EPS;
-        let x_analytic = (ql[1]/ql[0] - qr[1]/qr[0] + 2. * (Math.sqrt(ql[0]) + Math.sqrt(qr[0]))) ** 2 / 16.;
-        return [x_analytic, f1(x_analytic)];
-    } else {  // SS
-        x_min = Math.max(ql[0], qr[0]);
-        x_max = 2. * x_min;
-        while ((f(x_max) > 0.) && (n < 30)) {  // find bracket with root inside 
-            x_max *= 1.5;
-            n++;
-        }
-        if (n == 30) {
-            console.log("Error with middle state computation. Bracket not found !");
-            return [-1., 0.];
-        }
-    }
-    
-    n = 0;
-    f_min = f(x_min);
-    f_max = f(x_max);
-    let x_mid, f_mid;
-    let tol = 1.e-5;
-    while (n < 100) {
-        x_mid = (x_min + x_max) * 0.5;
-        f_mid = f(x_mid);
-        if ((Math.abs(f_mid) < EPS) || (x_max - x_min < 2. * tol)) {
-            console.log("Middle state " + x_mid);
-            return [x_mid, f1(x_mid)];
-        }
-        n++;
-        if (f_min * f_mid < 0.) {
-            x_max = x_mid;
-        } else {
-            x_min = x_mid;
-        }
-    }
-    
-    console.log("Middle state not precise, too many computations needed" + x_mid);
-    return [x_mid, f1(x_mid)];
-}
 
 function find_middle_state(ql, qr) {
     /**
@@ -852,11 +760,11 @@ function draw_loci(canvas, tsfm, canvas_flux, tsfm_flux) {
     [pts_1_integral, pts_1_hugoniot] = compute_locus(1, ql);
     [pts_2_integral, pts_2_hugoniot] = compute_locus(2, qr);
 
-    plot_locus(canvas, tsfm, BLUE, pts_1_integral, pts_1_hugoniot);
-    plot_locus(canvas, tsfm, ORANGE, pts_2_integral, pts_2_hugoniot);
-    draw_state(canvas, BLUE, ql, tsfm);
-    draw_state(canvas, ORANGE, qr, tsfm);
-    draw_state(canvas, GREEN, qm, tsfm);
+    plot_locus(canvas, tsfm, COLORS[13], pts_1_integral, pts_1_hugoniot);
+    plot_locus(canvas, tsfm, COLORS[18], pts_2_integral, pts_2_hugoniot);
+    draw_state(canvas, COLORS[13], ql, tsfm);
+    draw_state(canvas, COLORS[18], qr, tsfm);
+    draw_state(canvas, COLORS[6], qm, tsfm);
     display_middle_state(canvas);
 
     // Map the loci from (q1, q2) domain to the flux domain (f1, f2)
@@ -866,11 +774,11 @@ function draw_loci(canvas, tsfm, canvas_flux, tsfm_flux) {
             curves[c][i] = compute_flux(curves[c][i]);
         }
     }
-    plot_locus(canvas_flux, tsfm_flux, BLUE, pts_1_integral, pts_1_hugoniot);
-    plot_locus(canvas_flux, tsfm_flux, ORANGE, pts_2_integral, pts_2_hugoniot);
-    draw_state(canvas_flux, BLUE, compute_flux(ql), tsfm_flux);
-    draw_state(canvas_flux, ORANGE, compute_flux(qr), tsfm_flux);
-    draw_state(canvas_flux, GREEN, compute_flux(qm), tsfm_flux);
+    plot_locus(canvas_flux, tsfm_flux, COLORS[13], pts_1_integral, pts_1_hugoniot);
+    plot_locus(canvas_flux, tsfm_flux, COLORS[18], pts_2_integral, pts_2_hugoniot);
+    draw_state(canvas_flux, COLORS[13], compute_flux(ql), tsfm_flux);
+    draw_state(canvas_flux, COLORS[18], compute_flux(qr), tsfm_flux);
+    draw_state(canvas_flux, COLORS[6], compute_flux(qm), tsfm_flux);
 
     // Compute approximate Lax-Friedrichs flux
     [l1l, l2l] = [lambdas[0], lambdas[1]];
@@ -882,7 +790,7 @@ function draw_loci(canvas, tsfm, canvas_flux, tsfm_flux) {
         0.5 * (f_ql[0] + f_qr[0]) - 0.5 * max_eig * (qr[0] - ql[0]),
         0.5 * (f_ql[1] + f_qr[1]) - 0.5 * max_eig * (qr[1] - ql[1]),
     ];
-    draw_state(canvas_flux, RED, f_LF, tsfm_flux);
+    draw_state(canvas_flux, COLORS[0], f_LF, tsfm_flux);
 }
 
 
@@ -906,17 +814,17 @@ function compute_locus(which, qs) {
     let x_end = (entropy_fix) ? qs[0] : q_max[0];
     n_step = Math.ceil((x_end - 0.) / dx);
     dx = (x_end - 0.) / n_step;
-    for (i = 1; i <= n_step; i++) {
-        x = map_x(i * dx, 0., x_end);
+    for (i = 0; i <= n_step; i++) {
+        x = map_x(i * dx, EPS, x_end);
         y = x * qs[1] / qs[0] + sign * 2. * x * (Math.sqrt(qs[0]) - Math.sqrt(x));
         pts_integral.push([x, y]);
     }
 
     // Compute Hugoniot locus (shock)
-    let x_start = (entropy_fix) ? qs[0] : 0.;
+    let x_start = (entropy_fix) ? qs[0] : EPS;
     n_step = Math.ceil((q_max[0] - x_start) / dx);
     dx = (q_max[0] - x_start) / n_step;
-    for (i = 1; i <= n_step; i ++) {
+    for (i = 0; i <= n_step; i ++) {
         x = map_x(i * dx, x_start, q_max[0]);  // denser near 0.
         y = x * qs[1] / qs[0] - sign * (x - qs[0]) * Math.sqrt(0.5 * x * (1. + x / qs[0]));
         pts_hugoniot.push([x, y]);
@@ -979,10 +887,11 @@ function display_middle_state(canvas) {
     // let info = "\u03C6M = " + q1_info + "   u\u03C6M = " + q2_info; 
     let info = "hM = " + q1_info + "   huM = " + q2_info; 
     let ctx = canvas.getContext("2d");
+    // console.log("Middle state :  " + qm[0] + "  " + qm[1]);
 
     ctx.save();
     ctx.font = canvas.width/30 + 'px Fira Mono';
-    ctx.fillStyle = GREEN;
+    ctx.fillStyle = COLORS[6];
     ctx.textAlign = 'right';
     ctx.textBaseline = 'bottom';
     ctx.fillText(info, 0.99*canvas.width, 0.99*canvas.height);
@@ -993,8 +902,10 @@ function draw_characteristics(canvas, tsfm, t=0.) {
     let ctx = canvas.getContext("2d");
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    if (active_char[0]) draw_characteristic(ctx, tsfm, 1);
-    if (active_char[1]) draw_characteristic(ctx, tsfm, 2);
+    // let colors = ["#4a83ff", "#f08080", "#1a62ff", "#e73232"];
+    let colors = [COLORS[17], COLORS[11], COLORS[17]+"60", COLORS[11] + "40"]
+    if (active_char[0]) draw_characteristic(ctx, tsfm, 1, colors[0]);
+    if (active_char[1]) draw_characteristic(ctx, tsfm, 2, colors[1]);
 
     ctx.save();
 
@@ -1002,7 +913,6 @@ function draw_characteristics(canvas, tsfm, t=0.) {
     ctx.moveTo(0., 0.);
     for (w = 0; w < 2; w++) {
         if (wave_type[w] == "R") {
-            ctx.fillStyle = "#c7c7c7b0";
             ctx.beginPath();
             ctx.setTransform(...tsfm);
             ctx.moveTo(0., 0.);
@@ -1011,22 +921,24 @@ function draw_characteristics(canvas, tsfm, t=0.) {
             }
             ctx.closePath();
             ctx.resetTransform();
+            ctx.fillStyle = colors[2+w];
             ctx.fill();
         } else {
-            ctx.strokeStyle = "#000000";
-            ctx.lineWidth = 5 * LW;
+            ctx.lineWidth = 6 * LW;
             ctx.beginPath();
             ctx.setTransform(...tsfm);
             ctx.moveTo(0., 0.);
-            ctx.lineTo(duration * speeds[2*w], duration);
+            ctx.lineTo(1.1*duration * speeds[2*w], 1.1*duration);
             ctx.resetTransform();
+            ctx.strokeStyle = colors[w];
             ctx.stroke();
         }
     }
 
     if ((EPS < t) && (t + EPS < duration)) {
         ctx.lineWidth = 5 * LW;
-        ctx.strokeStyle = "#999999b0";
+        // ctx.strokeStyle = "#999999b0";
+        ctx.strokeStyle = COLORS[4];
         ctx.beginPath();
         ctx.setTransform(...tsfm);
         ctx.moveTo(-x_max, t);
@@ -1045,134 +957,127 @@ function dist_pt_segment(p, v, w) {
     return Math.hypot(p[0] - (v[0] * (1. - t) + w[0] * t), p[1] - (v[1] * (1. - t) + w[1] * t))
 }
 
-function draw_characteristic(ctx, tsfm, which) {
+function draw_characteristic(ctx, tsfm, which, color) {
 
     [l1l, l2l, l1m, l2m, l1r, l2r] = lambdas;
-    let lbd_l = lambdas[2*0+(which-1)];
-    let lbd_m = lambdas[2*1+(which-1)];
-    let lbd_r = lambdas[2*2+(which-1)];
+    let w1 = ql[1]/ql[0] + 2.*Math.sqrt(ql[0]);
+    let w2 = qr[1]/qr[0] - 2.*Math.sqrt(qr[0]);
+    let sign = (which == 1) ? -1. : +1.;
     
-    let T = duration;
     const normal = 1 * LW;
-    const bold =  4 * LW;
+    const bold =  3. * LW;
 
     let nc = 15;  // number of characteristics
-    let x_max_ = 1.5 * x_max;
-    let dx = x_max_ / nc;
-    let xi, t_max;
-    let x, y;
+    let xi_max = 1.5 * x_max;
+    let dx = xi_max / nc;
+    let n_pts;  // Discretization of nonlinear characteristics
+    let xi, x, t, x1, t1, x2, t2, x3, t3, w;
+    
     let dist_to_hoover, ref_dist;
     let [xh, th] = hoover_position;
 
-    let pts_intersection_1 = [];
-    let pts_intersection_2 = [];
-
     ctx.save();
+    ctx.strokeStyle = color;
 
-    // Left state characteristics
-    // If hoover near a line, closer than 33% of characteristics spacing, make it bold
-    ref_dist = 0.33 * dx / Math.hypot(1., lbd_l);
-    if (ql[0] > EPS) {  // if left state is not dry
-        ctx.strokeStyle = BLUE + "80";
+    // Draw 1-characteristic before 1-shock/1-fan, or 2-characteristic after 2-shock/2-fan
+    let lbd = (which == 1) ? lambdas[0] : lambdas[5];
+    let s = (which == 1) ? speeds[0] : speeds[3];
+    ref_dist = 0.33 * (xi_max / nc) / Math.hypot(1., lbd);
+
+    if (EPS < ql[0] * (which == 1) + qr[0] * (which == 2)) {  // No left/right dry state
         for (i = 0; i < nc; i++) {
-            xi = -x_max_ + x_max_ * (i + 0.5) / nc;
-            if ((wave_type[0] == "R") && (which == 1)) {
-                // draw until the top of the domain
-                t_max = T;
-                [x, y] = [xi + t_max * lbd_l, t_max];
-            } else {
-                // draw until the intersection with the middle state
-                t_max = xi / (speeds[0] - lbd_l);
-                [x, y] = [xi + t_max * lbd_l, t_max];
-                // save the intersection point so that we can draw the middle state characteristics
-                pts_intersection_1.push([xi + t_max * lbd_l, t_max]);
-            }
+            xi = sign * (0.5 * dx + i * dx);
+            // characteristic goes to infinity for rarefaction / collapses for shocks
+            t1 = (wave_type[which-1] == "R") ? duration : xi / (s - lbd);
+            x1 = xi + lbd * t1;
+            
             ctx.beginPath();
             ctx.setTransform(...tsfm);
             ctx.moveTo(xi, 0.);
-            ctx.lineTo(x, y);
+            ctx.lineTo(x1, t1);
             ctx.resetTransform();
-            dist_to_hoover = dist_pt_segment(hoover_position, [xi, 0.], [x, y]);
-            ctx.lineWidth = ((xh <= speeds[0] * th) && (dist_to_hoover < ref_dist)) ? bold : normal;
+            dist_to_hoover = dist_pt_segment(hoover_position, [xi, 0.], [x1, t1]);
+            ctx.lineWidth = ((0 <= sign * (xh - s * th)) && (dist_to_hoover < ref_dist)) ? bold : normal;
             ctx.stroke();
         }
     }
-    if (pts_intersection_1.length == 0) {
-        for (xi = T * speeds[1] + dx / 2.; xi < T * speeds[2]; xi += dx) {
-            pts_intersection_1.push([xi, T]);
-        }
-    }
 
-    // Right state characteristics
-    ref_dist = 0.33 * dx / Math.hypot(1., lbd_r);
-    if (qr[0] > EPS) {
-        ctx.strokeStyle = ORANGE + "80";
-        for (i = 0; i < nc; i++) {
-            xi = 0. + x_max_ * (i+0.5) / nc;
-            if ((wave_type[1] == "R") && (which == 2)) {
-                t_max = T;
-                [x, y] = [xi + t_max * lbd_r, t_max];
-            } else {
-                t_max = xi / (speeds[3] - lbd_r);
-                [x, y] = [xi + t_max * lbd_r, t_max];
-                pts_intersection_2.push([x, y]);
-            }
-            ctx.beginPath();
-            ctx.setTransform(...tsfm);
-            ctx.moveTo(xi, 0.);
-            ctx.lineTo(x, y);
-            ctx.resetTransform();
-            dist_to_hoover = dist_pt_segment(hoover_position, [xi, 0.], [x, y]);
-            ctx.lineWidth = ((speeds[3] * th <= xh) && (dist_to_hoover < ref_dist)) ? bold : normal;
-            ctx.stroke();
-        }
-    }
-    if (pts_intersection_2.length == 0) {
-        for (xi = T * speeds[2] - dx / 2.; xi > T * speeds[1]; xi -= dx) {
-            pts_intersection_2.push([xi, T]);
-        }
-    }
-
-    // Middle state characteristics
-    let x0, t0, num;
-    let pts_intersection = (which == 1) ? pts_intersection_1 : pts_intersection_2;
-    if (2 <= pts_intersection.length) {  // distance btw two middle characteristics
-        num = (pts_intersection[1][0] - pts_intersection[0][0]) - lbd_m * (pts_intersection[1][1] - pts_intersection[0][1]);
-    } else {
-        num = dx;
-    }
-    ref_dist = 0.33 * Math.abs(num) / Math.hypot(1., lbd_m);
+    // Draw 1-characteristic after 1-shock/1-fan, or 2-characteristic before 2-shock/2-fan
+    ref_dist = 0.33 * (xi_max / nc) / Math.hypot(1., (which == 1) ? lambdas[4] : lambdas[1]);
     
-    if (qm[0] > EPS) {
-        ctx.strokeStyle = GREEN + "80";
-        for (i = 0; i < pts_intersection.length; i++) {
+    if (EPS < qr[0] * (which == 1) + ql[0] * (which == 2)) {  // No left/right dry state
+        for (i = 0; i < nc; i++) {
+            
+            let flag_close = false;
             ctx.beginPath();
             ctx.setTransform(...tsfm);
-            if (which == 1) {
-                [x0, t0] = pts_intersection[i];
-                xi = x0 - t0 * lbd_m;
-                t_max = xi / (speeds[2] - lbd_m);
-                [x, y] = [speeds[2] * t_max, t_max];
-                ctx.moveTo(x0, t0);
-                ctx.lineTo(x, y);
+
+            xi = -sign * (0.5 * dx + i * dx);
+            ctx.moveTo(xi, 0.);
+            
+            // 1-characteristic after 2-shock/2-fan or 2-characteristic before 1-shock/1-fan
+            [lbd, s] = (which == 1) ? [lambdas[4], speeds[3]] : [lambdas[1], speeds[0]];
+            t1 = xi / (s - lbd);
+            x1 = s * t1;
+            ctx.lineTo(x1, t1);
+            if (dist_pt_segment(hoover_position, [xi, 0.], [x1, t1]) < ref_dist) flag_close = true;
+
+            if (wave_type[3-which - 1] == "R") {  // 1-characteristic inside 2-fan or 2-characteristic inside 1-fan
+                [lbd, w] = (which == 1) ? [l2m, w2] : [l1m, w1];
+                t2 = (EPS < qm[0]) ? ((x1 - w*t1) / (lbd - w))**1.5 / Math.sqrt(t1) : duration;  // Handle dry middle state
+                t2 = Math.min(duration, t2);  // Clip at maximum time
+                n_pts = 100;
+                dt = (t2 - t1) / n_pts;
+                for (j = 1; j <= n_pts; j++) {
+                    t = t1 + j * dt;
+                    x = (x1 - w * t1) * Math.cbrt(t / t1) + w * t;
+                    ctx.lineTo(x, t);
+                    if (Math.hypot(xh - x, th - t) < ref_dist) flag_close = true;
+                }
+                x2 = x;  // should be equal to (l2m * t2) or (l1m * t2)
+            } else {  // 1-characteristic at 2-shock or 2-characteristic at 1-shock
+                t2 = t1;
+                x2 = x1;
             }
-            else {
-                [x0, t0] = pts_intersection[i];
-                xi = x0 - t0 * lbd_m;
-                t_max = xi / (speeds[1] - lbd_m);
-                [x, y] = [speeds[1] * t_max, t_max];
-                ctx.moveTo(x0, t0);
-                ctx.lineTo(x, y);
-            }
+
+            // 1-characteristic after 1-shock/1-fan or 2-characteristic before 2-shock/2-fan
+            [lbd, s] = (which == 1) ? [lambdas[2], speeds[1]] : [lambdas[3], speeds[2]];
+            t3 = (wave_type[which - 1] == "R") ? duration*1.1 : (lbd * t2 - x2) / (lbd - s);
+            t3 = Math.min(t3, duration*1.1);
+            // Characteristics not collapsing into the shock before Tend - and the ones collapsing
+            x3 = (duration < t3) ? x2 + lbd * (t3 - t2) : x2 + lbd * (t2 * s - x2) / (lbd - s);
+            ctx.lineTo(x3, t3);
+            dist_to_hoover = dist_pt_segment(hoover_position, [x2, t2], [x3, t3]);
+            if (((xh - s * th) * sign <= 0.) && (dist_to_hoover < ref_dist)) flag_close = true;
+
             ctx.resetTransform();
-            dist_to_hoover = dist_pt_segment(hoover_position, [x0, t0], [x, y]);
-            ctx.lineWidth = ((speeds[1] * th <= xh) && (xh <= speeds[2] * th) && (dist_to_hoover < ref_dist)) ? bold : normal;
+            ctx.lineWidth = flag_close ? bold : normal;
             ctx.stroke();
+        }
+    }
+
+    // Draw 1-characteristic inside 1-fan, or 2-characteristic inside 2-fan
+    let [xa, xb] = [duration * speeds[2*which-2], duration * speeds[2*which-2+1]];
+    if (wave_type[which - 1] == 'R') {
+        nc = 1 + 2 * Math.floor((xb - xa) / (2. * dx));
+        xi = 0.5 * (xa + xb);
+        for (i = 0; i < nc; i++) {
+            ctx.beginPath();
+            ctx.setTransform(...tsfm);
+            ctx.moveTo(0., 0.);
+            ctx.lineTo(xi, duration);
+            ctx.resetTransform();
+            ctx.setLineDash([15*LW, 10*LW]);
+            dist_to_hoover = dist_pt_segment(hoover_position, [0., 0.], [xi, duration]) * duration / th;
+            ctx.lineWidth = ((0 < th) && (th < duration) && (dist_to_hoover < ref_dist)) ? bold : normal;
+            ctx.stroke()
+            xi += (i+1) * dx * (2*(i%2) - 1);  // 0, -1, 1, -2, 2 ... 
         }
     }
 
     ctx.restore();
 }
+
 /**
  * 
  */
@@ -1180,7 +1085,7 @@ function draw_characteristic(ctx, tsfm, which) {
 function set_background_1(canvas) {
     let ctx = canvas.getContext("2d");
     ctx.lineWidth = 3 * LW;
-    ctx.strokeStyle = "#c5c5c5";
+    ctx.strokeStyle = COLORS[4];
     ctx.setLineDash([5*LW, 5*LW]);
     ctx.beginPath();
     ctx.moveTo(tsfm1[4], tsfm1[5]);
@@ -1195,11 +1100,12 @@ function set_background_2(canvas) {
     const s = origin_shift;
     
     // draw_axes(canvas, ctx, [w * s, h / 2], tsfm2[0], -tsfm2[3], ["\u03C6", "\u03C6 u"]);
-    draw_axes(canvas, ctx, [w * s, h / 2], tsfm2[0], -tsfm2[3], ["h", "h u"]);
+    draw_axes(canvas, ctx, [w * s, h / 2], tsfm2[0], -tsfm2[3], ["h", "h u"], 1., COLORS[4]);
     
     // Show supersonic regions
     ctx.setTransform(...tsfm2);
-    ctx.fillStyle = "#ff000015";
+    // ctx.fillStyle = "#ff000015";
+    ctx.fillStyle = COLORS[4] + "20";
     let dx = px_per_step / tsfm1[0];
     let x, y;
     for (sign = -1; sign <= 1; sign += 2) {
@@ -1221,17 +1127,17 @@ function set_background_3(canvas) {
     const h = canvas.height;
     const w = canvas.width;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    draw_axes(canvas, ctx, [w * 0.50, (1. - origin_shift) * h], tsfm3[0], -tsfm3[3], ["x", "t"]);
+    draw_axes(canvas, ctx, [w * 0.50, (1. - origin_shift) * h], tsfm3[0], -tsfm3[3], ["x", "t"], 1., COLORS[4]);
 }
 
 function set_background_4(canvas) {
     const ctx = canvas.getContext("2d");
     const h = canvas.height;
     const w = canvas.width;
-    draw_axes(canvas, ctx, [w * 0.50, (1. - origin_shift) * h], tsfm4[0], -tsfm4[3], ["f1", "f2"], k=1.);
+    draw_axes(canvas, ctx, [w * 0.50, (1. - origin_shift) * h], tsfm4[0], -tsfm4[3], ["f1", "f2"], 1., COLORS[4]);
 }
 
-function draw_axes(canvas, ctx, origin, dx, dy, labels, k=1.) {
+function draw_axes(canvas, ctx, origin, dx, dy, labels, k=1., color=COLORS[4]) {
 
     var ctx = canvas.getContext("2d");
     var x_axis_starting_point = { number: 1, suffix: ''};
@@ -1241,11 +1147,15 @@ function draw_axes(canvas, ctx, origin, dx, dy, labels, k=1.) {
     const fontsize = k * window.innerWidth / 150;
 
     ctx.save();
-    ctx.strokeStyle = "black";
-    draw_arrow(ctx, 0., origin[1], w, 0., 3);
-    draw_arrow(ctx, origin[0], h, 0., -h, 3);
+    ctx.fillStyle = color;
+    ctx.strokeStyle = color;
+    draw_arrow(ctx, 0., origin[1], w, 0., 3, color);
+    draw_arrow(ctx, origin[0], h, 0., -h, 3, color);
 
     // Ticks marks along the X-axis
+    let n_ticks = 0.95 * (canvas.width - origin[0]) / dx;
+    n_ticks *= (Math.abs(origin[0] - w/2.) < w/4.) ? 2. : 1.;  // axis centered, or offset
+    let freq_ticks = 1 + Math.floor(n_ticks / 10);
     let x_pm = [origin[0] - dx, origin[0] + dx];
     for(i=1; (w*0.02 < x_pm[0]) || (x_pm[1] < w*0.92); i++, x_pm[0]-=dx, x_pm[1]+=dx) {
         for (j = 0; j < 2; j++) {
@@ -1253,21 +1163,26 @@ function draw_axes(canvas, ctx, origin, dx, dy, labels, k=1.) {
                 sign = (j == 0) ? -1 : 1;
                 ctx.beginPath();
                 ctx.lineWidth = 1 * LW;
-                ctx.strokeStyle = "#000000";
                 // Draw a tick mark 6px long (-3 to 3)
-                ctx.moveTo(x_pm[j], origin[1] - 3);
-                ctx.lineTo(x_pm[j], origin[1] + 3);
+                ctx.moveTo(x_pm[j], origin[1] - 4);
+                ctx.lineTo(x_pm[j], origin[1] + 4);
                 ctx.stroke();
                 // Text value at that point
-                ctx.font = fontsize + 'px Arial';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'top';
-                ctx.fillText(x_axis_starting_point.number*(sign*i) + x_axis_starting_point.suffix, x_pm[j], origin[1] + h * 0.015);
+                if (i % freq_ticks == 0) {
+                    ctx.font = fontsize + 'px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'top';
+                    ctx.fillText(x_axis_starting_point.number*(sign*i) + x_axis_starting_point.suffix, x_pm[j], origin[1] + h * 0.015);
+                }
             }
         }
     }
 
     // Ticks marks along the Y-axis
+    n_ticks = 0.95 * (origin[1]) / dy;
+    n_ticks *= (Math.abs(origin[1] - h/2.) < h/4.) ? 2. : 1.;
+    console.log(n_ticks);
+    freq_ticks = 1 + Math.floor(n_ticks / 10);
     let y_pm = [origin[1] + dy, origin[1] - dy];
     for(i=1; (h*0.08 < y_pm[1]) || (y_pm[0] < h*0.98); i++, y_pm[0]+=dy, y_pm[1]-=dy) {
         for (j = 0; j < 2; j++) {
@@ -1275,16 +1190,17 @@ function draw_axes(canvas, ctx, origin, dx, dy, labels, k=1.) {
                 sign = (j == 0) ? -1 : 1;
                 ctx.beginPath();
                 ctx.lineWidth = 1 * LW;
-                ctx.strokeStyle = "#000000";
                 // Draw a tick mark 6px long (-3 to 3)
-                ctx.moveTo(origin[0] - 3, y_pm[j]);
-                ctx.lineTo(origin[0] + 3, y_pm[j]);
+                ctx.moveTo(origin[0] - 4, y_pm[j]);
+                ctx.lineTo(origin[0] + 4, y_pm[j]);
                 ctx.stroke();
                 // Text value at that point
-                ctx.font = fontsize + 'px Arial';
-                ctx.textAlign = 'right';
-                ctx.textBaseline = 'middle';
-                ctx.fillText(y_axis_starting_point.number*(sign*i) + y_axis_starting_point.suffix, origin[0] - w * 0.01, y_pm[j]);
+                if (i % freq_ticks == 0) {
+                    ctx.font = fontsize + 'px Arial';
+                    ctx.textAlign = 'right';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(y_axis_starting_point.number*(sign*i) + y_axis_starting_point.suffix, origin[0] - w * 0.01, y_pm[j]);
+                }
             }
         }
     }
@@ -1301,7 +1217,7 @@ function draw_axes(canvas, ctx, origin, dx, dy, labels, k=1.) {
     ctx.restore();
 }
 
-function draw_arrow(ctx, fromx, fromy, dx, dy, max_width, color="#fffff") {
+function draw_arrow(ctx, fromx, fromy, dx, dy, max_width, color=COLORS[4]) {
     var tox = fromx + dx;
     var toy = fromy + dy;
     var angle = Math.PI * (1. - 1./9.);

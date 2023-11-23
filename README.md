@@ -13,4 +13,4 @@
 
 
 ## Riemann solver for 1D shallow water equations
-![Example 3 gif](javascript/riemann/screenshot_riemann.png)
+![Example 3 gif](javascript/riemann/example.gif)
