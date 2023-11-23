@@ -1058,7 +1058,8 @@ function draw_characteristic(ctx, tsfm, which, color) {
 
     // Draw 1-characteristic inside 1-fan, or 2-characteristic inside 2-fan
     let [xa, xb] = [duration * speeds[2*which-2], duration * speeds[2*which-2+1]];
-    if (wave_type[which - 1] == 'R') {
+    ref_dist = 0.40 * (xi_max / nc) * th / duration;
+    if ((wave_type[which - 1] == 'R') && (EPS < xb - xa)) {
         nc = 1 + 2 * Math.floor((xb - xa) / (2. * dx));
         xi = 0.5 * (xa + xb);
         for (i = 0; i < nc; i++) {
@@ -1068,7 +1069,7 @@ function draw_characteristic(ctx, tsfm, which, color) {
             ctx.lineTo(xi, duration);
             ctx.resetTransform();
             ctx.setLineDash([15*LW, 10*LW]);
-            dist_to_hoover = dist_pt_segment(hoover_position, [0., 0.], [xi, duration]) * duration / th;
+            dist_to_hoover = dist_pt_segment(hoover_position, [0., 0.], [xi, duration]) * Math.sqrt(1+(xi/duration)**2);
             ctx.lineWidth = ((0 < th) && (th < duration) && (dist_to_hoover < ref_dist)) ? bold : normal;
             ctx.stroke()
             xi += (i+1) * dx * (2*(i%2) - 1);  // 0, -1, 1, -2, 2 ... 
