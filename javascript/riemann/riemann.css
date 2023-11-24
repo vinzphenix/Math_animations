@@ -27,9 +27,11 @@ body {
     margin-right: 1vw;
     margin-top: 2vh;
     margin-bottom: 2vh;
+    align-items: center;
 }
 
 .form p {
+    display: inline;
     font-size: var(--font_size);
     font-weight: 1;
     margin: 0;
@@ -39,7 +41,7 @@ body {
     transform: translateY(-50%);
     /* vertical-align: middle; */
     left: 0vw;
-    width: 2.5vw;
+    /* width: 2.5vw; */
     text-align: right;
     color: black;
 }
@@ -54,6 +56,8 @@ body {
     left: 3.5vw;
     height: 2.5vh;
     width: 3.5vw;
+    text-align: center;
+    vertical-align: middle;
     font-size: var(--font_size);
 }
 

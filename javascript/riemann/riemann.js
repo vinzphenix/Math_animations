@@ -17,7 +17,7 @@ const dot_state_radius = 10 * LW;  // same as locus dot size
 const px_per_step = 10;  // discretization of curves
 const n_speed_lines = 20;  // number of speed lines
 
-const x_max = 8.;
+let x_max = 8.;
 let y_max;
 let q_max = [7., 4.5];  // [q1, q2] max values
 let f_max = [7., 20.5];  // [q1, q2] max values
@@ -154,6 +154,32 @@ function handle_inputs(canvas1, canvas2, canvas3, canvas4, canvas3A) {
         }
     );
 
+    // Set x limits
+    document.getElementById("input_x").value = x_max;
+    document.getElementById("input_x").addEventListener(
+        'keyup', function (e){
+            if (e.key === 'Enter') this.blur();
+        }
+    );
+    document.getElementById("input_x").addEventListener(
+        'blur', function (e){
+            let value = Number(this.value);
+            if ((EPS < Number(this.value)) && (anim_state == "init")) {
+                tsfm1[0] *= x_max / value;
+                tsfm3[0] *= x_max / value;
+                tsfm1[3] *= x_max / value;
+                x_max = value;
+                y_max = canvas1.height * (2. * x_max) / canvas1.width;
+                set_background_1(canvas1A);
+                set_background_3(canvas3A);
+                draw_characteristics(canvas3, tsfm3);
+                setup_animation();
+            } else {
+                this.value = x_max;
+            }
+        }
+    );
+
     // Set simulation time
     document.getElementById("range_t").value = 0.;
     document.getElementById("range_t").min = 0.;
@@ -226,7 +252,8 @@ function handle_inputs(canvas1, canvas2, canvas3, canvas4, canvas3A) {
                 this.value = ql[0];
                 return;
             }
-            this.value = Math.min(Math.max(0., this.value), q_max[0]);
+            // this.value = Math.min(Math.max(0., this.value), q_max[0]);
+            this.value = Math.max(0., this.value);
             if ((qr[0] < EPS) && (this.value < EPS)) this.value = ql[0];
             else ql[0] = Number(this.value);
             if (ql[0] < EPS) ql[1] = 0.;
@@ -248,7 +275,7 @@ function handle_inputs(canvas1, canvas2, canvas3, canvas4, canvas3A) {
                 this.value = ql[1];
                 return;
             }
-            this.value = Math.max(-q_max[1], Math.min(this.value, q_max[1]));
+            // this.value = Math.max(-q_max[1], Math.min(this.value, q_max[1]));
             if (ql[0] < EPS) this.value = 0.;
             ql[1] = Number(this.value);
             update_all_plots(canvas2, canvas3, canvas4);
@@ -268,7 +295,8 @@ function handle_inputs(canvas1, canvas2, canvas3, canvas4, canvas3A) {
                 this.value = qr[0];
                 return;
             }
-            this.value = Math.min(Math.max(0., this.value), q_max[0]);
+            // this.value = Math.min(Math.max(0., this.value), q_max[0]);
+            this.value = Math.max(0., this.value);
             if ((ql[0] < EPS) && (this.value < EPS)) this.value = qr[0];
             else qr[0] = Number(this.value);
             if (qr[0] < EPS) qr[1] = 0.;
@@ -290,7 +318,7 @@ function handle_inputs(canvas1, canvas2, canvas3, canvas4, canvas3A) {
                 this.value = qr[1];
                 return;
             }
-            this.value = Math.max(-q_max[1], Math.min(this.value, q_max[1]));
+            // this.value = Math.max(-q_max[1], Math.min(this.value, q_max[1]));
             if (qr[0] < EPS) this.value = 0.;
             qr[1] = Number(this.value);
             update_all_plots(canvas2, canvas3, canvas4);
@@ -706,7 +734,7 @@ function find_middle_state(ql, qr) {
         res = ql[1]/ql[0] - qr[1]/qr[0];
         
         if (x < ql[0]) res += +2. * Math.sqrt(ql[0]) - 3. * Math.sqrt(x);
-        else res += -0.5 * (4. * x * x + ql[0] * x - ql[0] * ql[0]) / Math.sqrt(2. * x * ql[0] * (ql[0] + x))
+        else res += -0.5 * (4. * x * x + ql[0] * x - ql[0] * ql[0]) / Math.sqrt(2. * x * ql[0] * (ql[0] + x));
         
         if (x < qr[0]) res -= -(2. * Math.sqrt(qr[0]) - 3. * Math.sqrt(x));
         else res -= +0.5 * (4. * x * x + qr[0] * x - qr[0] * qr[0]) / Math.sqrt(2. * x * qr[0] * (qr[0] + x));
@@ -822,7 +850,8 @@ function compute_locus(which, qs) {
 
     // Compute Hugoniot locus (shock)
     let x_start = (entropy_fix) ? qs[0] : EPS;
-    n_step = Math.ceil((q_max[0] - x_start) / dx);
+    n_step = Math.ceil(Math.abs(q_max[0] - x_start) / dx);
+    console.log("nstpes "+ n_step);
     dx = (q_max[0] - x_start) / n_step;
     for (i = 0; i <= n_step; i ++) {
         x = map_x(i * dx, x_start, q_max[0]);  // denser near 0.
