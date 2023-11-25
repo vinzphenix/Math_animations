@@ -32,7 +32,8 @@ let tsfm1, tsfm2, tsfm3, tsfm4;
 let active_char = [true, true];
 let entropy_fix = true;
 let drag_flag = -1;
-let hoover_position = [0., -1.];
+let hoover_position_q = [-1., 0.];
+let hoover_position_xt = [0., -1.];
 
 // Animation parameters
 let anim_state = "init";  // init, play, pause, end
@@ -43,9 +44,9 @@ let speedup = 0.5;
 let x_speed_lines = [];
 
 // State parameters
-let QL = [GRAVITY * 5., 0. * GRAVITY];  // left state
-let QR = [GRAVITY * 3., 0. * GRAVITY];  // right state
-let QM = [GRAVITY * 0., 0. * GRAVITY];  // middle state (just for initialization)
+let ql = [GRAVITY * 5., 0. * GRAVITY];  // left state
+let qr = [GRAVITY * 3., 0. * GRAVITY];  // right state
+let qm = [GRAVITY * 0., 0. * GRAVITY];  // middle state (just for initialization)
 
 let f_LF = [0., 0.];  // Lax-Friedrichs flux
 
@@ -139,9 +140,9 @@ function handle_inputs(canvas1, canvas2, canvas3, canvas4, canvas3A) {
     canvas2.addEventListener('mouseup', (e) => {
         drag_flag = -1;
     });
-    // canvas2.addEventListener('mouseout', (e) => {
-    //     drag_flag = -1;
-    // });
+    canvas2.addEventListener('mouseout', (e) => {
+        hoover_position_q[0] = -1;
+    });
     
     // Display hoovered characteristics as bold
     canvas3.addEventListener('mousemove', function(e){
@@ -258,7 +259,7 @@ function handle_inputs(canvas1, canvas2, canvas3, canvas4, canvas3A) {
     );
 
     // Left height input
-    document.getElementById("phi_L").value = QL[0] / GRAVITY;
+    document.getElementById("phi_L").value = ql[0] / GRAVITY;
     document.getElementById("phi_L").addEventListener(
         'keypress', function (e){
             if (e.key === 'Enter') this.blur();
@@ -267,21 +268,21 @@ function handle_inputs(canvas1, canvas2, canvas3, canvas4, canvas3A) {
     document.getElementById("phi_L").addEventListener(
         'blur', function (e){
             if (anim_state != "init") {
-                this.value = QL[0] / GRAVITY;
+                this.value = ql[0] / GRAVITY;
                 return;
             }
             // this.value = Math.min(Math.max(0., this.value), q_max[0]);
             this.value = Math.max(0., this.value);
-            if ((QR[0] < EPS) && (this.value < EPS)) this.value = QL[0] / GRAVITY;
-            else QL[0] = Number(this.value) * GRAVITY;
-            if (QL[0] < EPS) QL[1] = 0.;
-            document.getElementById("u_L").value = QL[1] / GRAVITY;
+            if ((qr[0] < EPS) && (this.value < EPS)) this.value = ql[0] / GRAVITY;
+            else ql[0] = Number(this.value) * GRAVITY;
+            if (ql[0] < EPS) ql[1] = 0.;
+            document.getElementById("u_L").value = ql[1] / GRAVITY;
             update_all_plots(canvas2, canvas3, canvas4);
         }
     );
 
     // Left mass flux input
-    document.getElementById("u_L").value = QL[1] / GRAVITY;
+    document.getElementById("u_L").value = ql[1] / GRAVITY;
     document.getElementById("u_L").addEventListener(
         'keypress', function (e){
             if (e.key === 'Enter') this.blur();
@@ -290,18 +291,18 @@ function handle_inputs(canvas1, canvas2, canvas3, canvas4, canvas3A) {
     document.getElementById("u_L").addEventListener(
         'blur', function (e){
             if (anim_state != "init") {
-                this.value = QL[1] / GRAVITY;
+                this.value = ql[1] / GRAVITY;
                 return;
             }
             // this.value = Math.max(-q_max[1], Math.min(this.value, q_max[1]));
-            if (QL[0] < EPS) this.value = 0.;
-            QL[1] = Number(this.value) * GRAVITY;
+            if (ql[0] < EPS) this.value = 0.;
+            ql[1] = Number(this.value) * GRAVITY;
             update_all_plots(canvas2, canvas3, canvas4);
         }
     );
     
     // Right height input
-    document.getElementById("phi_R").value = QR[0] / GRAVITY;
+    document.getElementById("phi_R").value = qr[0] / GRAVITY;
     document.getElementById("phi_R").addEventListener(
         'keypress', function (e){
             if (e.key === 'Enter') this.blur();
@@ -310,21 +311,21 @@ function handle_inputs(canvas1, canvas2, canvas3, canvas4, canvas3A) {
     document.getElementById("phi_R").addEventListener(
         'blur', function (e){
             if (anim_state != "init") {
-                this.value = QR[0] / GRAVITY;
+                this.value = qr[0] / GRAVITY;
                 return;
             }
             // this.value = Math.min(Math.max(0., this.value), q_max[0]);
             this.value = Math.max(0., this.value);
-            if ((QL[0] < EPS) && (this.value < EPS)) this.value = QR[0] / GRAVITY;
-            else QR[0] = Number(this.value) * GRAVITY;
-            if (QR[0] < EPS) QR[1] = 0.;
-            document.getElementById("u_R").value = QR[1] / GRAVITY;
+            if ((ql[0] < EPS) && (this.value < EPS)) this.value = qr[0] / GRAVITY;
+            else qr[0] = Number(this.value) * GRAVITY;
+            if (qr[0] < EPS) qr[1] = 0.;
+            document.getElementById("u_R").value = qr[1] / GRAVITY;
             update_all_plots(canvas2, canvas3, canvas4);
         }
     );
 
     // Right mass flux input
-    document.getElementById("u_R").value = QR[1] / GRAVITY;
+    document.getElementById("u_R").value = qr[1] / GRAVITY;
     document.getElementById("u_R").addEventListener(
         'keypress', function (e){
             if (e.key === 'Enter') this.blur();
@@ -333,12 +334,12 @@ function handle_inputs(canvas1, canvas2, canvas3, canvas4, canvas3A) {
     document.getElementById("u_R").addEventListener(
         'blur', function (e){
             if (anim_state != "init") {
-                this.value = QR[1] / GRAVITY;
+                this.value = qr[1] / GRAVITY;
                 return;
             }
             // this.value = Math.max(-q_max[1], Math.min(this.value, q_max[1]));
-            if (QR[0] < EPS) this.value = 0.;
-            QR[1] = Number(this.value) * GRAVITY;
+            if (qr[0] < EPS) this.value = 0.;
+            qr[1] = Number(this.value) * GRAVITY;
             update_all_plots(canvas2, canvas3, canvas4);
         }
     );
@@ -372,7 +373,7 @@ function handle_inputs(canvas1, canvas2, canvas3, canvas4, canvas3A) {
 function mouse_select_state(event, tsfm) {
     var x = event.offsetX;
     var y = event.offsetY;
-    q_list = [QL, QR];  // list of list
+    q_list = [ql, qr];  // list of list
 
     for (i = 0; i < 2; i++) {
         qs = [
@@ -380,7 +381,7 @@ function mouse_select_state(event, tsfm) {
             tsfm[1] * q_list[i][0] + tsfm[3] * q_list[i][1] + tsfm[5],
         ];
 
-        if (Math.hypot(qs[0] - x, qs[1] - y) < dot_state_radius) {
+        if (Math.hypot(qs[0] - x, qs[1] - y) < 1.5*dot_state_radius) {
             drag_flag = i + 1;  // 1 or 2
         }
     }
@@ -399,19 +400,26 @@ function mouse_move_state(event, canvas, canvas_xt, canvas_flux) {
         new_y = det * (-tsfm2[1] * x + tsfm2[0] * y);
         
         if (drag_flag == 1) {
-            QL[0] = new_x;
-            QL[1] = new_y;
-            document.getElementById("phi_L").value = Math.round(QL[0] / GRAVITY * 100) / 100;
-            document.getElementById("u_L").value = Math.round(QL[1] / GRAVITY * 100) / 100;
+            ql[0] = new_x;
+            ql[1] = new_y;
+            document.getElementById("phi_L").value = Math.round(ql[0] / GRAVITY * 100) / 100;
+            document.getElementById("u_L").value = Math.round(ql[1] / GRAVITY * 100) / 100;
         } else {
-            QR[0] = new_x;
-            QR[1] = new_y;
-            document.getElementById("phi_R").value = Math.round(QR[0] / GRAVITY * 100) / 100;
-            document.getElementById("u_R").value = Math.round(QR[1] / GRAVITY * 100) / 100;
+            qr[0] = new_x;
+            qr[1] = new_y;
+            document.getElementById("phi_R").value = Math.round(qr[0] / GRAVITY * 100) / 100;
+            document.getElementById("u_R").value = Math.round(qr[1] / GRAVITY * 100) / 100;
         }
         
         update_all_plots(canvas, canvas_xt, canvas_flux);
     }
+
+    let x = event.offsetX;
+    let y = event.offsetY;
+    if (x < tsfm2[4]) return;
+    hoover_position_q[0] = x;
+    hoover_position_q[1] = y;
+    draw_loci(canvas2, tsfm2, canvas4, tsfm4);
 }
 
 function mouse_move_hoover_char(event, canvas, reset=false) {
@@ -419,26 +427,26 @@ function mouse_move_hoover_char(event, canvas, reset=false) {
     let y = event.offsetY - tsfm3[5];
     if (y > 0.) return;
     det = 1. / (tsfm3[0] * tsfm3[3] - tsfm3[1] * tsfm3[2]);
-    hoover_position[0] = det * (+tsfm3[3] * x - tsfm3[2] * y);
-    hoover_position[1] = det * (-tsfm3[1] * x + tsfm3[0] * y);
-    if (reset) hoover_position[1] = -10.;
+    hoover_position_xt[0] = det * (+tsfm3[3] * x - tsfm3[2] * y);
+    hoover_position_xt[1] = det * (-tsfm3[1] * x + tsfm3[0] * y);
+    if (reset) hoover_position_xt[1] = -10.;
     draw_characteristics(canvas, tsfm3, last_t);
 }
 
 function update_all_plots(canvas_q, canvas_xt, canvas_f) {
-    res = find_middle_state(QL, QR);
-    QM[0] = res[0];
-    QM[1] = res[1];
+    res = find_middle_state(ql, qr);
+    qm[0] = res[0];
+    qm[1] = res[1];
         
-    [l1l, l2l] = compute_eigs(QL);
-    [l1r, l2r] = compute_eigs(QR);
-    if ((QM[0] < EPS) && (Math.abs(QM[1]) < EPS)) {  // dry state
-        l1m = compute_u(QL) + 2. * Math.sqrt(QL[0]);
-        l2m = compute_u(QR) - 2. * Math.sqrt(QR[0]);
-        if (QL[0] < EPS) l1l = l1m = l2m - 1;
-        if (QR[0] < EPS) l2m = l2r = l1m + 1;
+    [l1l, l2l] = compute_eigs(ql);
+    [l1r, l2r] = compute_eigs(qr);
+    if ((qm[0] < EPS) && (Math.abs(qm[1]) < EPS)) {  // dry state
+        l1m = compute_u(ql) + 2. * Math.sqrt(ql[0]);
+        l2m = compute_u(qr) - 2. * Math.sqrt(qr[0]);
+        if (ql[0] < EPS) l1l = l1m = l2m - 1;
+        if (qr[0] < EPS) l2m = l2r = l1m + 1;
     } else {
-        [l1m, l2m] = compute_eigs(QM);
+        [l1m, l2m] = compute_eigs(qm);
     }
     lambdas[0] = l1l; lambdas[1] = l2l;
     lambdas[2] = l1m; lambdas[3] = l2m; 
@@ -462,21 +470,21 @@ function compute_state(x, t, flag="") {
     let xi, h, u;
     if ((flag == "R1") || ((t * speeds[0] <= x) && (x <= t * speeds[1]))) { // 1-rarefaction (1-shock not possible as speeds[0]==speeds[1])
         xi = x / t;
-        h = ((QL[1]/QL[0] + 2. * Math.sqrt(QL[0])) / 3. - xi / 3) ** 2 / 1.;
-        u = (QL[1]/QL[0] + 2. * Math.sqrt(QL[0])) / 3. + 2. * xi / 3.;
+        h = ((ql[1]/ql[0] + 2. * Math.sqrt(ql[0])) / 3. - xi / 3) ** 2 / 1.;
+        u = (ql[1]/ql[0] + 2. * Math.sqrt(ql[0])) / 3. + 2. * xi / 3.;
         return [h, h*u]
     } else if ((flag == "R2") || ((t * speeds[2] <= x) && (x <= t * speeds[3]))) {  // 2-rarefaction (2-shock not possible as speeds[2]==speeds[3])
         xi = x / t;
-        h = ((QR[1]/QR[0] - 2. * Math.sqrt(QR[0])) / 3. - xi / 3.) ** 2 / 1.;
-        u = (QR[1]/QR[0] - 2. * Math.sqrt(QR[0])) / 3. + 2. * xi / 3.;
+        h = ((qr[1]/qr[0] - 2. * Math.sqrt(qr[0])) / 3. - xi / 3.) ** 2 / 1.;
+        u = (qr[1]/qr[0] - 2. * Math.sqrt(qr[0])) / 3. + 2. * xi / 3.;
         return [h, h*u]
     }
     else if (x < t * speeds[0]) {  // left state
-        return QL;
+        return ql;
     } else if ((t * speeds[1] < x) && (x < t * speeds[2])) {  // middle state
-        return QM; 
+        return qm; 
     } else {  // right state
-        return QR;
+        return qr;
     }
 }
 
@@ -494,9 +502,9 @@ function compute_eigs(q) {
 
 function compute_s(which) {
     if (which == 1) {
-        return QL[1]/QL[0] - Math.sqrt(QM[0]/2 * (1+ QM[0]/QM[0]));
+        return ql[1]/ql[0] - Math.sqrt(qm[0]/2 * (1+ qm[0]/qm[0]));
     } else {
-        return QR[1]/QR[0] + Math.sqrt(QM[0]/2 * (1+ QM[0]/QR[0]));
+        return qr[1]/qr[0] + Math.sqrt(qm[0]/2 * (1+ qm[0]/qr[0]));
     }
 }
 
@@ -523,7 +531,7 @@ function setup_animation() {
     draw_characteristics(canvas_xt, tsfm3, 0.);
 
     let velocity;
-    let velocities = [QL[1]/QL[0], QR[1]/QR[0]];
+    let velocities = [ql[1]/ql[0], qr[1]/qr[0]];
     for (v = 0; v < 2; v++) {
         velocity = velocities[v] * x_max / 10.;
         sign = (v == 0) ? -1. : 1.;
@@ -592,8 +600,8 @@ function compute_transitions_curves(t) {
     const dx_ref = px_per_step / tsfm1[0];
     let dx, n_step;
     
-    let pts_1_wave = [[positions[0], QL[0]]];
-    let pts_2_wave = [[positions[2], QM[0]]];
+    let pts_1_wave = [[positions[0], ql[0]]];
+    let pts_2_wave = [[positions[2], qm[0]]];
     if ((wave_type[0] == "R") && (EPS < t)) {  // Left rarefaction
         n_step = Math.ceil((positions[1] - positions[0]) / dx_ref);
         dx = (positions[1] - positions[0]) / n_step;
@@ -604,7 +612,7 @@ function compute_transitions_curves(t) {
             pts_1_wave.push([x, q1]);
         }
     } else {  // Left shock
-        pts_1_wave.push([positions[1], QM[0]]);
+        pts_1_wave.push([positions[1], qm[0]]);
     }
     
     if ((wave_type[1] == "R") && (EPS < t)) {  // Right rarefaction
@@ -616,7 +624,7 @@ function compute_transitions_curves(t) {
             pts_2_wave.push([x, q1]);
         }
     } else {  // Right shock
-        pts_2_wave.push([positions[3], QR[0]]);
+        pts_2_wave.push([positions[3], qr[0]]);
     }
     
     return [positions, pts_1_wave, pts_2_wave];
@@ -633,10 +641,10 @@ function draw_physics(positions, pts_1_wave, pts_2_wave) {
     ctx.fillStyle = COLORS[10];
 
     ctx.beginPath();
-    ctx.moveTo(-x_max, QL[0]);
+    ctx.moveTo(-x_max, ql[0]);
     
     // Draw left state
-    ctx.lineTo(positions[0], QL[0]);
+    ctx.lineTo(positions[0], ql[0]);
 
     // Draw left wave
     for (i = 1; i < pts_1_wave.length; i++) {
@@ -644,17 +652,17 @@ function draw_physics(positions, pts_1_wave, pts_2_wave) {
     }
 
     // Draw middle state
-    ctx.lineTo(positions[2], QM[0]);
+    ctx.lineTo(positions[2], qm[0]);
     
     // Draw right wave
     for (i = 1; i < pts_2_wave.length; i++) {
         ctx.lineTo(pts_2_wave[i][0], pts_2_wave[i][1]);
     }
-    ctx.lineTo(positions[3], QR[0]);
+    ctx.lineTo(positions[3], qr[0]);
     
     
     // Draw right state
-    ctx.lineTo(x_max, QR[0]);
+    ctx.lineTo(x_max, qr[0]);
 
     // Fill the area
     ctx.lineTo(x_max, 0.);
@@ -728,46 +736,46 @@ function draw_speed_lines(t) {
  * 
  */
 
-function find_middle_state(QL, QR) {
+function find_middle_state(ql, qr) {
     /**
      * Bissection method to find middle state
      */
 
     function f1(x) {
-        if (x < QL[0]) return x * QL[1]/QL[0] + 2. * x * (Math.sqrt(QL[0]) - Math.sqrt(x));  // 1-integral curve
-        else return x * QL[1]/QL[0] - (x - QL[0]) * (Math.sqrt(0.5 * x * (1. + x / QL[0])));  // 1-hugoniot locus
+        if (x < ql[0]) return x * ql[1]/ql[0] + 2. * x * (Math.sqrt(ql[0]) - Math.sqrt(x));  // 1-integral curve
+        else return x * ql[1]/ql[0] - (x - ql[0]) * (Math.sqrt(0.5 * x * (1. + x / ql[0])));  // 1-hugoniot locus
     }
     function f2(x) {
-        if (x < QR[0]) return x * QR[1]/QR[0] - 2. * x * (Math.sqrt(QR[0]) - Math.sqrt(x));  // 2-integral curve
-        else return x * QR[1]/QR[0] + (x - QR[0]) * (Math.sqrt(0.5 * x * (1. + x / QR[0])));  // 2-hugoniot locus
+        if (x < qr[0]) return x * qr[1]/qr[0] - 2. * x * (Math.sqrt(qr[0]) - Math.sqrt(x));  // 2-integral curve
+        else return x * qr[1]/qr[0] + (x - qr[0]) * (Math.sqrt(0.5 * x * (1. + x / qr[0])));  // 2-hugoniot locus
     }
     function f(x) {
         return f1(x) - f2(x);
     }
     function df(x) {
-        res = QL[1]/QL[0] - QR[1]/QR[0];
+        res = ql[1]/ql[0] - qr[1]/qr[0];
         
-        if (x < QL[0]) res += +2. * Math.sqrt(QL[0]) - 3. * Math.sqrt(x);
-        else res += -0.5 * (4. * x * x + QL[0] * x - QL[0] * QL[0]) / Math.sqrt(2. * x * QL[0] * (QL[0] + x));
+        if (x < ql[0]) res += +2. * Math.sqrt(ql[0]) - 3. * Math.sqrt(x);
+        else res += -0.5 * (4. * x * x + ql[0] * x - ql[0] * ql[0]) / Math.sqrt(2. * x * ql[0] * (ql[0] + x));
         
-        if (x < QR[0]) res -= -(2. * Math.sqrt(QR[0]) - 3. * Math.sqrt(x));
-        else res -= +0.5 * (4. * x * x + QR[0] * x - QR[0] * QR[0]) / Math.sqrt(2. * x * QR[0] * (QR[0] + x));
+        if (x < qr[0]) res -= -(2. * Math.sqrt(qr[0]) - 3. * Math.sqrt(x));
+        else res -= +0.5 * (4. * x * x + qr[0] * x - qr[0] * qr[0]) / Math.sqrt(2. * x * qr[0] * (qr[0] + x));
         
         return res;
     }
 
     // Handle dry states
     if (
-        (QL[0] < EPS && Math.abs(QL[1]) < EPS) || 
-        (QR[0] < EPS && Math.abs(QR[1]) < EPS) ||
-        (QL[1]/QL[0] + 2. * Math.sqrt(QL[0]) < QR[1]/QR[0] - 2. * Math.sqrt(QR[0])) 
+        (ql[0] < EPS && Math.abs(ql[1]) < EPS) || 
+        (qr[0] < EPS && Math.abs(qr[1]) < EPS) ||
+        (ql[1]/ql[0] + 2. * Math.sqrt(ql[0]) < qr[1]/qr[0] - 2. * Math.sqrt(qr[0])) 
         ) {
             // console.log("Middle state is dry !");
             return [0., 0.];
     }
 
-    let fl = f(QL[0]);
-    let fr = f(QR[0]);
+    let fl = f(ql[0]);
+    let fr = f(qr[0]);
     let x;
     let tol = 1.e-6;
     let delta = 2. * tol;
@@ -776,13 +784,13 @@ function find_middle_state(QL, QR) {
 
     // Initialize x in a smart way
     if (fl * fr < 0.) {  // RS or SR
-        x = Math.max(QL[0], QR[0]);
+        x = Math.max(ql[0], qr[0]);
     } else if (fl < 0.){  // RR (analytic solution)
-        x = (QL[1]/QL[0] - QR[1]/QR[0] + 2. * (Math.sqrt(QL[0]) + Math.sqrt(QR[0]))) ** 2 / 16.;
+        x = (ql[1]/ql[0] - qr[1]/qr[0] + 2. * (Math.sqrt(ql[0]) + Math.sqrt(qr[0]))) ** 2 / 16.;
         return [x, f1(x)];
     } else {  // SS
-        x = (QL[1]/QL[0] - QR[1]/QR[0]) * Math.sqrt(2) / (1./Math.sqrt(QL[0]) + 1./Math.sqrt(QR[0]));
-        x = Math.max(x, QL[0], QR[0]);
+        x = (ql[1]/ql[0] - qr[1]/qr[0]) * Math.sqrt(2) / (1./Math.sqrt(ql[0]) + 1./Math.sqrt(qr[0]));
+        x = Math.max(x, ql[0], qr[0]);
     }
 
     // Do Newton steps
@@ -799,14 +807,14 @@ function draw_loci(canvas, tsfm, canvas_flux, tsfm_flux) {
     canvas.getContext("2d").clearRect(0, 0, canvas.width, canvas.height);
     canvas_flux.getContext("2d").clearRect(0, 0, canvas_flux.width, canvas_flux.height);
 
-    [pts_1_integral, pts_1_hugoniot] = compute_locus(1, QL);
-    [pts_2_integral, pts_2_hugoniot] = compute_locus(2, QR);
+    [pts_1_integral, pts_1_hugoniot] = compute_locus(1, ql);
+    [pts_2_integral, pts_2_hugoniot] = compute_locus(2, qr);
 
     plot_locus(canvas, tsfm, COLORS[13], pts_1_integral, pts_1_hugoniot);
     plot_locus(canvas, tsfm, COLORS[18], pts_2_integral, pts_2_hugoniot);
-    draw_state(canvas, COLORS[13], QL, tsfm);
-    draw_state(canvas, COLORS[18], QR, tsfm);
-    draw_state(canvas, COLORS[6], QM, tsfm);
+    draw_state(canvas, COLORS[13], ql, tsfm, 1);
+    draw_state(canvas, COLORS[18], qr, tsfm, 1);
+    draw_state(canvas, COLORS[6], qm, tsfm);
     display_middle_state(canvas);
 
     // Map the loci from (q1, q2) domain to the flux domain (f1, f2)
@@ -818,19 +826,19 @@ function draw_loci(canvas, tsfm, canvas_flux, tsfm_flux) {
     }
     plot_locus(canvas_flux, tsfm_flux, COLORS[13], pts_1_integral, pts_1_hugoniot);
     plot_locus(canvas_flux, tsfm_flux, COLORS[18], pts_2_integral, pts_2_hugoniot);
-    draw_state(canvas_flux, COLORS[13], compute_flux(QL), tsfm_flux);
-    draw_state(canvas_flux, COLORS[18], compute_flux(QR), tsfm_flux);
-    draw_state(canvas_flux, COLORS[6], compute_flux(QM), tsfm_flux);
+    draw_state(canvas_flux, COLORS[13], compute_flux(ql), tsfm_flux);
+    draw_state(canvas_flux, COLORS[18], compute_flux(qr), tsfm_flux);
+    draw_state(canvas_flux, COLORS[6], compute_flux(qm), tsfm_flux);
 
     // Compute approximate Lax-Friedrichs flux
     [l1l, l2l] = [lambdas[0], lambdas[1]];
     [l1r, l2r] = [lambdas[4], lambdas[5]];
     let max_eig = Math.max(Math.abs(l1l), Math.abs(l2l), Math.abs(l2l), Math.abs(l2r));
-    let f_ql = compute_flux(QL);
-    let f_qr = compute_flux(QR);
+    let f_ql = compute_flux(ql);
+    let f_qr = compute_flux(qr);
     f_LF = [
-        0.5 * (f_ql[0] + f_qr[0]) - 0.5 * max_eig * (QR[0] - QL[0]),
-        0.5 * (f_ql[1] + f_qr[1]) - 0.5 * max_eig * (QR[1] - QR[1]),
+        0.5 * (f_ql[0] + f_qr[0]) - 0.5 * max_eig * (qr[0] - ql[0]),
+        0.5 * (f_ql[1] + f_qr[1]) - 0.5 * max_eig * (qr[1] - qr[1]),
     ];
     draw_state(canvas_flux, COLORS[0], f_LF, tsfm_flux);
 }
@@ -856,7 +864,6 @@ function compute_locus(which, qs) {
     let x_end = (entropy_fix) ? qs[0] : q_max[0];
     n_step = Math.ceil((x_end - 0.) / dx_ref);
     dx = (x_end - 0.) / n_step;
-    console.log("I n_step = " + n_step, q_max[0], x_end, dx, dx_ref, tsfm2);
     for (i = 0; i <= n_step; i++) {
         x = map_x(i * dx, EPS, x_end);
         y = x * qs[1] / qs[0] + sign * 2. * x * (Math.sqrt(qs[0]) - Math.sqrt(x));
@@ -867,7 +874,6 @@ function compute_locus(which, qs) {
     let x_start = (entropy_fix) ? qs[0] : EPS;
     n_step = Math.ceil(Math.abs(q_max[0] - x_start) / dx_ref);
     dx = (q_max[0] - x_start) / n_step;
-    console.log("H n_step = " + n_step, q_max[0], x_start, dx, tsfm2);
     for (i = 0; i <= n_step; i ++) {
         x = map_x(i * dx, x_start, q_max[0]);  // denser near 0.
         y = x * qs[1] / qs[0] - sign * (x - qs[0]) * Math.sqrt(0.5 * x * (1. + x / qs[0]));
@@ -910,7 +916,7 @@ function plot_locus(canvas, tsfm, color, pts_integral, pts_hugoniot) {
     ctx.restore();
 }
 
-function draw_state(canvas, color, q, tsfm) {
+function draw_state(canvas, color, q, tsfm, intensify=0) {
     // Draw dot for state q
     let ctx = canvas.getContext("2d");
     ctx.save();
@@ -920,19 +926,28 @@ function draw_state(canvas, color, q, tsfm) {
         tsfm[0] * q[0] + tsfm[2] * q[1] + tsfm[4],
         tsfm[1] * q[0] + tsfm[3] * q[1] + tsfm[5],
     ];
-    ctx.arc(q_px[0], q_px[1], dot_state_radius, 0, 2. * Math.PI, true);
+
+    let dist_to_hoover = Math.hypot(q_px[0] - hoover_position_q[0], q_px[1] - hoover_position_q[1]);
+    if ((intensify) && (dist_to_hoover < 2. * dot_state_radius)) {
+        ctx.translate(q_px[0], q_px[1]);
+        ctx.rotate(Math.PI/4);
+        ctx.rect(-1.5*dot_state_radius, -1.5*dot_state_radius, 3*dot_state_radius, 3*dot_state_radius);
+        ctx.resetTransform()
+    } else {
+        ctx.arc(q_px[0], q_px[1], dot_state_radius, 0, 2. * Math.PI, true);
+    }
     ctx.fill();
     ctx.restore();
 }
 
 function display_middle_state(canvas) {
-    let q1_info = (Math.round(100*QM[0]/GRAVITY)/100).toFixed(2).padStart(4, ' ');
-    let q2_info = (Math.round(100*QM[1]/GRAVITY)/100).toFixed(2).padStart(5, ' ');
+    let q1_info = (Math.round(100*qm[0]/GRAVITY)/100).toFixed(2).padStart(4, ' ');
+    let q2_info = (Math.round(100*qm[1]/GRAVITY)/100).toFixed(2).padStart(5, ' ');
     // let info = "\u03C6M = " + q1_info + "   u\u03C6M = " + q2_info; 
     let info = "hM = " + q1_info + "   huM = " + q2_info; 
     let ctx = canvas.getContext("2d");
-    console.log("Middle state :  " + QM[0]/GRAVITY + "  " + QM[1]/GRAVITY);
-    console.log(QL[0], QR[0]);
+    // console.log("Middle state :  " + qm[0]/GRAVITY + "  " + qm[1]/GRAVITY);
+    // console.log(ql[0], qr[0]);
 
     ctx.save();
     ctx.font = canvas.width/30 + 'px Fira Mono';
@@ -1005,8 +1020,8 @@ function dist_pt_segment(p, v, w) {
 function draw_characteristic(ctx, tsfm, which, color) {
 
     [l1l, l2l, l1m, l2m, l1r, l2r] = lambdas;
-    let w1 = QL[1]/QL[0] + 2.*Math.sqrt(QL[0]);
-    let w2 = QR[1]/QR[0] - 2.*Math.sqrt(QR[0]);
+    let w1 = ql[1]/ql[0] + 2.*Math.sqrt(ql[0]);
+    let w2 = qr[1]/qr[0] - 2.*Math.sqrt(qr[0]);
     let sign = (which == 1) ? -1. : +1.;
     
     const normal = 1 * LW;
@@ -1019,7 +1034,7 @@ function draw_characteristic(ctx, tsfm, which, color) {
     let xi, x, t, x1, t1, x2, t2, x3, t3, w;
     
     let dist_to_hoover, ref_dist;
-    let [xh, th] = hoover_position;
+    let [xh, th] = hoover_position_xt;
 
     ctx.save();
     ctx.strokeStyle = color;
@@ -1029,7 +1044,7 @@ function draw_characteristic(ctx, tsfm, which, color) {
     let s = (which == 1) ? speeds[0] : speeds[3];
     ref_dist = 0.33 * (xi_max / nc) / Math.hypot(1., lbd);
 
-    if (EPS < QL[0] * (which == 1) + QR[0] * (which == 2)) {  // No left/right dry state
+    if (EPS < ql[0] * (which == 1) + qr[0] * (which == 2)) {  // No left/right dry state
         for (i = 0; i < nc; i++) {
             xi = sign * (0.5 * dx + i * dx);
             // characteristic goes to infinity for rarefaction / collapses for shocks
@@ -1041,7 +1056,7 @@ function draw_characteristic(ctx, tsfm, which, color) {
             ctx.moveTo(xi, 0.);
             ctx.lineTo(x1, t1);
             ctx.resetTransform();
-            dist_to_hoover = dist_pt_segment(hoover_position, [xi, 0.], [x1, t1]);
+            dist_to_hoover = dist_pt_segment(hoover_position_xt, [xi, 0.], [x1, t1]);
             ctx.lineWidth = ((0 <= sign * (xh - s * th)) && (dist_to_hoover < ref_dist)) ? bold : normal;
             ctx.stroke();
         }
@@ -1050,7 +1065,7 @@ function draw_characteristic(ctx, tsfm, which, color) {
     // Draw 1-characteristic after 1-shock/1-fan, or 2-characteristic before 2-shock/2-fan
     ref_dist = 0.33 * (xi_max / nc) / Math.hypot(1., (which == 1) ? lambdas[4] : lambdas[1]);
     
-    if (EPS < QR[0] * (which == 1) + QL[0] * (which == 2)) {  // No left/right dry state
+    if (EPS < qr[0] * (which == 1) + ql[0] * (which == 2)) {  // No left/right dry state
         for (i = 0; i < nc; i++) {
             
             let flag_close = false;
@@ -1065,11 +1080,11 @@ function draw_characteristic(ctx, tsfm, which, color) {
             t1 = xi / (s - lbd);
             x1 = s * t1;
             ctx.lineTo(x1, t1);
-            if (dist_pt_segment(hoover_position, [xi, 0.], [x1, t1]) < ref_dist) flag_close = true;
+            if (dist_pt_segment(hoover_position_xt, [xi, 0.], [x1, t1]) < ref_dist) flag_close = true;
 
             if (wave_type[3-which - 1] == "R") {  // 1-characteristic inside 2-fan or 2-characteristic inside 1-fan
                 [lbd, w] = (which == 1) ? [l2m, w2] : [l1m, w1];
-                t2 = (EPS < QM[0]) ? ((x1 - w*t1) / (lbd - w))**1.5 / Math.sqrt(t1) : duration;  // Handle dry middle state
+                t2 = (EPS < qm[0]) ? ((x1 - w*t1) / (lbd - w))**1.5 / Math.sqrt(t1) : duration;  // Handle dry middle state
                 t2 = Math.min(duration, t2);  // Clip at maximum time
                 n_pts = 100;
                 dt = (t2 - t1) / n_pts;
@@ -1092,7 +1107,7 @@ function draw_characteristic(ctx, tsfm, which, color) {
             // Characteristics not collapsing into the shock before Tend - and the ones collapsing
             x3 = (duration < t3) ? x2 + lbd * (t3 - t2) : x2 + lbd * (t2 * s - x2) / (lbd - s);
             ctx.lineTo(x3, t3);
-            dist_to_hoover = dist_pt_segment(hoover_position, [x2, t2], [x3, t3]);
+            dist_to_hoover = dist_pt_segment(hoover_position_xt, [x2, t2], [x3, t3]);
             if (((xh - s * th) * sign <= 0.) && (dist_to_hoover < ref_dist)) flag_close = true;
 
             ctx.resetTransform();
@@ -1114,7 +1129,7 @@ function draw_characteristic(ctx, tsfm, which, color) {
             ctx.lineTo(xi, duration);
             ctx.resetTransform();
             ctx.setLineDash([15*LW, 10*LW]);
-            dist_to_hoover = dist_pt_segment(hoover_position, [0., 0.], [xi, duration]) * Math.sqrt(1+(xi/duration)**2);
+            dist_to_hoover = dist_pt_segment(hoover_position_xt, [0., 0.], [xi, duration]) * Math.sqrt(1+(xi/duration)**2);
             ctx.lineWidth = ((0 < th) && (th < duration) && (dist_to_hoover < ref_dist)) ? bold : normal;
             ctx.stroke()
             xi += (i+1) * dx * (2*(i%2) - 1);  // 0, -1, 1, -2, 2 ... 
