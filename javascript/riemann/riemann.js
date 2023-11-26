@@ -44,8 +44,8 @@ let speedup = 0.5;
 let x_speed_lines = [];
 
 // State parameters
-let ql = [GRAVITY * 5, 0. * GRAVITY];  // left state
-let qr = [GRAVITY * 0.1, 0 * GRAVITY];  // right state
+let ql = [GRAVITY * 5., 0. * GRAVITY];  // left state
+let qr = [GRAVITY * 3., 0 * GRAVITY];  // right state
 let qm = [GRAVITY * 0., 0. * GRAVITY];  // middle state (just for initialization)
 
 let f_LF = [0., 0.];  // Lax-Friedrichs flux
@@ -1062,9 +1062,7 @@ function draw_characteristic(ctx, tsfm, which, color) {
         }
     }
 
-    // Draw 1-characteristic after 1-shock/1-fan, or 2-characteristic before 2-shock/2-fan
-    console.log(ref_dist);
-    
+    // Draw 1-characteristic after 1-shock/1-fan, or 2-characteristic before 2-shock/2-fan    
     if (EPS < qr[0] * (which == 1) + ql[0] * (which == 2)) {  // No left/right dry state
         for (i = 0; i < nc; i++) {
             
@@ -1109,6 +1107,7 @@ function draw_characteristic(ctx, tsfm, which, color) {
             // Characteristics not collapsing into the shock before Tend - and the ones collapsing
             x3 = (duration < t3) ? x2 + lbd * (t3 - t2) : x2 + lbd * (t2 * s - x2) / (lbd - s);
             ctx.lineTo(x3, t3);
+            // Unusefully complicated formula to compute the shrinking of the space btw characteristics when crossing shock
             if ((which == 1) && (wave_type[1] == "S")) 
                 ref_dist = 0.33  * dx * ((speeds[2] - lbd)/(speeds[2] - l1r)) / Math.hypot(1., lbd);
             if ((which == 2) && (wave_type[0] == "S")) 
