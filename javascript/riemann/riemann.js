@@ -17,7 +17,7 @@ const min_pixel_per_unit = 50;
 const dot_state_radius = 10 * LW;  // same as locus dot size
 const px_per_step = 10;  // discretization of curves
 const n_speed_lines = 20;  // number of speed lines
-const GRAVITY = 10.;
+const GRAVITY = 9.81;
 
 let x_max = 8.;
 let y_max;
@@ -29,7 +29,7 @@ let px_grid_size_y;  // nb of px
 let tsfm1, tsfm2, tsfm3, tsfm4;
 
 // Interaction parameters
-let active_char = [true, true];
+let active_char = [true, false];
 let entropy_fix = true;
 let drag_flag = -1;
 let hoover_position_q = [-1., 0.];
@@ -44,8 +44,8 @@ let speedup = 0.5;
 let x_speed_lines = [];
 
 // State parameters
-let ql = [GRAVITY * 5., 0. * GRAVITY];  // left state
-let qr = [GRAVITY * 3., 0. * GRAVITY];  // right state
+let ql = [GRAVITY * 5, 0. * GRAVITY];  // left state
+let qr = [GRAVITY * 0.1, 0 * GRAVITY];  // right state
 let qm = [GRAVITY * 0., 0. * GRAVITY];  // middle state (just for initialization)
 
 let f_LF = [0., 0.];  // Lax-Friedrichs flux
@@ -502,7 +502,7 @@ function compute_eigs(q) {
 
 function compute_s(which) {
     if (which == 1) {
-        return ql[1]/ql[0] - Math.sqrt(qm[0]/2 * (1+ qm[0]/qm[0]));
+        return ql[1]/ql[0] - Math.sqrt(qm[0]/2 * (1+ qm[0]/ql[0]));
     } else {
         return qr[1]/qr[0] + Math.sqrt(qm[0]/2 * (1+ qm[0]/qr[0]));
     }
@@ -838,7 +838,7 @@ function draw_loci(canvas, tsfm, canvas_flux, tsfm_flux) {
     let f_qr = compute_flux(qr);
     f_LF = [
         0.5 * (f_ql[0] + f_qr[0]) - 0.5 * max_eig * (qr[0] - ql[0]),
-        0.5 * (f_ql[1] + f_qr[1]) - 0.5 * max_eig * (qr[1] - qr[1]),
+        0.5 * (f_ql[1] + f_qr[1]) - 0.5 * max_eig * (qr[1] - ql[1]),
     ];
     draw_state(canvas_flux, COLORS[0], f_LF, tsfm_flux);
 }
@@ -1063,7 +1063,7 @@ function draw_characteristic(ctx, tsfm, which, color) {
     }
 
     // Draw 1-characteristic after 1-shock/1-fan, or 2-characteristic before 2-shock/2-fan
-    ref_dist = 0.33 * (xi_max / nc) / Math.hypot(1., (which == 1) ? lambdas[4] : lambdas[1]);
+    console.log(ref_dist);
     
     if (EPS < qr[0] * (which == 1) + ql[0] * (which == 2)) {  // No left/right dry state
         for (i = 0; i < nc; i++) {
@@ -1080,7 +1080,9 @@ function draw_characteristic(ctx, tsfm, which, color) {
             t1 = xi / (s - lbd);
             x1 = s * t1;
             ctx.lineTo(x1, t1);
-            if (dist_pt_segment(hoover_position_xt, [xi, 0.], [x1, t1]) < ref_dist) flag_close = true;
+            ref_dist = 0.33 * dx / Math.hypot(1., lbd);
+            dist_to_hoover = dist_pt_segment(hoover_position_xt, [xi, 0.], [x1, t1]);
+            if ((dist_to_hoover < ref_dist) && (sign * (xh - s * th) <= 0)) flag_close = true;
 
             if (wave_type[3-which - 1] == "R") {  // 1-characteristic inside 2-fan or 2-characteristic inside 1-fan
                 [lbd, w] = (which == 1) ? [l2m, w2] : [l1m, w1];
@@ -1107,8 +1109,12 @@ function draw_characteristic(ctx, tsfm, which, color) {
             // Characteristics not collapsing into the shock before Tend - and the ones collapsing
             x3 = (duration < t3) ? x2 + lbd * (t3 - t2) : x2 + lbd * (t2 * s - x2) / (lbd - s);
             ctx.lineTo(x3, t3);
+            if ((which == 1) && (wave_type[1] == "S")) 
+                ref_dist = 0.33  * dx * ((speeds[2] - lbd)/(speeds[2] - l1r)) / Math.hypot(1., lbd);
+            if ((which == 2) && (wave_type[0] == "S")) 
+                ref_dist = 0.33  * dx * ((speeds[1] - lbd)/(speeds[1] - l2l)) / Math.hypot(1., lbd);
             dist_to_hoover = dist_pt_segment(hoover_position_xt, [x2, t2], [x3, t3]);
-            if (((xh - s * th) * sign <= 0.) && (dist_to_hoover < ref_dist)) flag_close = true;
+            if ((speeds[1] * th <= xh) && (xh <= speeds[2]*th) && (dist_to_hoover < ref_dist)) flag_close = true;
 
             ctx.resetTransform();
             ctx.lineWidth = flag_close ? bold : normal;
