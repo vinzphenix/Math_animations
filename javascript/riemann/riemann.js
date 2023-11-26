@@ -1135,7 +1135,7 @@ function draw_characteristic(ctx, tsfm, which, color) {
             ctx.resetTransform();
             ctx.setLineDash([15*LW, 10*LW]);
             dist_to_hoover = dist_pt_segment(hoover_position_xt, [0., 0.], [xi, duration]) * Math.sqrt(1+(xi/duration)**2);
-            ctx.lineWidth = ((0 < th) && (th < duration) && (dist_to_hoover < ref_dist)) ? bold : normal;
+            ctx.lineWidth = ((xa * th/duration <= xh) && (xh <= xb * th/duration) && (dist_to_hoover < ref_dist)) ? bold : normal;
             ctx.stroke()
             xi += (i+1) * dx * (2*(i%2) - 1);  // 0, -1, 1, -2, 2 ... 
         }
