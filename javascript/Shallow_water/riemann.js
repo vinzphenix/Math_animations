@@ -22,7 +22,7 @@ const GRAVITY = 9.81;
 let x_max = 8.;
 let y_max;
 let q_max = [7.*GRAVITY, 4.*GRAVITY**1.5];  // [q1, q2] max values
-let f_max = [7.*GRAVITY**1.5, 20.5*GRAVITY**2];  // [q1, q2] max values
+let f_max = [0.5*GRAVITY**1.5, 2*GRAVITY**2];  // [q1, q2] max values
 let px_grid_size_x;  // nb of px
 let px_grid_size_y;  // nb of px
 
@@ -1247,7 +1247,7 @@ function draw_axes(canvas, ctx, origin, dx, dy, labels, k=1., color=COLORS[4]) {
                     ctx.font = fontsize + 'px Arial';
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'top';
-                    label = Math.round(sign*i*delta/EPS)*EPS + y_axis_starting_point.suffix
+                    label = Math.round(sign*i*delta*1e6)/1e6 + y_axis_starting_point.suffix
                     ctx.fillText(label, x_pm[j], origin[1] + h * 0.015);
                 }
             }
@@ -1281,7 +1281,7 @@ function draw_axes(canvas, ctx, origin, dx, dy, labels, k=1., color=COLORS[4]) {
                     ctx.font = fontsize + 'px Arial';
                     ctx.textAlign = 'right';
                     ctx.textBaseline = 'middle';
-                    label = Math.round(sign*i*delta/EPS)*EPS + y_axis_starting_point.suffix
+                    label = Math.round(sign*i*delta*1e6)/1e6 + y_axis_starting_point.suffix
                     ctx.fillText(label, origin[0] - w * 0.01, y_pm[j]);
                 }
             }

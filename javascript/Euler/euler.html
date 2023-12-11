@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+
+    <head>
+        <title>Riemann solver</title>
+        <meta charset="utf-8">
+        <link rel="stylesheet" href="euler.css">
+        <link rel="stylesheet" href="nord.css">
+        <script type="text/javascript" src="euler.js"></script>
+    </head>
+
+    <body>
+        <div class="inputs">
+            <div class="form" style="margin-bottom: 1vh;">
+                <p style="width: 65%;">Duration </p>
+                <input type="number" style="left: 70%; width: 25%;" id="input_T">
+            </div>
+            <div class="form" style="margin-top: 1vh;">
+                <p style="width: 65%;">Maximum x</p>
+                <input type="number" style="left: 70%; width: 25%;" id="input_x">
+            </div>
+                <div class="slider" style="margin-bottom: 0vh" id="slider_t" value=0.0>
+                <p id="text_t">t = 0.00</p>
+                <input type="range" min="0" max="1" step="0.01" value=0.0 id="range_t"/>
+            </div>
+            <div class="slider" style="margin-top: 0vh;" id="slider_speed">
+                <p id="text_speed">Speed /2</p>
+                <input type="range" min="-4" max="4" value="-1" step="1" id="range_speed"/>
+            </div>
+            <div class="container">
+                <div class="btn play" id="button_play">
+                    <span class="bar bar-1"></span>
+                  <span class="bar bar-2"></span>
+                </div>
+                <div class="btn stop" id="button_stop">
+                    <span class="square"></span>
+                </div>
+            </div>
+            <div class="form" style="margin-bottom: 1vh;">
+                <!-- <p>&#966;L </p> -->
+                <p style="width: 30%;">hL </p>
+                <input type="number" id="phi_L" style="left: 40%;">
+            </div>
+            <div class="form" style="margin-top: 1vh">
+                <p style="width: 30%;">huL </p>
+                <input type="number" id="u_L" style="left: 40%;">
+            </div>
+            <div class="form" style="margin-bottom: 1vh;">
+                <p style="width: 30%;">hR </p>
+                <input type="number" id="phi_R" style="left: 40%;">
+            </div>
+            <div class="form" style="margin-top: 1vh">
+                <p style="width: 30%;">huR </p>
+                <input type="number" id="u_R" style="left: 40%;">
+            </div>
+            <div class="checkbox" style="margin-top: 5vh; margin-bottom: 1vh;">
+                <input type="checkbox" id="1_char" name="1char">
+                <label for="1char">1-&#967;</label>
+            </div>
+            <div class="checkbox" style="margin-top: 1vh;">
+                <input type="checkbox" id="2_char" name="2char">
+                <label for="2char">2-&#967;</label>
+            </div>
+            <div class="checkbox">
+                <input type="checkbox" id="entropy" name="entropy">
+                <label for="entropy" style="text-align: center; vertical-align: middle;">Entropy fix</label>
+            </div>
+        </div>
+
+        <div>
+            <canvas id="canvas1A_Axes", style="position: absolute; z-index: 0; background-color: var(--nord3)"></canvas>
+            <canvas id="canvas1A", style="position: absolute; z-index:1"></canvas>
+        </div>
+        <div>
+            <canvas id="canvas1B_Axes", style="position: absolute; z-index: 0; background-color: var(--nord2);"></canvas>
+            <canvas id="canvas1B", style="position: absolute; z-index: 1"></canvas>
+        </div>
+        <div>
+            <canvas id="canvas1C_Axes", style="position: absolute; z-index: 0; background-color: var(--nord2);"></canvas>
+            <canvas id="canvas1C", style="position: absolute"></canvas>
+        </div>
+        <div>
+            <canvas id="canvas2_Axes", style="position: absolute; z-index: 0; background-color: var(--nord2);"></canvas>
+            <canvas id="canvas2", style="position: absolute"></canvas>
+        </div>
+        <div">
+            <canvas id="canvas3_Axes", style="position: absolute; z-index: 0; background-color: var(--nord2);"></canvas>
+            <canvas id="canvas3", style="position: absolute"></canvas>
+        </div>
+        <!-- <div>
+            <canvas id="canvas4", style="border:3px solid #76c783""></canvas>
+            <canvas id="canvas4", style="border:3px solid #8194ff"></canvas>            
+        </div> -->
+
+        <script >
+
+            // const canvas0 = document.getElementById("canvasCursors");
+            const canvas1A_Axes = document.getElementById("canvas1A_Axes");
+            const canvas1A = document.getElementById("canvas1A");
+            const canvas1B_Axes = document.getElementById("canvas1B_Axes");
+            const canvas1B = document.getElementById("canvas1B");
+            const canvas1C_Axes = document.getElementById("canvas1C_Axes");
+            const canvas1C = document.getElementById("canvas1C");
+            const canvas2_Axes = document.getElementById("canvas2_Axes");
+            const canvas2 = document.getElementById("canvas2");
+            const canvas3_Axes = document.getElementById("canvas3_Axes");
+            const canvas3 = document.getElementById("canvas3");
+
+            const border = 0.;
+            const sep_o = Math.floor(Math.min(window.innerHeight, window.innerWidth) * 0.005);
+            const sep_i = Math.floor(Math.min(window.innerHeight, window.innerWidth) * 0.01);
+            const widths = [0.12, 0.44, 0.44];
+            const heights_lf = [1./3., 1./3., 1./3.];
+            const heights_rg = [0.5, 0.5];
+
+            canvas0_width = widths[0] * (window.innerWidth);
+            // canvas0.width = canvas0_width
+            // canvas0.height = (window.innerHeight - 2 * sep_o) - 2. * border;
+            // canvas0.style.left = sep_o + "px";
+            // canvas0.style.top = sep_o + "px";
+            // canvas0.style.border = border + "px solid #020000";
+
+            canvas_list = [canvas1A_Axes, canvas1A]
+            for (i = 0; i < 2; i++) {
+                canvas = canvas_list[i];
+                canvas.width = widths[1] * (window.innerWidth - 2 * sep_o) - 2. * border - sep_i;
+                canvas.height = heights_lf[0] * (window.innerHeight - 2 * sep_o) - 2. * border - sep_i;
+                canvas.style.left = canvas0_width + sep_i + 2.*border + "px";
+                canvas.style.top = sep_o + sep_i/2. + "px";
+                canvas.style.border = border + "px solid #020000";
+                canvas.style.border_radius = 10+"px";
+            }
+
+            canvas_list = [canvas1B_Axes, canvas1B]
+            for (i = 0; i < 2; i++) {
+                canvas = canvas_list[i];
+                canvas.width = widths[1] * (window.innerWidth - 2 * sep_o) - 2. * border - sep_i;
+                canvas.height = heights_lf[1] * (window.innerHeight - 2 * sep_o) - 2. * border - sep_i;
+                canvas.style.left = canvas0_width + sep_i + 2.*border + "px";
+                // canvas.style.top = window.innerHeight - canvas.height - sep_o - 2 * border + "px";
+                canvas.style.top = sep_o + sep_i/2. + canvas1A.height + 2 * border + sep_i + "px";
+                canvas.style.border = border + "px solid #020000";
+            }
+
+            canvas_list = [canvas1C_Axes, canvas1C]
+            for (i = 0; i < 2; i++) {
+                canvas = canvas_list[i];
+                canvas.width = widths[1] * (window.innerWidth - 2 * sep_o) - 2. * border - sep_i;
+                canvas.height = heights_lf[2] * (window.innerHeight - 2 * sep_o) - 2. * border - sep_i;
+                canvas.style.left = canvas0_width + sep_i + 2.*border + "px";
+                canvas.style.top = sep_o + sep_i/2. + canvas1A.height + canvas1B.height + 4*border + 2 * sep_i + "px";
+                // canvas.style.top = window.innerHeight - canvas.height - sep_o - 2 * border + "px";
+                canvas.style.border = border + "px solid #020000";
+            }
+
+            canvas_list = [canvas2_Axes, canvas2]
+            for (i = 0; i < 2; i++) {
+                canvas = canvas_list[i];
+                canvas.width = widths[2] * (window.innerWidth - 2 * sep_o) - 4. * border - sep_i;
+                canvas.height = heights_rg[0] * (window.innerHeight - 2 * sep_o) - 2. * border - sep_i;
+                canvas.style.left = canvas0_width + canvas1A.width + 2 * sep_i + 4 * border + "px";
+                canvas.style.top = sep_o + sep_i/2. + "px";
+                canvas.style.border = border + "px solid #020000";
+            }
+            
+            canvas_list = [canvas3_Axes, canvas3]
+            for (i = 0; i < 2; i++) {
+                canvas = canvas_list[i];
+                canvas.width = widths[2] * (window.innerWidth - 2 * sep_o) - 4. * border - sep_i;
+                canvas.height = heights_rg[1] * (window.innerHeight - 2 * sep_o) - 2. * border - sep_i;
+                canvas.style.left = canvas0_width + canvas1A.width + 2 * sep_i + 4 * border + "px";
+                canvas.style.top = sep_o + sep_i/2. + canvas2.height + 2*border + sep_i + "px";
+                canvas.style.border = border + "px solid #020000";
+            }
+            
+            canvas_Axes = [canvas1A_Axes, canvas1B_Axes, canvas1C_Axes, canvas2_Axes, canvas3_Axes];
+            canvas = [canvas1A, canvas1B, canvas1C, canvas2, canvas3];
+            main(canvas_Axes, canvas);
+        </script>
+    </body>
+</html>
