@@ -113,6 +113,9 @@
             const heights_lf = [1./3., 1./3., 1./3.];
             const heights_rg = [0.5, 0.5];
 
+            let canvas_axes = [];
+            let canvas_list = [];
+
             canvas0_width = widths[0] * (window.innerWidth);
             // canvas0.width = canvas0_width
             // canvas0.height = (window.innerHeight - 2 * sep_o) - 2. * border;
@@ -173,9 +176,9 @@
                 canvas.style.border = border + "px solid #020000";
             }
             
-            canvas_Axes = [canvas1A_Axes, canvas1B_Axes, canvas1C_Axes, canvas2_Axes, canvas3_Axes];
-            canvas = [canvas1A, canvas1B, canvas1C, canvas2, canvas3];
-            main(canvas_Axes, canvas);
+            canvas_axes = [canvas1A_Axes, canvas1B_Axes, canvas1C_Axes, canvas2_Axes, canvas3_Axes];
+            canvas_list = [canvas1A, canvas1B, canvas1C, canvas2, canvas3];
+            main(canvas_axes, canvas_list);
         </script>
     </body>
 </html>
