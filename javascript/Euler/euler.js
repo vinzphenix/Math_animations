@@ -27,7 +27,7 @@ let G3 = 2. * G * (G - 1.);
 let x_max = 8.;
 let y_max;
 let qq_max = [0., 1., -1., 1., 0., 1.];
-let q_max = [-10., 10., 0., 100.];  // [q1, q2] max values
+let q_max = [-20., 20., 0., 40.];  // [q1, q2] max values
 let f_max = [0.5*GRAVITY**1.5, 2*GRAVITY**2];  // [q1, q2] max values
 let px_grid_size_x;  // nb of px
 let px_grid_size_y;  // nb of px
@@ -61,7 +61,7 @@ let c_speeds = [0., 0., 0., 0.];
 let lambdas = [[0., 0., 0.], [0., 0., 0.], [0., 0., 0.], [0., 0., 0.]];
 let speeds = [0., 0., 0., 0.];
 let wave_type = ["R", "R"];
-const EPS = 1.e-10;
+const EPS = 1.e-14;
 
 function main(canvas_axes, canvas_list) {
     [cv1A, cv1B, cv1C, cv2, cv3] = canvas_list;
@@ -460,6 +460,8 @@ function update_all_plots(canvas_list) {
     } else {
         qr[0] = qR[0] * (pp + alpha) / (pp * alpha + 1.)
     }
+    console.log(qL[0], ql[0], qr[0], qR[0]);
+    console.log(qL[1], ql[1], qr[1], qR[1]);
 
     c_speeds[1] = compute_c(ql);
     c_speeds[2] = compute_c(qr);
@@ -801,7 +803,8 @@ function find_middle_state(qL, qR) {
     // Handle dry states
     if ((qL[0] < EPS) || (qR[0] < EPS) || (qL[1] + cr1 < qR[1] - cr3)) {
         // console.log("Middle state is dry !");
-        return [0., 0.5 * (qL[1] + qL[2]), 0.];
+        wave_type[0] = wave_type[1] = "R";
+        return [0.5 * (qL[1] + qR[1]), 0.];
     }
 
     let fl = f(qL[2]);
@@ -979,6 +982,8 @@ function plot_locus(canvas, tsfm, color, pts_integral, pts_hugoniot) {
 
 function draw_state(canvas, color, q, tsfm, intensify=false, middle="") {
     
+    if (q[0] < EPS) return;
+
     let ctx = canvas.getContext("2d");
     ctx.save();
     ctx.fillStyle = color;
@@ -1025,7 +1030,7 @@ function draw_limit_state(canvas, color, q, tsfm, sign) {
     ctx.beginPath();
     q_px = [
         tsfm[0] * (q[1] + sign * 2 * Math.sqrt(G * q[2]/q[0]) / (G-1)) + tsfm[2] * 0. + tsfm[4],
-        tsfm[1] * (q[1] + sign * 2 * Math.sqrt(G * q[2]/q[0]) / (G-1)) + tsfm[3] * 0. + tsfm[5],
+        tsfm[1] * 0. + tsfm[3] * 0. + tsfm[5],
     ];
     ctx.arc(q_px[0], q_px[1], 0.75*dot_state_radius, 0, 2. * Math.PI, true);
     ctx.fill();
@@ -1039,12 +1044,14 @@ function display_middle_state(canvas, mode) {
     if (mode == "density") {
         q1_info = (Math.round(100*ql[0])/100).toFixed(2).padStart(4, ' ');
         q2_info = (Math.round(100*qr[0])/100).toFixed(2).padStart(5, ' ');
+        if (ql[0] < EPS) q1_info = q2_info = " /";
         info = "\u03C1*l = " + q1_info + "   \u03C1*r = " + q2_info;
         ctx.textAlign = 'left';
         position = 0.01 * canvas.width;
     } else {
         q1_info = (Math.round(100*ql[1])/100).toFixed(2).padStart(4, ' ');
         q2_info = (Math.round(100*ql[2])/100).toFixed(2).padStart(5, ' ');
+        if (ql[0] < EPS) q1_info = " /";
         info = " u* = " + q1_info + "    p* = " + q2_info;
         ctx.textAlign = 'right';
         position = 0.99 * canvas.width;
@@ -1267,6 +1274,8 @@ function display_supersonic(ctx, qs, color) {
         // return (Math.exp(-k) - Math.exp(-k*x)) / (Math.exp(-k) - 1.);
         return Math.pow(1. - x, 2);
     }
+
+    if (qs[0] < EPS) return;
 
     // Show supersonic regions
     let n_layers = 60;
