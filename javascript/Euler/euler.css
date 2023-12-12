@@ -4,6 +4,7 @@
 
 body {
     background: linear-gradient(to bottom right, hsl(0, 0%, 85%), hsl(0, 0%, 100%));
+    background-size: 100vw 100vh;
     /* background-color: #05051a; */
     font-family: "Helvetica";
 }
@@ -13,8 +14,8 @@ body {
     flex-direction: column;
     height: 90vh;
     width: 10vw;
-    margin-top: 5vh;
-    margin-bottom:5vh;
+    margin-top: 3vh;
+    margin-bottom:3vh;
     padding-left: 2vh;
     padding-right: 2vh;
 }
@@ -25,8 +26,8 @@ body {
     height: 2.5vh;
     margin-left: 1vw;
     margin-right: 1vw;
-    margin-top: 2vh;
-    margin-bottom: 2vh;
+    margin-top: 1.5vh;
+    margin-bottom: 1.5vh;
     align-items: center;
 }
 
