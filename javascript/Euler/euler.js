@@ -50,8 +50,8 @@ let speedup = 0.5;
 let x_speed_lines = [];
 
 // State parameters
-let qL = [1., +2., 20.];  // left state
-let qR = [2., -3., 12.];  // right state
+let qL = [1., -5., 18.];  // left state
+let qR = [2., 10., 20.];  // right state
 let ql = [0., +0., 0.];  // middle left state (just for initialization)
 let qr = [0., +0., 0.];  // middle right state (just for initialization)
 
@@ -1136,6 +1136,10 @@ function dist_pt_segment(p, v, w) {
     return Math.hypot(p[0] - (v[0] * (1. - t) + w[0] * t), p[1] - (v[1] * (1. - t) + w[1] * t))
 }
 
+function check_dist_pt_pt(p, q, ref_dist, tsfm) {
+    return Math.hypot(tsfm[0]*(p[0] - q[0]), tsfm[3]*(p[1] - q[1])) < ref_dist * tsfm[0];
+}
+
 function draw_entropic(ctx, tsfm, side, color) {
     [l1l, l2l, l1m, l2m, l1r, l2r] = lambdas;
     let w1 = qL[1]/qL[0] + 2.*Math.sqrt(qL[0]);
@@ -1192,7 +1196,7 @@ function draw_entropic(ctx, tsfm, side, color) {
                 t = t1 + j * dt;
                 x = sigma * t + (sh - sigma) * t1 * Math.pow(t /t1, 2./(G+1.));
                 ctx.lineTo(x, t);
-                if (Math.hypot(xh - x, th - t) < ref_dist) flag_close = true;
+                if (check_dist_pt_pt([x, t], [xh, th], ref_dist, tsfm)) flag_close = true;
             }
             x2 = x;  // should be equal to (l1(ql) * t2) or (l3(qr) * t2)
         } else {  // 2-characteristic at 1-shock or 3-shock
@@ -1239,7 +1243,7 @@ function draw_acoustic(ctx, tsfm, which, color) {
     let n_pts;  // Discretization of nonlinear characteristics
     let xi, x, t, x1, t1, x2, t2, x3, t3, w;
     
-    let dist_to_hoover, ref_dist, flag_close;
+    let dist_to_hoover, flag_close;
     let [xh, th] = hoover_position_xt;
 
     ctx.save();
@@ -1247,12 +1251,30 @@ function draw_acoustic(ctx, tsfm, which, color) {
 
     let lbd, sigma, sh, st;
 
+    let ref_dist = 50;  // max nb pixels away from which to highlight the curve
+    let min_dist = 2 * ref_dist;  // initialize higher than ref_dist
+    let cur_dist, min_index;
+    
+    for (i = 0; i < nc; i++) {
+        xi = sign * (0.5 * dx + i * dx);
+        cur_dist = draw_one_acoustic(ctx, tsfm, which, xi, normal);
+        console.log(cur_dist);
+        if (cur_dist < min_dist) {
+            min_dist = cur_dist;
+            min_index = i;
+        }
+    }
+
+    // Draw the closest one to the pointer with bold curve
+    if (min_dist < ref_dist) draw_one_acoustic(ctx, tsfm, which, xi, bold);
+    return;
+
     // Draw 1-characteristic before 1-shock/1-fan, or 3-characteristic after 3-shock/3-fan
     lbd = (which == 1) ? lambdas[0][0] : lambdas[3][2];
     sh = (which == 1) ? speeds[0] : speeds[4];
     ref_dist = 0.33 * (xi_max / nc) / Math.hypot(1., lbd);
         
-    if (((which == 1) && (!is_vacuum(qL))) || ((which == 3) && (!is_vacuum(qR)))) {  // No left/right dry state
+    /*if (((which == 1) && (!is_vacuum(qL))) || ((which == 3) && (!is_vacuum(qR)))) {  // No left/right dry state
         for (i = 0; i < nc; i++) {
             xi = sign * (0.5 * dx + i * dx);
             // characteristic goes to infinity for rarefaction / collapses for shocks
@@ -1268,11 +1290,11 @@ function draw_acoustic(ctx, tsfm, which, color) {
             ctx.lineWidth = ((0 <= sign * (xh - sh * th)) && (dist_to_hoover < ref_dist)) ? bold : normal;
             ctx.stroke();
         }
-    }
+    }*/
 
     // Draw 1-characteristic after 1-shock/1-fan, or 2-characteristic before 2-shock/2-fan    
-    if (((which == 1) && (!is_vacuum(qR))) || ((which == 3) && (!is_vacuum(qL)))) {
-        for (i = 0; i < nc; i++) {
+    /*if (((which == 1) && (!is_vacuum(qR))) || ((which == 3) && (!is_vacuum(qL)))) {
+        for (i = 0; i < nc/4; i++) {
             
             flag_close = false;
             ctx.beginPath();
@@ -1290,7 +1312,6 @@ function draw_acoustic(ctx, tsfm, which, color) {
             dist_to_hoover = dist_pt_segment(hoover_position_xt, [xi, 0.], [x1, t1]);
             if ((dist_to_hoover < ref_dist) && (sign * (xh - sh * th) <= 0)) flag_close = true;
 
-
             if (o_wave == "R") {  // 1-characteristic inside 2-fan or 2-characteristic inside 1-fan
                 [sh, st] = (which == 1) ? [speeds[4], speeds[3]] : [speeds[0], speeds[1]];
                 if (which == 1) 
@@ -1305,8 +1326,7 @@ function draw_acoustic(ctx, tsfm, which, color) {
                     t = t1 + j * dt;
                     x = sigma * t + (sh - sigma) * t1 * Math.pow(t /t1, (3.-G)/(G+1.));
                     ctx.lineTo(x, t);
-                    if (Math.hypot(xh - x, th - t) < ref_dist) flag_close = true;
-                    console.log(Math.hypot(xh - x, th - t), 0.33*dx, lambdas[0][2], ref_dist, flag_close);
+                    if (check_dist_pt_pt([x, t], [xh, th], ref_dist, tsfm)) flag_close = true;
                 }
                 x2 = x;  // should be equal to (l3(qr) * t2) or (l1(ql) * t2)
             } else {  // 1-characteristic at 3-shock or 3-characteristic at 1-shock
@@ -1314,10 +1334,6 @@ function draw_acoustic(ctx, tsfm, which, color) {
                 x2 = x1;
             }
 
-            ctx.resetTransform();
-            ctx.lineWidth = flag_close ? bold : normal;
-            ctx.stroke();
-            continue;
 
             // 1-characteristic after 1-shock/1-fan or 2-characteristic before 2-shock/2-fan
             [lbd, s] = (which == 1) ? [lambdas[2], speeds[1]] : [lambdas[3], speeds[2]];
@@ -1338,10 +1354,10 @@ function draw_acoustic(ctx, tsfm, which, color) {
             ctx.lineWidth = flag_close ? bold : normal;
             ctx.stroke();
         }
-    }
+    }*/
 
     // Draw 1-characteristic inside 1-fan, or 3-characteristic inside 3-fan
-    [sh, st] = (which == 1) ? [speeds[0], speeds[1]] : [speeds[3], speeds[4]];
+    /*[sh, st] = (which == 1) ? [speeds[0], speeds[1]] : [speeds[3], speeds[4]];
     let [xa, xb] = [duration * sh, duration * st];
     ref_dist = 0.40 * (xi_max / nc) * th / duration;
     if ((wave == 'R')) {
@@ -1359,9 +1375,44 @@ function draw_acoustic(ctx, tsfm, which, color) {
             ctx.stroke()
             xi += (i+1) * dx * (2*(i%2) - 1);  // 0, -1, 1, -2, 2 ... 
         }
-    }
+    }*/
 
     ctx.restore();
+}
+
+function draw_one_acoustic(ctx, tsfm, which, xi, lw) {
+    let sign = (which == 1) ? -1. : +1.;
+    let wave = (which == 1) ? wave_type[0] : wave_type[1];
+    let o_wave = (which == 1) ? wave_type[1] : wave_type[0];
+
+    let lbd, sigma, sh, st;
+    let dist_to_hoover;
+    let [xh, th] = hoover_position_xt;
+    let min_dist = Infinity;
+
+    // Draw 1-characteristic before 1-shock/1-fan, or 3-characteristic after 3-shock/3-fan
+
+    if (((which == 1) && (xi < 0.) && (!is_vacuum(qL))) || ((which == 3) && (0. < xi) && (!is_vacuum(qR)))) {  // No left/right dry state
+
+        lbd = (which == 1) ? lambdas[0][0] : lambdas[3][2];
+        sh = (which == 1) ? speeds[0] : speeds[4];
+
+        // characteristic goes to infinity for rarefaction / collapses for shocks
+        t1 = (wave == "R") ? duration : xi / (sh - lbd);
+        x1 = xi + lbd * t1;
+        
+        ctx.beginPath();
+        ctx.setTransform(...tsfm);
+        ctx.moveTo(xi, 0.);
+        ctx.lineTo(x1, t1);
+        ctx.resetTransform();
+        dist_to_hoover = dist_pt_segment(hoover_position_xt, [xi, 0.], [x1, t1]);
+        if (0 <= sign * (xh - sh * th)) min_dist = Math.min(min_dist, dist_to_hoover);
+        ctx.lineWidth = lw;
+        ctx.stroke();
+    }
+    
+    return min_dist;
 }
 
 function display_supersonic(ctx, qs, color) {
