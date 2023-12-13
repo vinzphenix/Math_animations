@@ -306,7 +306,22 @@ function handle_inputs(canvas_axes, canvas_list) {
             }
         }
     );
-    
+
+    // Set gamma
+    document.getElementById("range_g").value = G;
+    document.getElementById("range_g").min = 1.1;
+    document.getElementById("range_g").max = 1.67;
+    document.getElementById("range_g").addEventListener(
+        'input', function (e) {
+            console.log(anim_state, this.value);
+            if (anim_state == "init") {
+                G = Number(this.value);
+                document.getElementById("text_g").innerText = "γ = " + G.toFixed(2);
+                update_all_plots(canvas_list);
+            }
+        }
+    );
+
     // Handle play/pause and stop buttons
     document.getElementById("button_play").addEventListener("click", handle_play_pause);
     document.getElementById("button_stop").addEventListener("click", handle_stop);
@@ -474,26 +489,21 @@ function update_all_plots(canvas_list) {
     // setup_animation();
 }
 
-function compute_state(x, t, flag="") {    
-    let xi, h, u;
-    if ((flag == "R1") || ((t * speeds[0] <= x) && (x <= t * speeds[1]))) { // 1-rarefaction (1-shock not possible as speeds[0]==speeds[1])
-        xi = x / t;
-        h = ((qL[1]/qL[0] + 2. * Math.sqrt(qL[0])) / 3. - xi / 3) ** 2 / 1.;
-        u = (qL[1]/qL[0] + 2. * Math.sqrt(qL[0])) / 3. + 2. * xi / 3.;
-        return [h, h*u]
-    } else if ((flag == "R2") || ((t * speeds[2] <= x) && (x <= t * speeds[3]))) {  // 2-rarefaction (2-shock not possible as speeds[2]==speeds[3])
-        xi = x / t;
-        h = ((qR[1]/qR[0] - 2. * Math.sqrt(qR[0])) / 3. - xi / 3.) ** 2 / 1.;
-        u = (qR[1]/qR[0] - 2. * Math.sqrt(qR[0])) / 3. + 2. * xi / 3.;
-        return [h, h*u]
+function compute_state_fan(x, t, which) {    
+    let xi, r, u, p, R, U, P;
+    xi = x / t;
+    if (which == 1) { // 1-rarefaction
+        [R, U, P] = qL;
+        r = R * Math.pow(2.0 / (G+1.) + (G-1.) / (G+1.) * (U - xi) / c_speeds[0], 2./(G-1.));
+        u = 2. / (G+1.) * (xi + c_speeds[0] + (G-1.) / 2. * U);
+        p = P * Math.pow(2.0 / (G+1.) + (G-1.) / (G+1.) * (U - xi) / c_speeds[0], 2.*G/(G-1.));
+    } else {  // 3-rarefaction
+        [R, U, P] = qR;
+        r = R * Math.pow(2.0 / (G+1.) - (G-1.) / (G+1.) * (U - xi) / c_speeds[3], 2./(G-1.));
+        u = 2. / (G+1.) * (xi - c_speeds[0] + (G-1.) / 2. * U);
+        p = P * Math.pow(2.0 / (G+1.) - (G-1.) / (G+1.) * (U - xi) / c_speeds[3], 2.*G/(G-1.));
     }
-    else if (x < t * speeds[0]) {  // left state
-        return qL;
-    } else if ((t * speeds[1] < x) && (x < t * speeds[2])) {  // middle state
-        return qm; 
-    } else {  // right state
-        return qR;
-    }
+    return [r, u, p]
 }
 
 function compute_s(which) {
@@ -734,31 +744,6 @@ function color_waves(pts_1_wave, pts_2_wave) {
             ctx.strokeStyle = COLORS[6];
             ctx.stroke();
         }
-    }
-    ctx.restore();
-}
-
-function draw_speed_lines(t) {
-    const canvas = document.getElementById('canvas1');
-    const ctx = canvas.getContext("2d");
-
-    ctx.save();
-    ctx.lineWidth = 1. * LW;
-    // ctx.strokeStyle = "#535353";
-    ctx.strokeStyle = COLORS[9];
-
-    for (i = 0; i < x_speed_lines.length; i++) {
-        // RK2
-        [q1, q2] = compute_state(x_speed_lines[i], last_t);
-        x_mid_rk2 = x_speed_lines[i] + 0.5 * (t - last_t) * compute_u([q1, q2]);
-        [q1, q2] = compute_state(x_mid_rk2, 0.5 * (last_t + t));
-        x_speed_lines[i] += (t - last_t) * compute_u([q1, q2]);
-
-        // trick for 1 px width
-        ctx.beginPath();
-        ctx.moveTo(Math.round(tsfm1[0] * x_speed_lines[i] + tsfm1[4]-0.5)+0.5, tsfm1[5]+0.5);
-        ctx.lineTo(Math.round(tsfm1[0] * x_speed_lines[i] + tsfm1[4]-0.5)+0.5, Math.round(tsfm1[3] * q1 + tsfm1[5]) + 0.5);
-        ctx.stroke();
     }
     ctx.restore();
 }
@@ -1208,6 +1193,7 @@ function draw_acoustic(ctx, tsfm, which, color) {
     // Draw 1-"characteristic" inside 1-fan, or 3-"characteristic" inside 3-fan
     let [sh, st] = (which == 1) ? [speeds[0], speeds[1]] : [speeds[3], speeds[4]];
     let [xa, xb] = [duration * sh, duration * st];
+    dx *= 1.5;
     nc =  1 + 2 * Math.floor((xb - xa) / (2. * dx));
     xi = 0.5 * (xa + xb);
     for (i = 0; i < nc; i++) {
@@ -1380,7 +1366,7 @@ function draw_one_entropic_char(ctx, tsfm, xi, color, lw) {
         dist_to_hoover = dist_pt_segment(hoover_position_xt, [xi, 0.], [x1, t1], tsfm);
         min_dist = Math.min(min_dist, dist_to_hoover);
     }
-    
+
     if (wave == "R") {  // 2-characteristic inside 1-fan or 3-fan
         [sh, st] = (side == -1) ? [speeds[0], speeds[1]] : [speeds[4], speeds[3]];
         sigma = (side == -1) ? qL[1] + 2. * c_speeds[0] / (G-1) : qR[1] - 2. * c_speeds[3] / (G-1);
