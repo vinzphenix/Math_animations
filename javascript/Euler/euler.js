@@ -39,7 +39,7 @@ let active_char = [true, true, true];
 let entropy_fix = true;
 let drag_flag = -1;
 let hoover_position_q = [-1., 0.];
-let hoover_position_xt = [0., -1.];
+let hoover_position_xt = [undefined, undefined];
 
 // Animation parameters
 let anim_state = "init";  // init, play, pause, end
@@ -50,8 +50,8 @@ let speedup = 0.5;
 let x_speed_lines = [];
 
 // State parameters
-let qL = [1., -5., 18.];  // left state
-let qR = [2., 10., 20.];  // right state
+let qL = [1., -3., 30.];  // left state
+let qR = [2., -1., 4.];  // right state
 let ql = [0., +0., 0.];  // middle left state (just for initialization)
 let qr = [0., +0., 0.];  // middle right state (just for initialization)
 
@@ -431,11 +431,13 @@ function mouse_move_state(event, canvas_list) {
 function mouse_move_hoover_char(event, canvas, reset=false) {
     let x = event.offsetX - tsfm3[4];
     let y = event.offsetY - tsfm3[5];
-    if (y > 0.) return;
-    det = 1. / (tsfm3[0] * tsfm3[3] - tsfm3[1] * tsfm3[2]);
-    hoover_position_xt[0] = det * (+tsfm3[3] * x - tsfm3[2] * y);
-    hoover_position_xt[1] = det * (-tsfm3[1] * x + tsfm3[0] * y);
-    if (reset) hoover_position_xt[1] = -10.;
+    if ((y > 0.) || reset) {
+        hoover_position_xt[0] = hoover_position_xt[1] = undefined;
+    } else {
+        det = 1. / (tsfm3[0] * tsfm3[3] - tsfm3[1] * tsfm3[2]);
+        hoover_position_xt[0] = det * (+tsfm3[3] * x - tsfm3[2] * y);
+        hoover_position_xt[1] = det * (-tsfm3[1] * x + tsfm3[0] * y);
+    }
     draw_characteristics(canvas, tsfm3, last_t);
 }
 
@@ -1071,8 +1073,7 @@ function draw_characteristics(canvas, tsfm, t=0.) {
     // let colors = ["#4a83ff", "#f08080", "#1a62ff", "#e73232"];
     let colors = [COLORS[17], COLORS[11], COLORS[17]+"60", COLORS[11] + "40"]
     if (active_char[0]) draw_acoustic(ctx, tsfm, 1, colors[0]);
-    if (active_char[1]) draw_entropic(ctx, tsfm, -1, COLORS[5]);
-    if (active_char[1]) draw_entropic(ctx, tsfm, +1, COLORS[5]);
+    if (active_char[1]) draw_entropic(ctx, tsfm, COLORS[5]);
     if (active_char[2]) draw_acoustic(ctx, tsfm, 3, colors[1]);
 
     ctx.save();
@@ -1128,7 +1129,11 @@ function draw_characteristics(canvas, tsfm, t=0.) {
     ctx.restore();
 }
 
-function dist_pt_segment(p, v, w) {
+function dist_pt_segment(pp, vv, ww, tsfm) {
+    let p = [tsfm[0]*pp[0] + tsfm[4], tsfm[3]*pp[1] + tsfm[5]];
+    let v = [tsfm[0]*vv[0] + tsfm[4], tsfm[3]*vv[1] + tsfm[5]];
+    let w = [tsfm[0]*ww[0] + tsfm[4], tsfm[3]*ww[1] + tsfm[5]];
+    if (p[0] == undefined) return Infinity;
     let l2 = Math.hypot(v[0] - w[0], v[1] - w[1]);
     if (l2 < EPS) return Math.hypot(p[0] - v[0], p[1] - v[1]);
     let t = ((p[0] - v[0]) * (w[0] - v[0]) + (p[1] - v[1]) * (w[1] - v[1])) / (l2 * l2);
@@ -1136,252 +1141,95 @@ function dist_pt_segment(p, v, w) {
     return Math.hypot(p[0] - (v[0] * (1. - t) + w[0] * t), p[1] - (v[1] * (1. - t) + w[1] * t))
 }
 
-function check_dist_pt_pt(p, q, ref_dist, tsfm) {
-    return Math.hypot(tsfm[0]*(p[0] - q[0]), tsfm[3]*(p[1] - q[1])) < ref_dist * tsfm[0];
+function dist_pt_pt(p, q, tsfm) {
+    return Math.hypot(tsfm[0]*(p[0] - q[0]), tsfm[3]*(p[1] - q[1]));
 }
 
-function draw_entropic(ctx, tsfm, side, color) {
-    [l1l, l2l, l1m, l2m, l1r, l2r] = lambdas;
-    let w1 = qL[1]/qL[0] + 2.*Math.sqrt(qL[0]);
-    let w2 = qR[1]/qR[0] - 2.*Math.sqrt(qR[0]);
-    let wave = (side == -1) ? wave_type[0] : wave_type[1];
-    
+function draw_entropic(ctx, tsfm, color) {
     const normal = 1 * LW;
     const bold =  3. * LW;
 
-    let nc = 15;  // number of characteristics
+    let nc = 15;  // number of characteristics on each side
     let xi_max = 1.5 * x_max;
     let dx = xi_max / nc;
-    let n_pts;  // Discretization of nonlinear characteristics
-    let xi, x, t, x1, t1, x2, t2, x3, t3, w;
-    
-    let dist_to_hoover, ref_dist, flag_close;
-    let [xh, th] = hoover_position_xt;
+    let xi;
 
-    ctx.save();
-    ctx.strokeStyle = color;
-
-    // Draw 2-characteristic before 1-shock/1-fan, or 2-characteristic after 3-shock/3-fan
-    let lbd, sigma, sh, st;
-    let s = (side == -1) ? speeds[0] : speeds[4];
-
-    for (i = 0; i < nc; i++) {
-        ctx.beginPath();
-        ctx.setTransform(...tsfm);
-        flag_close = false;
-
-        xi = side * (0.5 * dx + i * dx);
-        ctx.moveTo(xi, 0.);
-
-        if (((side == -1) && (!is_vacuum(qL))) || ((side == 1) && (!is_vacuum(qR)))) {  // No left/right vacuum state
-            lbd = (side == -1) ? lambdas[0][1] : lambdas[3][1];
-            ref_dist = 0.33 * (xi_max / nc) / Math.hypot(1., lbd);
-            
-            t1 = xi / (s - lbd);
-            x1 = xi + lbd * t1;
-            
-            ctx.lineTo(x1, t1);
-            dist_to_hoover = dist_pt_segment(hoover_position_xt, [xi, 0.], [x1, t1]);
-            if ((0 <= side * (xh - s * th)) && (dist_to_hoover < ref_dist)) flag_close = true;
-        }
-
-        if (wave == "R") {  // 2-characteristic inside 1-fan or 3-fan
-            [sh, st] = (side == -1) ? [speeds[0], speeds[1]] : [speeds[4], speeds[3]];
-            sigma = (side == -1) ? qL[1] + 2. * c_speeds[0] / (G-1) : qR[1] - 2. * c_speeds[3] / (G-1);
-            t2 = (is_vacuum(ql)) ? duration : t1 * Math.pow((sigma - sh) / (sigma - st), (G+1.)/(G-1.));  // Handle vacuum middle state
-            t2 = Math.min(duration, t2);  // Clip at maximum time
-            n_pts = 100;
-            dt = (t2 - t1) / n_pts;
-            for (j = 1; j <= n_pts; j++) {
-                t = t1 + j * dt;
-                x = sigma * t + (sh - sigma) * t1 * Math.pow(t /t1, 2./(G+1.));
-                ctx.lineTo(x, t);
-                if (check_dist_pt_pt([x, t], [xh, th], ref_dist, tsfm)) flag_close = true;
-            }
-            x2 = x;  // should be equal to (l1(ql) * t2) or (l3(qr) * t2)
-        } else {  // 2-characteristic at 1-shock or 3-shock
-            t2 = t1;
-            x2 = x1;
-        }
-
-        if (!is_vacuum(ql)) {  // No middle left/ middle right vacuum state
-            lbd = (side == -1) ? lambdas[1][1] : lambdas[2][1];
-            t3 = duration;
-            x3 = x2 + lbd * (t3 - t2);
-            ctx.lineTo(x3, t3);
-            if (wave == "S")
-                ref_dist = 0.33  * dx * ((speeds[0] - lbd)/(speeds[0] - lambdas[0][1])) / Math.hypot(1., lbd);
-            if (wave == "S")
-                ref_dist = 0.33  * dx * ((speeds[4] - lbd)/(speeds[4] - lambdas[3][1])) / Math.hypot(1., lbd);
-            dist_to_hoover = dist_pt_segment(hoover_position_xt, [x2, t2], [x3, t3]);
-            if ((speeds[1] * th <= xh) && (xh <= speeds[3]*th) && (dist_to_hoover < ref_dist)) flag_close = true;
-        }
-
-        ctx.resetTransform();
-        ctx.lineWidth = flag_close ? bold : normal;
-        ctx.stroke();   
-    }
-
-    ctx.restore();
-}
-
-function draw_acoustic(ctx, tsfm, which, color) {
-
-    [l1l, l2l, l1m, l2m, l1r, l2r] = lambdas;
-    let w1 = qL[1]/qL[0] + 2.*Math.sqrt(qL[0]);
-    let w2 = qR[1]/qR[0] - 2.*Math.sqrt(qR[0]);
-    let sign = (which == 1) ? -1. : +1.;
-    let wave = (which == 1) ? wave_type[0] : wave_type[1];
-    let o_wave = (which == 1) ? wave_type[1] : wave_type[0];
-    
-    const normal = 1 * LW;
-    const bold =  3. * LW;
-
-    let nc = 15;  // number of characteristics
-    let xi_max = 1.5 * x_max;
-    let dx = xi_max / nc;
-    let n_pts;  // Discretization of nonlinear characteristics
-    let xi, x, t, x1, t1, x2, t2, x3, t3, w;
-    
-    let dist_to_hoover, flag_close;
-    let [xh, th] = hoover_position_xt;
-
-    ctx.save();
-    ctx.strokeStyle = color;
-
-    let lbd, sigma, sh, st;
-
-    let ref_dist = 50;  // max nb pixels away from which to highlight the curve
+    let ref_dist = 25;  // max nb pixels away from which to highlight the curve
     let min_dist = 2 * ref_dist;  // initialize higher than ref_dist
-    let cur_dist, min_index;
+    let cur_dist, xi_close, kind;
     
-    for (i = 0; i < nc; i++) {
-        xi = sign * (0.5 * dx + i * dx);
-        cur_dist = draw_one_acoustic(ctx, tsfm, which, xi, normal);
-        console.log(cur_dist);
-        if (cur_dist < min_dist) {
-            min_dist = cur_dist;
-            min_index = i;
+    // Draw 1-characteristic or 3-characteristic
+    for (side = -1; side <= 1; side += 2) {
+        for (i = 0; i < nc; i++) {
+            xi = side * (0.5 * dx + Math.floor(i) * dx);
+            cur_dist = draw_one_entropic_char(ctx, tsfm, xi, color, normal);
+            if (cur_dist < min_dist) {
+                min_dist = cur_dist;
+                xi_close = xi;
+                kind = "classic";
+            }
         }
     }
 
     // Draw the closest one to the pointer with bold curve
-    if (min_dist < ref_dist) draw_one_acoustic(ctx, tsfm, which, xi, bold);
+    if ((kind == "classic") && (min_dist < ref_dist)) 
+        draw_one_entropic_char(ctx, tsfm, xi_close, color, bold);
+    
     return;
-
-    // Draw 1-characteristic before 1-shock/1-fan, or 3-characteristic after 3-shock/3-fan
-    lbd = (which == 1) ? lambdas[0][0] : lambdas[3][2];
-    sh = (which == 1) ? speeds[0] : speeds[4];
-    ref_dist = 0.33 * (xi_max / nc) / Math.hypot(1., lbd);
-        
-    /*if (((which == 1) && (!is_vacuum(qL))) || ((which == 3) && (!is_vacuum(qR)))) {  // No left/right dry state
-        for (i = 0; i < nc; i++) {
-            xi = sign * (0.5 * dx + i * dx);
-            // characteristic goes to infinity for rarefaction / collapses for shocks
-            t1 = (wave == "R") ? duration : xi / (sh - lbd);
-            x1 = xi + lbd * t1;
-            
-            ctx.beginPath();
-            ctx.setTransform(...tsfm);
-            ctx.moveTo(xi, 0.);
-            ctx.lineTo(x1, t1);
-            ctx.resetTransform();
-            dist_to_hoover = dist_pt_segment(hoover_position_xt, [xi, 0.], [x1, t1]);
-            ctx.lineWidth = ((0 <= sign * (xh - sh * th)) && (dist_to_hoover < ref_dist)) ? bold : normal;
-            ctx.stroke();
-        }
-    }*/
-
-    // Draw 1-characteristic after 1-shock/1-fan, or 2-characteristic before 2-shock/2-fan    
-    /*if (((which == 1) && (!is_vacuum(qR))) || ((which == 3) && (!is_vacuum(qL)))) {
-        for (i = 0; i < nc/4; i++) {
-            
-            flag_close = false;
-            ctx.beginPath();
-            ctx.setTransform(...tsfm);
-
-            xi = -sign * (0.5 * dx + i * dx);
-            ctx.moveTo(xi, 0.);
-            
-            // 1-characteristic after 3-shock/3-fan or 3-characteristic before 1-shock/1-fan
-            [lbd, sh] = (which == 1) ? [lambdas[3][0], speeds[4]] : [lambdas[0][2], speeds[0]];
-            t1 = xi / (sh - lbd);
-            x1 = sh * t1;
-            ctx.lineTo(x1, t1);
-            ref_dist = 0.33 * dx / Math.hypot(1., lbd);
-            dist_to_hoover = dist_pt_segment(hoover_position_xt, [xi, 0.], [x1, t1]);
-            if ((dist_to_hoover < ref_dist) && (sign * (xh - sh * th) <= 0)) flag_close = true;
-
-            if (o_wave == "R") {  // 1-characteristic inside 2-fan or 2-characteristic inside 1-fan
-                [sh, st] = (which == 1) ? [speeds[4], speeds[3]] : [speeds[0], speeds[1]];
-                if (which == 1) 
-                    sigma = qR[1] - 2. * c_speeds[3] / (G-1.);
-                else 
-                    sigma = qL[1] + 2. * c_speeds[0] / (G-1.);
-                t2 = (is_vacuum(ql)) ? duration : t1 * Math.pow((sigma - sh) / (sigma - st), (G+1.)/(2*(G-1.)));  // Handle vacuum middle state
-                t2 = Math.min(duration, t2);  // Clip at maximum time
-                n_pts = 100;
-                dt = (t2 - t1) / n_pts;
-                for (j = 1; j <= n_pts; j++) {
-                    t = t1 + j * dt;
-                    x = sigma * t + (sh - sigma) * t1 * Math.pow(t /t1, (3.-G)/(G+1.));
-                    ctx.lineTo(x, t);
-                    if (check_dist_pt_pt([x, t], [xh, th], ref_dist, tsfm)) flag_close = true;
-                }
-                x2 = x;  // should be equal to (l3(qr) * t2) or (l1(ql) * t2)
-            } else {  // 1-characteristic at 3-shock or 3-characteristic at 1-shock
-                t2 = t1;
-                x2 = x1;
-            }
-
-
-            // 1-characteristic after 1-shock/1-fan or 2-characteristic before 2-shock/2-fan
-            [lbd, s] = (which == 1) ? [lambdas[2], speeds[1]] : [lambdas[3], speeds[2]];
-            t3 = (wave_type[which - 1] == "R") ? duration*1.1 : (lbd * t2 - x2) / (lbd - s);
-            t3 = Math.min(t3, duration*1.1);
-            // Characteristics not collapsing into the shock before Tend - and the ones collapsing
-            x3 = (duration < t3) ? x2 + lbd * (t3 - t2) : x2 + lbd * (t2 * s - x2) / (lbd - s);
-            ctx.lineTo(x3, t3);
-            // Unusefully complicated formula to compute the shrinking of the space btw characteristics when crossing shock
-            if ((which == 1) && (wave_type[1] == "S")) 
-                ref_dist = 0.33  * dx * ((speeds[2] - lbd)/(speeds[2] - l1r)) / Math.hypot(1., lbd);
-            if ((which == 2) && (wave_type[0] == "S")) 
-                ref_dist = 0.33  * dx * ((speeds[1] - lbd)/(speeds[1] - l2l)) / Math.hypot(1., lbd);
-            dist_to_hoover = dist_pt_segment(hoover_position_xt, [x2, t2], [x3, t3]);
-            if ((speeds[1] * th <= xh) && (xh <= speeds[2]*th) && (dist_to_hoover < ref_dist)) flag_close = true;
-
-            ctx.resetTransform();
-            ctx.lineWidth = flag_close ? bold : normal;
-            ctx.stroke();
-        }
-    }*/
-
-    // Draw 1-characteristic inside 1-fan, or 3-characteristic inside 3-fan
-    /*[sh, st] = (which == 1) ? [speeds[0], speeds[1]] : [speeds[3], speeds[4]];
-    let [xa, xb] = [duration * sh, duration * st];
-    ref_dist = 0.40 * (xi_max / nc) * th / duration;
-    if ((wave == 'R')) {
-        nc = 1 + 2 * Math.floor((xb - xa) / (2. * dx));
-        xi = 0.5 * (xa + xb);
-        for (i = 0; i < nc; i++) {
-            ctx.beginPath();
-            ctx.setTransform(...tsfm);
-            ctx.moveTo(0., 0.);
-            ctx.lineTo(xi, duration);
-            ctx.resetTransform();
-            ctx.setLineDash([15*LW, 10*LW]);
-            dist_to_hoover = dist_pt_segment(hoover_position_xt, [0., 0.], [xi, duration]) * Math.sqrt(1+(xi/duration)**2);
-            ctx.lineWidth = ((xa * th/duration <= xh) && (xh <= xb * th/duration) && (dist_to_hoover < ref_dist)) ? bold : normal;
-            ctx.stroke()
-            xi += (i+1) * dx * (2*(i%2) - 1);  // 0, -1, 1, -2, 2 ... 
-        }
-    }*/
-
-    ctx.restore();
 }
 
-function draw_one_acoustic(ctx, tsfm, which, xi, lw) {
-    let sign = (which == 1) ? -1. : +1.;
+function draw_acoustic(ctx, tsfm, which, color) {
+    
+    const normal = 1 * LW;
+    const bold =  3. * LW;
+
+    let nc = 15;  // number of characteristics on each side
+    let xi_max = 1.5 * x_max;
+    let dx = xi_max / nc;
+    let xi;
+
+    let ref_dist = 25;  // max nb pixels away from which to highlight the curve
+    let min_dist = 2 * ref_dist;  // initialize higher than ref_dist
+    let cur_dist, xi_close, kind;
+    
+    // Draw 1-characteristic or 3-characteristic
+    for (side = -1; side <= 1; side += 2) {
+        for (i = 0; i < nc; i++) {
+            xi = side * (0.5 * dx + Math.floor(i) * dx);
+            cur_dist = draw_one_acoustic_char(ctx, tsfm, which, xi, color, normal);
+            if (cur_dist < min_dist) {
+                min_dist = cur_dist;
+                xi_close = xi;
+                kind = "classic";
+            }
+        }
+    }
+
+    // Draw 1-"characteristic" inside 1-fan, or 3-"characteristic" inside 3-fan
+    let [sh, st] = (which == 1) ? [speeds[0], speeds[1]] : [speeds[3], speeds[4]];
+    let [xa, xb] = [duration * sh, duration * st];
+    nc =  1 + 2 * Math.floor((xb - xa) / (2. * dx));
+    xi = 0.5 * (xa + xb);
+    for (i = 0; i < nc; i++) {
+        cur_dist = draw_one_acoustic_fan(ctx, tsfm, which, xi, color, normal);
+        if (cur_dist < min_dist) {
+            min_dist = cur_dist;
+            xi_close = xi;
+            kind = "fan";
+        }
+        xi += (i + 1) * dx * ((i%2==0) ? +1. : -1.);
+    }
+
+    // Draw the closest one to the pointer with bold curve
+    if ((kind == "classic") && (min_dist < ref_dist)) 
+        draw_one_acoustic_char(ctx, tsfm, which, xi_close, color, bold);
+    else if ((kind == "fan") && (min_dist < ref_dist))
+        draw_one_acoustic_fan(ctx, tsfm, which, xi_close, color, bold); 
+    
+    return;
+}
+
+function draw_one_acoustic_char(ctx, tsfm, which, xi, color, lw) {
     let wave = (which == 1) ? wave_type[0] : wave_type[1];
     let o_wave = (which == 1) ? wave_type[1] : wave_type[0];
 
@@ -1390,9 +1238,18 @@ function draw_one_acoustic(ctx, tsfm, which, xi, lw) {
     let [xh, th] = hoover_position_xt;
     let min_dist = Infinity;
 
-    // Draw 1-characteristic before 1-shock/1-fan, or 3-characteristic after 3-shock/3-fan
+    let x, x1, x2, x3, x4;
+    let t, t1, t2, t3, t4;
 
-    if (((which == 1) && (xi < 0.) && (!is_vacuum(qL))) || ((which == 3) && (0. < xi) && (!is_vacuum(qR)))) {  // No left/right dry state
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.beginPath();
+    ctx.setTransform(...tsfm);
+    ctx.moveTo(xi, 0.);
+
+    // Draw 1-characteristic before 1-shock/1-fan --- or --- 3-characteristic after 3-shock/3-fan
+    // Requires non-vacuum left state --- non-vacuum right state
+    if (((which == 1) && (xi < 0.) && (!is_vacuum(qL))) || ((which == 3) && (0. < xi) && (!is_vacuum(qR)))) {
 
         lbd = (which == 1) ? lambdas[0][0] : lambdas[3][2];
         sh = (which == 1) ? speeds[0] : speeds[4];
@@ -1401,20 +1258,167 @@ function draw_one_acoustic(ctx, tsfm, which, xi, lw) {
         t1 = (wave == "R") ? duration : xi / (sh - lbd);
         x1 = xi + lbd * t1;
         
-        ctx.beginPath();
-        ctx.setTransform(...tsfm);
-        ctx.moveTo(xi, 0.);
         ctx.lineTo(x1, t1);
+        dist_to_hoover = dist_pt_segment(hoover_position_xt, [xi, 0.], [x1, t1], tsfm);
+        min_dist = Math.min(min_dist, dist_to_hoover);
         ctx.resetTransform();
-        dist_to_hoover = dist_pt_segment(hoover_position_xt, [xi, 0.], [x1, t1]);
-        if (0 <= sign * (xh - sh * th)) min_dist = Math.min(min_dist, dist_to_hoover);
+        ctx.lineWidth = lw;
+        ctx.stroke();
+    }
+
+    // Draw 1-characteristic after 1-shock/1-fan --- or --- 3-characteristic before 3-shock/3-fan
+    // Requires non-vacuum right state --- non-vacuum left state
+    if (((which == 1) && (0. < xi) && (!is_vacuum(qR))) || ((which == 3) && (xi < 0.) && (!is_vacuum(qL)))) {
+        
+        // 1-characteristic after 3-shock/3-fan or 3-characteristic before 1-shock/1-fan
+        [lbd, sh] = (which == 1) ? [lambdas[3][0], speeds[4]] : [lambdas[0][2], speeds[0]];
+        t1 = xi / (sh - lbd);
+        x1 = sh * t1;
+        x1 = xi + lbd * t1;
+        ctx.lineTo(x1, t1);
+        dist_to_hoover = dist_pt_segment(hoover_position_xt, [xi, 0.], [x1, t1], tsfm);
+        min_dist = Math.min(min_dist, dist_to_hoover);
+
+        // 1-characteristic inside 3-fan --- or --- 3-characteristic inside 1-fan
+        if (o_wave == "R") {  
+            [sh, st] = (which == 1) ? [speeds[4], speeds[3]] : [speeds[0], speeds[1]];
+            sigma = (which == 1) ? qR[1] - 2. * c_speeds[3] / (G-1.) : qL[1] + 2. * c_speeds[0] / (G-1.);
+            t2 = (is_vacuum(ql)) ? duration : t1 * Math.pow((sigma - sh) / (sigma - st), (G+1.)/(2*(G-1.)));  // Handle vacuum middle state
+            t2 = Math.min(duration, t2);  // Clip at maximum time
+            n_pts = 100;
+            dt = (t2 - t1) / n_pts;
+            for (j = 1; j <= n_pts; j++) {
+                t = t1 + j * dt;
+                x = sigma * t + (sh - sigma) * t1 * Math.pow(t /t1, (3.-G)/(G+1.));
+                ctx.lineTo(x, t);
+                dist_to_hoover = dist_pt_pt([x, t], [xh, th], tsfm);
+                min_dist = Math.min(min_dist, dist_to_hoover);
+            }
+            x2 = x;  // should be equal to (l3(qr) * t2) or (l1(ql) * t2)
+        } else {  // 1-characteristic at 3-shock or 3-characteristic at 1-shock
+            t2 = t1;
+            x2 = x1;
+        }
+        
+        if (!is_vacuum(ql)) {  // No middle left/ middle right vacuum state
+            // 1-characteristic after 2-contact-wave --- or --- 3-characteristic before 2-contact-wave
+            [lbd, s] = (which == 1) ? [lambdas[2][0], speeds[2]] : [lambdas[1][2], speeds[2]];
+            t3 = (x2 - lbd * t2) / (s - lbd);
+            t3 = Math.min(t3, duration*1.1);
+            x3 = x2 + lbd * (t3 - t2);
+            dist_to_hoover = dist_pt_segment(hoover_position_xt, [x2, t2], [x3, t3], tsfm);
+            min_dist = Math.min(min_dist, dist_to_hoover);
+            ctx.lineTo(x3, t3);
+
+            // 1-characteristic before 2-contact-wave --- or --- 3-characteristic after 2-contact-wave
+            [lbd, s] = (which == 1) ? [lambdas[1][0], speeds[1]] : [lambdas[2][2], speeds[3]];
+            t4 = (wave == "R") ? duration : (x3 - lbd * t3) / (s - lbd);
+            t4 = Math.min(t4, duration);
+            x4 = x3 + lbd * (t4 - t3);
+            dist_to_hoover = dist_pt_segment(hoover_position_xt, [x3, t3], [x4, t4], tsfm);
+            min_dist = Math.min(min_dist, dist_to_hoover);
+            ctx.lineTo(x4, t4);
+        }
+
+        ctx.resetTransform();
         ctx.lineWidth = lw;
         ctx.stroke();
     }
     
+    ctx.restore();
     return min_dist;
 }
 
+function draw_one_acoustic_fan(ctx, tsfm, which, xi, color, lw) {
+    let wave = (which == 1) ? wave_type[0] : wave_type[1];
+    if (wave != 'R') return;
+
+    ctx.save();
+    ctx.strokeStyle = color;
+    let dist_to_hoover;
+    dist_to_hoover = dist_pt_segment(hoover_position_xt, [0., 0.], [xi, duration], tsfm);
+    
+    ctx.beginPath();
+    ctx.setTransform(...tsfm);
+    ctx.moveTo(0., 0.);
+    ctx.lineTo(xi, duration);
+    ctx.resetTransform();
+    ctx.setLineDash([15*LW, 10*LW]);
+    ctx.lineWidth = lw;
+    ctx.stroke();
+    ctx.restore();
+
+    return dist_to_hoover;
+}
+
+function draw_one_entropic_char(ctx, tsfm, xi, color, lw) {
+    
+    let side = (xi < 0.) ? -1 : +1;
+    let wave = (side == -1) ? wave_type[0] : wave_type[1];
+    let lbd, sigma, sh, st;
+    let dist_to_hoover;
+    let [xh, th] = hoover_position_xt;
+    let min_dist = Infinity;
+
+    let x, x1, x2, x3;
+    let t, t1, t2, t3;
+
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.beginPath();
+    ctx.setTransform(...tsfm);
+    ctx.moveTo(xi, 0.);
+
+    if (((side == -1) && (!is_vacuum(qL))) || ((side == 1) && (!is_vacuum(qR)))) {  // No left/right vacuum state
+        lbd = (side == -1) ? lambdas[0][1] : lambdas[3][1];
+        s = (side == -1) ? speeds[0] : speeds[4];
+        
+        t1 = xi / (s - lbd);
+        x1 = xi + lbd * t1;
+        
+        ctx.lineTo(x1, t1);
+        dist_to_hoover = dist_pt_segment(hoover_position_xt, [xi, 0.], [x1, t1], tsfm);
+        min_dist = Math.min(min_dist, dist_to_hoover);
+    }
+    
+    if (wave == "R") {  // 2-characteristic inside 1-fan or 3-fan
+        [sh, st] = (side == -1) ? [speeds[0], speeds[1]] : [speeds[4], speeds[3]];
+        sigma = (side == -1) ? qL[1] + 2. * c_speeds[0] / (G-1) : qR[1] - 2. * c_speeds[3] / (G-1);
+        t2 = (is_vacuum(ql)) ? duration : t1 * Math.pow((sigma - sh) / (sigma - st), (G+1.)/(G-1.));  // Handle vacuum middle state
+        t2 = Math.min(duration, t2);  // Clip at maximum time
+        n_pts = 100;
+        dt = (t2 - t1) / n_pts;
+        for (j = 1; j <= n_pts; j++) {
+            t = t1 + j * dt;
+            x = sigma * t + (sh - sigma) * t1 * Math.pow(t /t1, 2./(G+1.));
+            ctx.lineTo(x, t);
+            dist_to_hoover = dist_pt_pt([x, t], [xh, th], tsfm);
+            min_dist = Math.min(min_dist, dist_to_hoover);
+        }
+        x2 = x;  // should be equal to (l1(ql) * t2) or (l3(qr) * t2)
+    } else {  // 2-characteristic at 1-shock or 3-shock
+        t2 = t1;
+        x2 = x1;
+    }
+
+    if (!is_vacuum(ql)) {  // No middle left/ middle right vacuum state
+        lbd = (side == -1) ? lambdas[1][1] : lambdas[2][1];
+        t3 = duration;
+        x3 = x2 + lbd * (t3 - t2);
+        dist_to_hoover = dist_pt_segment(hoover_position_xt, [x2, t2], [x3, t3], tsfm);
+        min_dist = Math.min(min_dist, dist_to_hoover);
+        ctx.lineTo(x3, t3);
+    }
+
+    ctx.resetTransform();
+    ctx.lineWidth = lw;
+    ctx.stroke();
+    
+    ctx.restore();
+    return min_dist;
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////
 function display_supersonic(ctx, qs, color) {
 
     function compute_xy(rho, t, d) {
