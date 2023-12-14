@@ -385,7 +385,7 @@ function handle_inputs(canvas_axes, canvas_list) {
     document.getElementById("entropy").addEventListener(
         'input', function (e) {
             entropy_fix = this.checked;
-            draw_loci(canvas2, tsfm2, canvas4, tsfm4);
+            draw_loci(canvas2, tsfm2);
         }
     );
 }
@@ -555,16 +555,15 @@ function is_vacuum(q) {
  * 
  */
 function setup_animation() {
-    return;
-    const canvas = document.getElementById('canvas1');
-    const ctx = canvas.getContext("2d");        
+    let canvas = document.getElementById('canvas1A');
+    let ctx = canvas.getContext("2d");        
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // Set vertical lines that depict the fluid velocity
-    x_speed_lines.length = 0;
+    /*x_speed_lines.length = 0;
     for (i = 0; i < 2 * n_speed_lines + 2; i++) {
         x_speed_lines.push(-2.*x_max + 4. * x_max * i / (2. * n_speed_lines + 1.));
-    }
+    }*/
     
     const canvas_xt = document.getElementById('canvas3');
     draw_physics([0., 0., 0., 0.], [], []);
@@ -636,10 +635,50 @@ function animate(current_clock) {
 
 }
 
+function map_primitive(q, maps) {
+    let [r, u, p] = q;
+    let v1, v2, v3;
+    if (maps[0] == "P") v1 = r;
+    else if (maps[0] == "R") v1 = u + 2. * Math.sqrt(G*p/r) / (G - 1.);
+
+    if (maps[1] == "P") v2 = u;
+    else if (maps[1] == "R") v2 = u;
+    else if (maps[1] == "C") v2 = r * u;
+
+    if (maps[2] == "P") v3 = p;
+    else if (maps[2] == "R") v3 = u - 2. * Math.sqrt(G*p/r) / (G - 1);
+    else if (maps[2] == "C") v3 = 0.5 * r * u * u + r * e / (G - 1.);
+
+    return [v1, v2, v3];
+}
+
+function compute_fields(t, tsfm) {
+    const dx_ref = px_per_step / tsfm[0];
+
+    let x_array = [];
+    let y_array = [[], [], []];
+    let q_map;
+    
+    if (t < EPS) {
+        x_array.push(-xmax, 0., 0., x_max);
+        q_map = map_primitive(qL, ["P", "P", "P"]);
+        for (f = 0; f < 3; f++) y_array[f].push(q_map[f], q_map[f]);
+        q_map = map_primitive(qR, ["P", "P", "P"]);
+        for (f = 0; f < 3; f++) y_array[f].push(q_map[f], q_map[f]);
+    }
+    
+}
+
 function compute_transitions_curves(t) {
     const positions = [speeds[0] * t, speeds[1] * t, speeds[2] * t, speeds[3] * t];
     const dx_ref = px_per_step / tsfm1[0];
     let dx, n_step;
+
+    let x_array = [];
+    let y_array = [];
+
+    x_array.push(-x_max);
+    y_array.push(-x_max);
     
     let pts_1_wave = [[positions[0], qL[0]]];
     let pts_2_wave = [[positions[2], qm[0]]];
@@ -671,47 +710,24 @@ function compute_transitions_curves(t) {
     return [positions, pts_1_wave, pts_2_wave];
 }
 
-function draw_physics(positions, pts_1_wave, pts_2_wave) {
-    const canvas = document.getElementById('canvas1');
+function draw_field(canvas, tsfm, x, y) {
+    // const canvas = document.getElementById('canvas1');
     const ctx = canvas.getContext("2d");
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     ctx.save();
-    ctx.setTransform(...tsfm1);
-    // ctx.fillStyle = "#5e8cd1";
-    ctx.fillStyle = COLORS[10];
-
+    ctx.setTransform(...tsfm);
+    
     ctx.beginPath();
-    ctx.moveTo(-x_max, qL[0]);
-    
-    // Draw left state
-    ctx.lineTo(positions[0], qL[0]);
-
-    // Draw left wave
-    for (i = 1; i < pts_1_wave.length; i++) {
-        ctx.lineTo(pts_1_wave[i][0], pts_1_wave[i][1]);
+    ctx.moveTo(x[0], y[0]);
+    for (i = 1; i < x.length; i++) {
+        ctx.lineTo(x[i], y[i]);
     }
-
-    // Draw middle state
-    ctx.lineTo(positions[2], qm[0]);
     
-    // Draw right wave
-    for (i = 1; i < pts_2_wave.length; i++) {
-        ctx.lineTo(pts_2_wave[i][0], pts_2_wave[i][1]);
-    }
-    ctx.lineTo(positions[3], qR[0]);
-    
-    
-    // Draw right state
-    ctx.lineTo(x_max, qR[0]);
-
-    // Fill the area
-    ctx.lineTo(x_max, 0.);
-    ctx.lineTo(-x_max, 0.);
-    ctx.closePath();
-    ctx.fill();
-
     ctx.resetTransform();
+    ctx.strokeStyle = COLORS[6];
+    ctx.lineWidth = 2 * LW;
+    ctx.stroke();
     ctx.restore();
 }
 
