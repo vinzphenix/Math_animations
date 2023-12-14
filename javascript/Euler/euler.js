@@ -12,8 +12,8 @@ const COLORS = [
     "#76c783", "#4a83ff", "#8194ff",
 ]
 
-const origin_shift = 0.05;  // percentage of width
-const min_pixel_per_unit = 50;
+const origin_shift = 0.0;  // percentage of width
+const min_pixel_per_unit = 60;
 const dot_state_radius = 10 * LW;  // same as locus dot size
 const px_per_step = 10;  // discretization of curves
 const n_speed_lines = 20;  // number of speed lines
@@ -26,7 +26,7 @@ let G3 = 2. * G * (G - 1.);
 
 let x_max = 8.;
 let y_max;
-let qq_max = [0., 1., -1., 1., 0., 1.];
+let qq_max = [0., 2., -1., 1., 0., 1.];
 let q_max = [-20., 20., 0., 40.];  // [q1, q2] max values
 let f_max = [0.5*GRAVITY**1.5, 2*GRAVITY**2];  // [q1, q2] max values
 let px_grid_size_x;  // nb of px
@@ -64,13 +64,24 @@ let wave_type = ["R", "R"];
 const EPS = 1.e-14;
 
 function main(canvas_axes, canvas_list) {
+
+    set_transforms();
+    set_backgrounds_1(canvas_axes[0], canvas_axes[1], canvas_axes[2])
+    set_background_2(canvas_axes[3]);
+    set_background_3(canvas_axes[4]);
+
+    handle_inputs(canvas_axes, canvas_list);  // Handle input interactions
+    update_all_plots(canvas_list);  // Initial figure display
+}
+
+function set_transforms() {
+
     [cv1A, cv1B, cv1C, cv2, cv3] = canvas_list;
 
-    // y_max = canvas1.height * (2. * x_max) / canvas1.width * GRAVITY;
     tsfm1A = [
         cv1A.width / (2. * x_max), 0.,
         0., -cv1A.height/(qq_max[1] - qq_max[0]) * (1. - origin_shift),
-        cv1A.width / 2., cv1A.height * (1. - origin_shift),
+        cv1A.width / 2., cv1A.height * (1. - origin_shift) * (qq_max[1]) / (qq_max[1] - qq_max[0]),
     ];
     tsfm1B = [
         cv1B.width / (2. * x_max), 0., 
@@ -80,9 +91,8 @@ function main(canvas_axes, canvas_list) {
     tsfm1C = [
         cv1C.width / (2. * x_max), 0., 
         0., -cv1C.height / (qq_max[5] - qq_max[4]) * (1. - origin_shift),
-        cv1C.width / 2., cv1C.height * (1. - origin_shift),
+        cv1C.width / 2., cv1C.height * (1. - origin_shift) * (qq_max[5]) / (qq_max[5] - qq_max[4]),
     ];
-    
 
     tsfm2 = [
         cv2.width / (q_max[1] - q_max[0]), 0.,
@@ -94,13 +104,6 @@ function main(canvas_axes, canvas_list) {
         0., -cv3.height / (duration) * (1. - origin_shift),
         cv3.width / 2., cv3.height * (1. - origin_shift),
     ];
-
-    set_backgrounds_1(canvas_axes[0], canvas_axes[1], canvas_axes[2])
-    set_background_2(canvas_axes[3]);
-    set_background_3(canvas_axes[4]);
-
-    handle_inputs(canvas_axes, canvas_list);  // Handle input interactions
-    update_all_plots(canvas_list);  // Initial figure display
 }
 
 function handle_play_pause() {
@@ -247,6 +250,7 @@ function handle_inputs(canvas_axes, canvas_list) {
             if ((EPS < Number(this.value)) && (anim_state == "init")) {
                 tsfm3[3] *= duration / value;
                 duration = value;
+                document.getElementById("range_t").max = duration;
                 set_background_3(canvas_axes[4]);
                 draw_characteristics(canvas_list[4], tsfm3, 0.);
             } else {
@@ -296,6 +300,8 @@ function handle_inputs(canvas_axes, canvas_list) {
     
     // Set simulation speed
     document.getElementById("range_speed").value = Math.log2(speedup);
+    document.getElementById("range_speed").min = -8;
+    document.getElementById("range_speed").max = +2;
     document.getElementById("range_speed").addEventListener(
         'input', function (e) {
             speedup = 2 ** (Number(this.value));
@@ -313,11 +319,12 @@ function handle_inputs(canvas_axes, canvas_list) {
     document.getElementById("range_g").max = 1.67;
     document.getElementById("range_g").addEventListener(
         'input', function (e) {
-            console.log(anim_state, this.value);
             if (anim_state == "init") {
                 G = Number(this.value);
                 document.getElementById("text_g").innerText = "γ = " + G.toFixed(2);
                 update_all_plots(canvas_list);
+            } else {
+                this.value = G;
             }
         }
     );
@@ -335,6 +342,12 @@ function handle_inputs(canvas_axes, canvas_list) {
     window.addEventListener('keydown', (e) => {
         if (e.key != "r") return;
         handle_stop();
+    });
+
+    // Handle re-framing
+    window.addEventListener('keydown', (e) => {
+        if ((e.key != "z") || (anim_state != "init")) return;
+        adjust_frame(canvas_axes);
     });
 
     // Handle play/pause switch
@@ -417,12 +430,20 @@ function mouse_move_state(event, canvas_list) {
         document.getElementById(id + 1).value = q[1];
         document.getElementById(id + 2).value = q[2];
     }
+    
+    let x = event.offsetX;
+    let y = event.offsetY;
+    if (y > tsfm2[5]) return;
+
+    hoover_position_q[0] = x;
+    hoover_position_q[1] = y;
+    draw_state(canvas_list[3], COLORS[13], qL, tsfm2, true);
+    draw_state(canvas_list[3], COLORS[18], qR, tsfm2, true);
+    // draw_loci(canvas_list[3], tsfm2);
 
     if (drag_flag != -1) {
-        let x = event.offsetX - tsfm2[4];
-        let y = event.offsetY - tsfm2[5];
-
-        if ((y > 0.)) return;
+        x -= tsfm2[4];
+        y -= tsfm2[5];
         
         // Transform from back to state space
         det = 1. / (tsfm2[0] * tsfm2[3] - tsfm2[1] * tsfm2[2]);
@@ -434,13 +455,6 @@ function mouse_move_state(event, canvas_list) {
         
         update_all_plots(canvas_list);
     }
-
-    let x = event.offsetX;
-    let y = event.offsetY;
-    if (y > tsfm2[5]) return;
-    hoover_position_q[0] = x;
-    hoover_position_q[1] = y;
-    draw_loci(canvas_list[3], tsfm2);
 }
 
 function mouse_move_hoover_char(event, canvas, reset=false) {
@@ -486,7 +500,7 @@ function update_all_plots(canvas_list) {
     draw_loci(canvas_list[3], tsfm2);
     draw_characteristics(canvas_list[4], tsfm3);
 
-    // setup_animation();
+    setup_animation();
 }
 
 function compute_state_fan(x, t, which) {    
@@ -500,7 +514,7 @@ function compute_state_fan(x, t, which) {
     } else {  // 3-rarefaction
         [R, U, P] = qR;
         r = R * Math.pow(2.0 / (G+1.) - (G-1.) / (G+1.) * (U - xi) / c_speeds[3], 2./(G-1.));
-        u = 2. / (G+1.) * (xi - c_speeds[0] + (G-1.) / 2. * U);
+        u = 2. / (G+1.) * (xi - c_speeds[3] + (G-1.) / 2. * U);
         p = P * Math.pow(2.0 / (G+1.) - (G-1.) / (G+1.) * (U - xi) / c_speeds[3], 2.*G/(G-1.));
     }
     return [r, u, p]
@@ -554,10 +568,48 @@ function is_vacuum(q) {
 /**
  * 
  */
+
+function adjust_frame(canvas_axes_list) {
+    let [_, y_arrays] = compute_fields(duration);
+    let bounds;
+    let delta;
+
+    for (f = 0; f < y_arrays.length; f++) {
+        bounds = [+Infinity, -Infinity];
+        for (i = 0; i < y_arrays[f].length; i++) {
+            bounds[0] = Math.min(bounds[0], y_arrays[f][i]);
+            bounds[1] = Math.max(bounds[1], y_arrays[f][i]);
+        }
+        delta = bounds[1] - bounds[0];
+        if (delta < EPS) delta = 0.25 * bounds[0];
+        qq_max[2*f + 0] = bounds[0] - 0.1 * delta;
+        qq_max[2*f + 1] = bounds[1] + 0.1 * delta;
+
+        if (f == 2) console.log(delta, bounds, qq_max);
+    }
+
+    set_transforms();
+    set_backgrounds_1(...canvas_axes_list);
+    setup_animation();
+}
+
 function setup_animation() {
-    let canvas = document.getElementById('canvas1A');
-    let ctx = canvas.getContext("2d");        
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const canvas_list = [
+        document.getElementById("canvas1A"),
+        document.getElementById("canvas1B"),
+        document.getElementById("canvas1C"),
+    ]
+    let canvas, ctx;
+    let [x_array, y_arrays] = compute_fields(0.)
+    let tsfms = [tsfm1A, tsfm1B, tsfm1C];
+
+    for (f = 0; f < 3; f++) {
+        canvas = canvas_list[f];
+        ctx = canvas.getContext("2d");
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        draw_field(canvas, tsfms[f], x_array, y_arrays[f]);
+    }
 
     // Set vertical lines that depict the fluid velocity
     /*x_speed_lines.length = 0;
@@ -565,36 +617,22 @@ function setup_animation() {
         x_speed_lines.push(-2.*x_max + 4. * x_max * i / (2. * n_speed_lines + 1.));
     }*/
     
-    const canvas_xt = document.getElementById('canvas3');
-    draw_physics([0., 0., 0., 0.], [], []);
-    draw_characteristics(canvas_xt, tsfm3, 0.);
+    // draw_physics([0., 0., 0., 0.], [], []);
 
-    let velocity;
-    let velocities = [qL[1]/qL[0], qR[1]/qR[0]];
-    for (v = 0; v < 2; v++) {
-        velocity = velocities[v] * x_max / 10.;
-        sign = (v == 0) ? -1. : 1.;
-        // color = (v == 0) ? BLUE : ORANGE;
-        color = (v == 0) ? COLORS[13] : COLORS[18];
-        draw_arrow(
-            ctx, 
-            tsfm1[0] * (sign * x_max/2. - velocity/2.) + tsfm1[4],
-            tsfm1[3] * y_max/2. + tsfm1[5], 
-            tsfm1[0] * velocity, 
-            0.,
-            window.innerWidth/50,
-            color
-        );
-    }
+    canvas = document.getElementById("canvas3");
+    draw_characteristics(canvas, tsfm3, 0.);
 }
 
 /**
  * CORE OF THE ANIMATION
  */
 function animate(current_clock) {
-    return;
 
-    const canvas = document.getElementById('canvas1');
+    const canvas_list = [
+        document.getElementById("canvas1A"),
+        document.getElementById("canvas1B"),
+        document.getElementById("canvas1C"),
+    ]
     const canvas_xt = document.getElementById('canvas3');
     const button = document.querySelector(".btn");
     
@@ -611,10 +649,20 @@ function animate(current_clock) {
     document.getElementById("text_t").innerText = "t = " + (Math.round(100*t)/100).toFixed(2).padStart(4, ' ');
     
     // Do the plots !
-    [positions, pts_1_wave, pts_2_wave] = compute_transitions_curves(t);
-    draw_physics(positions, pts_1_wave, pts_2_wave);
-    color_waves(pts_1_wave, pts_2_wave);
-    draw_speed_lines(t);
+    const dx_ref = px_per_step / tsfm1A[0];
+    let [x_array, y_arrays] = compute_fields(t)
+    let tsfms = [tsfm1A, tsfm1B, tsfm1C];
+    for (f = 0; f < 3; f++) {
+        canvas = canvas_list[f];
+        ctx = canvas.getContext("2d");
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        draw_field(canvas, tsfms[f], x_array, y_arrays[f]);
+    }
+
+    // [positions, pts_1_wave, pts_2_wave] = compute_transitions_curves(t);
+    // draw_physics(positions, pts_1_wave, pts_2_wave);
+    // color_waves(pts_1_wave, pts_2_wave);
+    // draw_speed_lines(t);
     draw_characteristics(canvas_xt, tsfm3, t);
     
     // Handle animation interaction
@@ -635,79 +683,119 @@ function animate(current_clock) {
 
 }
 
-function map_primitive(q, maps) {
+function map_primitive(q, state_map) {
     let [r, u, p] = q;
     let v1, v2, v3;
-    if (maps[0] == "P") v1 = r;
-    else if (maps[0] == "R") v1 = u + 2. * Math.sqrt(G*p/r) / (G - 1.);
 
-    if (maps[1] == "P") v2 = u;
-    else if (maps[1] == "R") v2 = u;
-    else if (maps[1] == "C") v2 = r * u;
+    if (state_map[0] == "P") v1 = r;
+    else if (state_map[0] == "R") v1 = u + 2. * Math.sqrt(G*p/r) / (G - 1.);
 
-    if (maps[2] == "P") v3 = p;
-    else if (maps[2] == "R") v3 = u - 2. * Math.sqrt(G*p/r) / (G - 1);
-    else if (maps[2] == "C") v3 = 0.5 * r * u * u + r * e / (G - 1.);
+    if (state_map[1] == "P") v2 = u;
+    else if (state_map[1] == "R") v2 = u;
+    else if (state_map[1] == "C") v2 = r * u;
+
+    if (state_map[2] == "P") v3 = p;
+    else if (state_map[2] == "R") v3 = u - 2. * Math.sqrt(G*p/r) / (G - 1);
+    else if (state_map[2] == "C") v3 = 0.5 * r * u * u + r * e / (G - 1.);
 
     return [v1, v2, v3];
 }
 
-function compute_fields(t, tsfm) {
-    const dx_ref = px_per_step / tsfm[0];
-
-    let x_array = [];
-    let y_array = [[], [], []];
-    let q_map;
+function compute_fields(t) {
     
-    if (t < EPS) {
-        x_array.push(-xmax, 0., 0., x_max);
-        q_map = map_primitive(qL, ["P", "P", "P"]);
-        for (f = 0; f < 3; f++) y_array[f].push(q_map[f], q_map[f]);
-        q_map = map_primitive(qR, ["P", "P", "P"]);
-        for (f = 0; f < 3; f++) y_array[f].push(q_map[f], q_map[f]);
-    }
+    const canvas_width = document.getElementById("canvas1A").width;
+    const dx_ref = (px_per_step / canvas_width) * (2. * x_max);
+    const positions = [speeds[0] * t, speeds[1] * t, speeds[2] * t, speeds[3] * t, speeds[4] * t];
     
-}
-
-function compute_transitions_curves(t) {
-    const positions = [speeds[0] * t, speeds[1] * t, speeds[2] * t, speeds[3] * t];
-    const dx_ref = px_per_step / tsfm1[0];
-    let dx, n_step;
-
+    let n_step, dx, x;
     let x_array = [];
     let y_array = [];
-
+    // let y_array = [[], [], []];
+    let q_map;
+    let state_map = ["P", "P", "P"];
+    
+    // Add left state
     x_array.push(-x_max);
-    y_array.push(-x_max);
-    
-    let pts_1_wave = [[positions[0], qL[0]]];
-    let pts_2_wave = [[positions[2], qm[0]]];
-    if ((wave_type[0] == "R") && (EPS < t)) {  // Left rarefaction
-        n_step = Math.ceil((positions[1] - positions[0]) / dx_ref);
-        dx = (positions[1] - positions[0]) / n_step;
-        let q1, q2;
-        for (i = 1; i <= n_step; i++) {
-            x = positions[0] + i * dx;
-            [q1, q2] = compute_state(x, t, flag="R1");
-            pts_1_wave.push([x, q1]);
+    q_map = map_primitive(qL, state_map);
+    y_array.push(q_map);
+
+    if (t < EPS) {
+
+        x_array.push(0., 0.);
+        q_map = map_primitive(qL, state_map);
+        y_array.push(q_map);
+        q_map = map_primitive(qR, state_map);
+        y_array.push(q_map);
+
+    } else {
+      
+        // Start of 1-wave
+        x_array.push(positions[0]);
+        y_array.push(q_map);
+
+        // 1-wave
+        if (wave_type[0] == "R") {
+            n_step = Math.ceil((positions[1] - positions[0]) / dx_ref);
+            dx = (positions[1] - positions[0]) / n_step;
+            for (i = 1; i <= n_step; i++) {
+                x = positions[0] + i * dx;
+                q_map = compute_state_fan(x, t, 1);
+                q_map = map_primitive(q_map, state_map);
+                x_array.push(x);
+                y_array.push(q_map);
+            }
+        } else {
+            q_map = map_primitive(ql, state_map);
+            x_array.push(positions[1]);
+            y_array.push(q_map);
         }
-    } else {  // Left shock
-        pts_1_wave.push([positions[1], qm[0]]);
-    }
-    
-    if ((wave_type[1] == "R") && (EPS < t)) {  // Right rarefaction
-        n_step = Math.ceil((positions[3] - positions[2]) / dx_ref);
-        dx = (positions[3] - positions[2]) / n_step;
-        for (i = 1; i <= n_step; i++) {
-            x = positions[2] + i * dx;
-            [q1, q2] = compute_state(x, t, flag="R2");
-            pts_2_wave.push([x, q1]);
+
+        // Left of contact-wave
+        q_map = map_primitive(ql, state_map);
+        x_array.push(positions[2]);
+        y_array.push(q_map);
+
+        // Right of contact-wave
+        q_map = map_primitive(qr, state_map);
+        x_array.push(positions[2]);
+        y_array.push(q_map);
+
+        // Start of 3-wave
+        x_array.push(positions[3]);
+        y_array.push(q_map);
+
+        // 3-wave
+        if ((wave_type[1] == "S") && (EPS < t)) {
+            q_map = map_primitive(qR, state_map);
+            x_array.push(positions[3]);
+            y_array.push(q_map);
+        } else if (EPS < t) {
+            n_step = Math.ceil((positions[4] - positions[3]) / dx_ref);
+            dx = (positions[4] - positions[3]) / n_step;
+            for (i = 1; i <= n_step; i++) {
+                x = positions[3] + i * dx;
+                q_map = compute_state_fan(x, t, 3);
+                q_map = map_primitive(q_map, state_map);
+                x_array.push(x);
+                y_array.push(q_map);
+            }
         }
-    } else {  // Right shock
-        pts_2_wave.push([positions[3], qR[0]]);
     }
+
+    // Right state
+    q_map = map_primitive(qR, state_map);
+    x_array.push(x_max);
+    y_array.push(q_map);
     
-    return [positions, pts_1_wave, pts_2_wave];
+    // transpose stuff
+    let y_tsp = [[], [], []];
+    for (i = 0; i < y_array.length; i++) {
+        for (j = 0; j < y_tsp.length; j++) {
+            y_tsp[j].push(y_array[i][j]);
+        }
+    }
+
+    return [x_array, y_tsp];
 }
 
 function draw_field(canvas, tsfm, x, y) {
@@ -721,46 +809,16 @@ function draw_field(canvas, tsfm, x, y) {
     ctx.beginPath();
     ctx.moveTo(x[0], y[0]);
     for (i = 1; i < x.length; i++) {
+        // In case of a jump, do not draw vertical lines
+        // if (x[i] - x[i-1] < EPS) ctx.moveTo(x[i], y[i]);  
+        // else ctx.lineTo(x[i], y[i]);
         ctx.lineTo(x[i], y[i]);
     }
     
     ctx.resetTransform();
     ctx.strokeStyle = COLORS[6];
-    ctx.lineWidth = 2 * LW;
+    ctx.lineWidth = 5 * LW;
     ctx.stroke();
-    ctx.restore();
-}
-
-function color_waves(pts_1_wave, pts_2_wave) {
-    const canvas = document.getElementById('canvas1');
-    const ctx = canvas.getContext("2d");
-    
-    ctx.save();
-    let pts_wave = [pts_1_wave, pts_2_wave];
-
-    for (w = 0; w < 2; w++) {
-        ctx.setTransform(...tsfm1);
-        ctx.beginPath();
-        ctx.moveTo(pts_wave[w][0][0], pts_wave[w][0][1]);
-        for (i = 1; i < pts_wave[w].length; i++) {
-            ctx.lineTo(pts_wave[w][i][0], pts_wave[w][i][1]);
-        }
-        ctx.lineTo(pts_wave[w][pts_wave[w].length-1][0], 0.);
-        if (wave_type[w] == "R") {
-            ctx.lineTo(pts_wave[w][0][0], 0.);
-            ctx.closePath();
-            ctx.resetTransform();
-            // ctx.fillStyle = "#ffffff80";
-            ctx.fillStyle = COLORS[5] + "80";
-            ctx.fill();
-        } else {
-            ctx.resetTransform();
-            ctx.lineWidth = 5 + LW;
-            // ctx.strokeStyle = "#000000";
-            ctx.strokeStyle = COLORS[6];
-            ctx.stroke();
-        }
-    }
     ctx.restore();
 }
 
@@ -989,7 +1047,6 @@ function draw_state(canvas, color, q, tsfm, intensify=false, middle="") {
 
     let ctx = canvas.getContext("2d");
     ctx.save();
-    ctx.fillStyle = color;
     ctx.beginPath();
     q_px = [
         tsfm[0] * q[1] + tsfm[2] * q[2] + tsfm[4],
@@ -997,7 +1054,8 @@ function draw_state(canvas, color, q, tsfm, intensify=false, middle="") {
     ];
     
     let dist_to_hoover = Math.hypot(q_px[0] - hoover_position_q[0], q_px[1] - hoover_position_q[1]);
-    let current_radius = ((intensify) && (dist_to_hoover < 2. * dot_state_radius)) ? 1.5 * dot_state_radius : dot_state_radius;
+    // let current_radius = ((intensify) && (dist_to_hoover < 2. * dot_state_radius)) ? 1.5 * dot_state_radius : dot_state_radius;
+    let current_radius = dot_state_radius;
     let supersonic = Math.sqrt(G * q[2]/q[0]) < Math.abs(q[1]);
 
     if ((middle == "left") || (middle == "right")) {
@@ -1022,6 +1080,8 @@ function draw_state(canvas, color, q, tsfm, intensify=false, middle="") {
             ctx.arc(q_px[0], q_px[1], current_radius, 0, 2. * Math.PI, true);
         }
     }
+    
+    ctx.fillStyle = ((intensify) && (dist_to_hoover < 2. * dot_state_radius)) ? COLORS[11]: color;
     ctx.fill();
     ctx.restore();
 }
@@ -1486,7 +1546,7 @@ function set_background_1(canvas, tsfm, label) {
     const w = canvas.width;
     const s = origin_shift;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    draw_axes(canvas, ctx, [tsfm[4], tsfm[5]], tsfm[0], -tsfm[3], ["x", label], 1., COLORS[4]);
+    draw_axes(canvas, ctx, [tsfm[4], tsfm[5]], tsfm[0], -tsfm[3], ["x", label], 1.);
 }
 
 function set_background_2(canvas) {
@@ -1496,7 +1556,7 @@ function set_background_2(canvas) {
     const w = canvas.width;
     const s = origin_shift;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    draw_axes(canvas, ctx, [w / 2., h * (1 - s)], tsfm2[0], -tsfm2[3], ["u", "p"], 1., COLORS[4]);
+    draw_axes(canvas, ctx, [w / 2., h * (1 - s)], tsfm2[0], -tsfm2[3], ["u", "p"], 1.);
 }
 
 function set_background_3(canvas) {
@@ -1505,10 +1565,10 @@ function set_background_3(canvas) {
     const w = canvas.width;
     const s = origin_shift;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    draw_axes(canvas, ctx, [w / 2., h * (1 - s)], tsfm3[0], -tsfm3[3], ["x", "t"], 1., COLORS[4]);
+    draw_axes(canvas, ctx, [w / 2., h * (1 - s)], tsfm3[0], -tsfm3[3], ["x", "t"], 1.);
 }
 
-function draw_axes(canvas, ctx, origin, dx, dy, labels, k=1., color=COLORS[4]) {
+function draw_axes(canvas, ctx, origin, dx, dy, labels, k=1., color=COLORS[4] + "80") {
     // dx = length in px of a unit
 
     var ctx = canvas.getContext("2d");
