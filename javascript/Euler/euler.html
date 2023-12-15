@@ -36,45 +36,78 @@
                     <span class="square"></span>
                 </div>
             </div>
-            <div class="form" style="margin-bottom: 0.75vh;">
-                <p style="width: 30%;">&rho;L </p>
-                <input type="number" id="qL0" style="left: 40%;">
+            <div class="stateInputs" style="margin-top: 1vh; margin-bottom: 1vh">
+                <div class="form" style="margin-bottom: 0.75vh;">
+                    <p style="width: 30%;">&rho;L </p>
+                    <input type="number" id="qL0" style="left: 40%;">
+                </div>
+                <div class="form" style="margin-bottom: 0.75vh;">
+                    <p style="width: 30%;">&rho;R </p>
+                    <input type="number" id="qR0" style="left: 40%;">
+                </div>
+                <div class="form" style="margin-top: 0.75vh; margin-bottom: 0.75vh">
+                    <p style="width: 30%;">uL </p>
+                    <input type="number" id="qL1" style="left: 40%;">
+                </div>
+                <div class="form" style="margin-top: 0.75vh; margin-bottom: 0.75vh">
+                    <p style="width: 30%;">uR </p>
+                    <input type="number" id="qR1" style="left: 40%;">
+                </div>
+                <div class="form" style="margin-top: 0.75vh;">
+                    <p style="width: 30%;">pL </p>
+                    <input type="number" id="qL2" style="left: 40%;">
+                </div>
+                <div class="form" style="margin-top: 0.75vh;">
+                    <p style="width: 30%;">pR </p>
+                    <input type="number" id="qR2" style="left: 40%;">
+                </div>
             </div>
-            <div class="form" style="margin-top: 0.75vh; margin-bottom: 0.75vh">
-                <p style="width: 30%;">uL </p>
-                <input type="number" id="qL1" style="left: 40%;">
-            </div>
-            <div class="form" style="margin-top: 0.75vh;">
-                <p style="width: 30%;">pL </p>
-                <input type="number" id="qL2" style="left: 40%;">
-            </div>
-            <div class="form" style="margin-bottom: 0.75vh;">
-                <p style="width: 30%;">&rho;R </p>
-                <input type="number" id="qR0" style="left: 40%;">
-            </div>
-            <div class="form" style="margin-top: 0.75vh; margin-bottom: 0.75vh">
-                <p style="width: 30%;">uR </p>
-                <input type="number" id="qR1" style="left: 40%;">
-            </div>
-            <div class="form" style="margin-top: 0.75vh;">
-                <p style="width: 30%;">pR </p>
-                <input type="number" id="qR2" style="left: 40%;">
-            </div>
-            <div class="slider" style="margin-bottom: 0vh" id="slider_g" value="1.4">
+            <div class="slider" style="margin-top: 0vh; margin-bottom: 0vh" id="slider_g" value="1.4">
                 <p id="text_g">&gamma; = 1.40</p>
                 <input type="range" min="1.100" max="1.67" step="0.01" value="1.4" id="range_g"/>
             </div>
-            <div class="checkbox" style="margin-top: 3vh; margin-bottom: 0.5vh;">
-                <input type="checkbox" id="1_char" name="1char">
-                <label for="1char">1-&#967;</label>
+            <div class="fieldModes">
+                <div class="dropdown">
+                    <button class="dropbtn" style="background-color: var(--nord3)">1st <br> field</button>
+                    <div class="dropdown-content">
+                        <a onclick="set_mode(1, 'r')">&rho;</a>
+                        <a onclick="set_mode(1, 'R1')">u+2c/(g-1)</a>
+                        <a onclick="set_mode(1, 's')">s</a>
+                    </div>
+                </div>
+                <div class="dropdown">
+                    <button class="dropbtn" style="background-color: var(--nord3)">2nd <br> field</button>
+                    <div class="dropdown-content">
+                        <a onclick="set_mode(2, 'u')">u</a>
+                        <a onclick="set_mode(2, 'ru')">&rho; u</a>
+                        <a onclick="set_mode(2, 'c')">c</a>
+                    </div>
+                </div> 
+                <div class="dropdown">
+                    <button class="dropbtn" style="background-color: var(--nord3)">3rd <br> field</button>
+                    <div class="dropdown-content">
+                        <a onclick="set_mode(3, 'p')">p</a>
+                        <a onclick="set_mode(3, 'E')">E</a>
+                        <a onclick="set_mode(3, 'R3')">u-2c/(g-1)</a>
+                        <a onclick="set_mode(3, 'e')">e</a>
+                        <a onclick="set_mode(3, 'H')">H</a>
+                        <a onclick="set_mode(3, 'h')">h</a>
+                    </div>
+                </div>
             </div>
-            <div class="checkbox" style="margin-top: 0.5vh; margin-bottom: 0.5vh">
-                <input type="checkbox" id="2_char" name="2char">
-                <label for="2char">2-&#967;</label>
-            </div>
-            <div class="checkbox" style="margin-top: 0.5vh;">
-                <input type="checkbox" id="3_char" name="3char">
-                <label for="3char">3-&#967;</label>
+            <div class="characteristics">
+                <div class="checkbox">
+                    <label for="1char">1-&#967;</label>
+                    <input type="checkbox" id="1_char" name="1char">
+                </div>
+                <div class="checkbox">
+                    <label for="2char">2-&#967;</label>
+                    <input type="checkbox" id="2_char" name="2char">
+                </div>
+                <div class="checkbox">
+                    <label for="3char">3-&#967;</label>
+                    <input type="checkbox" id="3_char" name="3char">
+                </div>
             </div>
             <div class="checkbox">
                 <input type="checkbox" id="entropy" name="entropy">
@@ -83,7 +116,7 @@
         </div>
 
         <div>
-            <canvas id="canvas1A_Axes", style="position: absolute; z-index: 0; background-color: var(--nord3)"></canvas>
+            <canvas id="canvas1A_Axes", style="position: absolute; z-index: 0; background-color: var(--nord2)"></canvas>
             <canvas id="canvas1A", style="position: absolute; z-index:1"></canvas>
         </div>
         <div>

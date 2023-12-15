@@ -12,7 +12,7 @@ const COLORS = [
     "#76c783", "#4a83ff", "#8194ff",
 ]
 
-const origin_shift = 0.0;  // percentage of width
+const origin_shift = 0.05;  // percentage of width
 const min_pixel_per_unit = 60;
 const dot_state_radius = 10 * LW;  // same as locus dot size
 const px_per_step = 10;  // discretization of curves
@@ -40,6 +40,8 @@ let entropy_fix = true;
 let drag_flag = -1;
 let hoover_position_q = [-1., 0.];
 let hoover_position_xt = [undefined, undefined];
+let state_map = ["r", "u", "p"];
+let state_labels = ["\u03C1", "u", "p"];
 
 // Animation parameters
 let anim_state = "init";  // init, play, pause, end
@@ -72,6 +74,7 @@ function main(canvas_axes, canvas_list) {
 
     handle_inputs(canvas_axes, canvas_list);  // Handle input interactions
     update_all_plots(canvas_list);  // Initial figure display
+    adjust_frame();
 }
 
 function set_transforms() {
@@ -80,18 +83,18 @@ function set_transforms() {
 
     tsfm1A = [
         cv1A.width / (2. * x_max), 0.,
-        0., -cv1A.height/(qq_max[1] - qq_max[0]) * (1. - origin_shift),
-        cv1A.width / 2., cv1A.height * (1. - origin_shift) * (qq_max[1]) / (qq_max[1] - qq_max[0]),
+        0., -cv1A.height/(qq_max[1] - qq_max[0]),
+        cv1A.width / 2., cv1A.height * (qq_max[1]) / (qq_max[1] - qq_max[0]),
     ];
     tsfm1B = [
         cv1B.width / (2. * x_max), 0., 
-        0., -cv1B.height / (qq_max[3] - qq_max[2]) * (1. - origin_shift),
-        cv1B.width / 2., cv1B.height * (1. - origin_shift) * (qq_max[3]) / (qq_max[3] - qq_max[2]),
+        0., -cv1B.height / (qq_max[3] - qq_max[2]),
+        cv1B.width / 2., cv1B.height * (qq_max[3]) / (qq_max[3] - qq_max[2]),
     ];
     tsfm1C = [
         cv1C.width / (2. * x_max), 0., 
-        0., -cv1C.height / (qq_max[5] - qq_max[4]) * (1. - origin_shift),
-        cv1C.width / 2., cv1C.height * (1. - origin_shift) * (qq_max[5]) / (qq_max[5] - qq_max[4]),
+        0., -cv1C.height / (qq_max[5] - qq_max[4]),
+        cv1C.width / 2., cv1C.height * (qq_max[5]) / (qq_max[5] - qq_max[4]),
     ];
 
     tsfm2 = [
@@ -105,6 +108,10 @@ function set_transforms() {
         cv3.width / 2., cv3.height * (1. - origin_shift),
     ];
 }
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////  -  HANDLE ALL INPUTS  -  //////////////////////////////////
 
 function handle_play_pause() {
     if ((anim_state == "init") || (anim_state == "end")) {
@@ -133,7 +140,7 @@ function init_non_vacuum(q) {
     q[2] = 1.;
 }
 
-function handle_state_inputs(canvas_list, this_q, next_q, this_id) {
+function handle_state_inputs(canvas_list, canvas_axes, this_q, next_q, this_id) {
     // Density input
     document.getElementById(this_id + 0).value = this_q[0];
     document.getElementById(this_id + 0).addEventListener(
@@ -159,6 +166,7 @@ function handle_state_inputs(canvas_list, this_q, next_q, this_id) {
             document.getElementById(this_id + 1).value = this_q[1];
             document.getElementById(this_id + 2).value = this_q[2];
             update_all_plots(canvas_list);
+            adjust_frame();
         }
     );
 
@@ -177,6 +185,7 @@ function handle_state_inputs(canvas_list, this_q, next_q, this_id) {
             }
             this_q[1] = Number(this.value);
             update_all_plots(canvas_list);
+            adjust_frame();
         }
     );
 
@@ -205,6 +214,7 @@ function handle_state_inputs(canvas_list, this_q, next_q, this_id) {
             document.getElementById(this_id + 0).value = this_q[0];
             document.getElementById(this_id + 1).value = this_q[1];
             update_all_plots(canvas_list);
+            adjust_frame();
         }
     );
 }
@@ -213,7 +223,6 @@ function handle_inputs(canvas_axes, canvas_list) {
 
     const canvas2 = canvas_list[3];
     const canvas3 = canvas_list[4];
-    const canvas3_axes = canvas_axes[4];
 
     // Drag and drop left and right states in state space
     canvas2.addEventListener('mousedown', function(e){
@@ -223,9 +232,11 @@ function handle_inputs(canvas_axes, canvas_list) {
         if (anim_state == "init") mouse_move_state(e, canvas_list);
     });
     canvas2.addEventListener('mouseup', (e) => {
+        // adjust_frame();
         drag_flag = -1;
     });
     canvas2.addEventListener('mouseout', (e) => {
+        // adjust_frame();
         hoover_position_q[1] = -1;
     });
     
@@ -347,7 +358,8 @@ function handle_inputs(canvas_axes, canvas_list) {
     // Handle re-framing
     window.addEventListener('keydown', (e) => {
         if ((e.key != "z") || (anim_state != "init")) return;
-        adjust_frame(canvas_axes);
+        e.preventDefault();
+        adjust_frame();
     });
 
     // Handle play/pause switch
@@ -367,8 +379,8 @@ function handle_inputs(canvas_axes, canvas_list) {
     );
 
     // Left density input
-    handle_state_inputs(canvas_list, qL, qR, "qL");
-    handle_state_inputs(canvas_list, qR, qL, "qR");
+    handle_state_inputs(canvas_list, canvas_axes, qL, qR, "qL");
+    handle_state_inputs(canvas_list, canvas_axes, qR, qL, "qR");
 
     // Handle with characteristics to display
     document.getElementById("1_char").checked = active_char[0];
@@ -423,8 +435,8 @@ function mouse_select_state(event, tsfm) {
 function mouse_move_state(event, canvas_list) {
     
     function set_new_state(x, y, q, id) {
-        base_x = Math.pow(10, 4 - Math.floor(Math.log10(q_max[1] - q_max[0])));
-        base_y = Math.pow(10, 4 - Math.floor(Math.log10(q_max[3] - q_max[2])));
+        base_x = Math.pow(10, 3 - Math.floor(Math.log10(q_max[1] - q_max[0])));
+        base_y = Math.pow(10, 3 - Math.floor(Math.log10(q_max[3] - q_max[2])));
         q[1] = Math.round(x * base_x) / base_x;
         q[2] = Math.round(y * base_y) / base_y;
         document.getElementById(id + 1).value = q[1];
@@ -470,11 +482,30 @@ function mouse_move_hoover_char(event, canvas, reset=false) {
     draw_characteristics(canvas, tsfm3, last_t);
 }
 
-/**
- * At most one of two states is vacuum
- * Vacuum states are characterized by "undefined" velocity
- */
+function set_mode(which, value){
+
+    if (anim_state == "play") return;
+    
+    // Set state mapping
+    state_map[which-1] = value;
+    
+    // Set state labels
+    if (value == "r") state_labels[0] = "\u03C1";
+    else if (value == "ru") state_labels[1] = "\u03C1u";
+    else state_labels[which-1] = value;
+
+    // Update the plots, and the bounding box
+    setup_animation();
+    adjust_frame();
+}
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////  -  MAIN FUNCTIONS FOR INTERACTIVE INTERFACE  -  ///////////////////////
+
 function update_all_plots(canvas_list) {
+    // At most one of two states is vacuum
+    // Vacuum states are characterized by "undefined" velocity
     set_state_speeds(qL, 0);
     set_state_speeds(qR, 3);
 
@@ -503,90 +534,70 @@ function update_all_plots(canvas_list) {
     setup_animation();
 }
 
-function compute_state_fan(x, t, which) {    
-    let xi, r, u, p, R, U, P;
-    xi = x / t;
-    if (which == 1) { // 1-rarefaction
-        [R, U, P] = qL;
-        r = R * Math.pow(2.0 / (G+1.) + (G-1.) / (G+1.) * (U - xi) / c_speeds[0], 2./(G-1.));
-        u = 2. / (G+1.) * (xi + c_speeds[0] + (G-1.) / 2. * U);
-        p = P * Math.pow(2.0 / (G+1.) + (G-1.) / (G+1.) * (U - xi) / c_speeds[0], 2.*G/(G-1.));
-    } else {  // 3-rarefaction
-        [R, U, P] = qR;
-        r = R * Math.pow(2.0 / (G+1.) - (G-1.) / (G+1.) * (U - xi) / c_speeds[3], 2./(G-1.));
-        u = 2. / (G+1.) * (xi - c_speeds[3] + (G-1.) / 2. * U);
-        p = P * Math.pow(2.0 / (G+1.) - (G-1.) / (G+1.) * (U - xi) / c_speeds[3], 2.*G/(G-1.));
-    }
-    return [r, u, p]
-}
-
-function compute_s(which) {
-    let p_star = ql[2];  // equal to qr[2]
-    if (which == 1) {
-        let [rho, u, p] = qL;
-        return u - c_speeds[0] * Math.sqrt((G+1)/(2*G) * p_star/p + (G-1)/(2*G));
-    } else {
-        let [rho, u, p] = qR;
-        return u + c_speeds[3] * Math.sqrt((G+1)/(2*G) * p_star/p + (G-1)/(2*G));
-    }
-}
-
-function set_middle_density(q_mid, q_ext, wave) {
-    if (wave == "N") {  // Vacuum external state
-        set_vaccum(q_mid);
-    } else {
-        let pp = q_mid[2] / q_ext[2];
-        if (wave == "R") {  // Rarefaction wave
-            q_mid[0] = q_ext[0] * Math.pow(pp, 1./G);
-        } else {  // wave == "S" for Shock wave
-            let alpha = (G - 1.) / (G + 1.);
-            q_mid[0] = q_ext[0] * (pp + alpha) / (pp * alpha + 1.);
-        }
-    }
-}
-
-function set_state_speeds(q, which) {
-    if (is_vacuum(q)) {
-        c_speeds[which] = undefined;
-        lambdas[which] = [undefined, undefined, undefined];        
-    } else {
-        c_speeds[which] = Math.sqrt(G * q[2] / q[0]);
-        lambdas[which] = [q[1] - c_speeds[which], q[1], q[1] + c_speeds[which]];
-    }
-}
-
-function set_vaccum(q) {
-    q[0] = 0.;
-    q[1] = undefined;
-    q[2] = 0.;
-}
-
-function is_vacuum(q) {
-    return q[1] == undefined;
-}
-
-/**
- * 
- */
-
-function adjust_frame(canvas_axes_list) {
-    let [_, y_arrays] = compute_fields(duration);
-    let bounds;
-    let delta;
+let qq_max_init, qq_max_target, frame_start_clock;
+function adjust_frame() {
+    let [x_array, y_arrays] = compute_fields(duration);
+    let bounds, delta, y_value;
+    qq_max_init = qq_max.slice();
+    qq_max_target = qq_max.slice();
 
     for (f = 0; f < y_arrays.length; f++) {
         bounds = [+Infinity, -Infinity];
         for (i = 0; i < y_arrays[f].length; i++) {
-            bounds[0] = Math.min(bounds[0], y_arrays[f][i]);
-            bounds[1] = Math.max(bounds[1], y_arrays[f][i]);
+            y_value = y_arrays[f][i];
+            if (y_arrays[1][i] != undefined) bounds[0] = Math.min(bounds[0], y_value);
+            if (y_arrays[1][i] != undefined) bounds[1] = Math.max(bounds[1], y_value);
+            // console.log(f, i, x_array[i], bounds);
         }
         delta = bounds[1] - bounds[0];
         if (delta < EPS) delta = 0.25 * bounds[0];
-        qq_max[2*f + 0] = bounds[0] - 0.1 * delta;
-        qq_max[2*f + 1] = bounds[1] + 0.1 * delta;
-
-        if (f == 2) console.log(delta, bounds, qq_max);
+        console.log("  ", f, bounds, y_arrays[f].length);
+        qq_max_target[2*f + 0] = bounds[0] - 0.1 * delta;
+        qq_max_target[2*f + 1] = bounds[1] + 0.1 * delta;
+        console.log("  ", f, bounds, qq_max_target);
     }
+
+
+    // Clip to zero for nonegative fields
+    if (state_map[0] != "R1") qq_max_target[2*0 + 0] = Math.max(qq_max_target[2*0 + 0], 0.);
+    if (state_map[1] == "c")  qq_max_target[2*1 + 0] = Math.max(qq_max_target[2*1 + 0], 0.);
+    if (state_map[2] != "R3") qq_max_target[2*2 + 0] = Math.max(qq_max_target[2*2 + 0], 0.);
+
+    console.log(qq_max_target);
+    requestAnimationFrame(move_frame);
+    // set_transforms();
+    // set_backgrounds_1(...canvas_axes_list);
+    // setup_animation();
+}
+
+function easing(t) {
+    let s = 1. - t;
+    return t*t*t * (10. * s * s + 5. * s * t + t * t);
+}
+
+function move_frame(current_clock) {
+    if (frame_start_clock == undefined) {
+        frame_start_clock = current_clock;
+    }
+    
+    let t = (current_clock - frame_start_clock) / 1000.;
+    if (1. < t) {
+        t = 1.;
+        frame_start_clock = undefined;
+    } else {
+        requestAnimationFrame(move_frame);
+    }
+
+    t = easing(t);
+    for (i = 0; i < 6; i++) {
+        qq_max[i] = qq_max_init[i] * (1. - t) + t * qq_max_target[i];
+    }
+
+    let canvas_axes_list = [
+        document.getElementById("canvas1A_Axes"),
+        document.getElementById("canvas1B_Axes"),
+        document.getElementById("canvas1C_Axes"),
+    ]
 
     set_transforms();
     set_backgrounds_1(...canvas_axes_list);
@@ -601,7 +612,7 @@ function setup_animation() {
         document.getElementById("canvas1C"),
     ]
     let canvas, ctx;
-    let [x_array, y_arrays] = compute_fields(0.)
+    let [x_array, y_arrays] = compute_fields(last_t);
     let tsfms = [tsfm1A, tsfm1B, tsfm1C];
 
     for (f = 0; f < 3; f++) {
@@ -619,13 +630,17 @@ function setup_animation() {
     
     // draw_physics([0., 0., 0., 0.], [], []);
 
+    set_time_cursor(last_t);
+
     canvas = document.getElementById("canvas3");
-    draw_characteristics(canvas, tsfm3, 0.);
+    draw_characteristics(canvas, tsfm3, last_t);
 }
 
-/**
- * CORE OF THE ANIMATION
- */
+function set_time_cursor(t) {
+    document.getElementById("range_t").value = t;
+    document.getElementById("text_t").innerText = "t = " + (Math.round(100*t)/100).toFixed(2).padStart(4, ' ');
+}
+
 function animate(current_clock) {
 
     const canvas_list = [
@@ -645,9 +660,8 @@ function animate(current_clock) {
     }
 
     // Update t range
-    document.getElementById("range_t").value = t;
-    document.getElementById("text_t").innerText = "t = " + (Math.round(100*t)/100).toFixed(2).padStart(4, ' ');
-    
+    set_time_cursor(t);
+
     // Do the plots !
     const dx_ref = px_per_step / tsfm1A[0];
     let [x_array, y_arrays] = compute_fields(t)
@@ -683,20 +697,90 @@ function animate(current_clock) {
 
 }
 
-function map_primitive(q, state_map) {
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////  -  DO THE MATHS AND DRAW THE PHYSICS  -  //////////////////////////
+
+function set_vaccum(q) {
+    q[0] = 0.;
+    q[1] = undefined;
+    q[2] = 0.;
+}
+
+function is_vacuum(q) {
+    return q[1] == undefined;
+}
+
+function set_state_speeds(q, which) {
+    if (is_vacuum(q)) {
+        c_speeds[which] = undefined;
+        lambdas[which] = [undefined, undefined, undefined];        
+    } else {
+        c_speeds[which] = Math.sqrt(G * q[2] / q[0]);
+        lambdas[which] = [q[1] - c_speeds[which], q[1], q[1] + c_speeds[which]];
+    }
+}
+
+function set_middle_density(q_mid, q_ext, wave) {
+    if (wave == "N") {  // Vacuum external state
+        set_vaccum(q_mid);
+    } else {
+        let pp = q_mid[2] / q_ext[2];
+        if (wave == "R") {  // Rarefaction wave
+            q_mid[0] = q_ext[0] * Math.pow(pp, 1./G);
+        } else {  // wave == "S" for Shock wave
+            let alpha = (G - 1.) / (G + 1.);
+            q_mid[0] = q_ext[0] * (pp + alpha) / (pp * alpha + 1.);
+        }
+    }
+}
+
+function compute_s(which) {
+    let p_star = ql[2];  // equal to qr[2]
+    if (which == 1) {
+        let [rho, u, p] = qL;
+        return u - c_speeds[0] * Math.sqrt((G+1)/(2*G) * p_star/p + (G-1)/(2*G));
+    } else {
+        let [rho, u, p] = qR;
+        return u + c_speeds[3] * Math.sqrt((G+1)/(2*G) * p_star/p + (G-1)/(2*G));
+    }
+}
+
+function compute_state_fan(x, t, which) {    
+    let xi, r, u, p, R, U, P;
+    xi = x / t;
+    if (which == 1) { // 1-rarefaction
+        [R, U, P] = qL;
+        r = R * Math.pow(2.0 / (G+1.) + (G-1.) / (G+1.) * (U - xi) / c_speeds[0], 2./(G-1.));
+        u = 2. / (G+1.) * (xi + c_speeds[0] + (G-1.) / 2. * U);
+        p = P * Math.pow(2.0 / (G+1.) + (G-1.) / (G+1.) * (U - xi) / c_speeds[0], 2.*G/(G-1.));
+    } else {  // 3-rarefaction
+        [R, U, P] = qR;
+        r = R * Math.pow(2.0 / (G+1.) - (G-1.) / (G+1.) * (U - xi) / c_speeds[3], 2./(G-1.));
+        u = 2. / (G+1.) * (xi - c_speeds[3] + (G-1.) / 2. * U);
+        p = P * Math.pow(2.0 / (G+1.) - (G-1.) / (G+1.) * (U - xi) / c_speeds[3], 2.*G/(G-1.));
+    }
+    return [r, u, p]
+}
+
+function map_primitive(q) {
     let [r, u, p] = q;
     let v1, v2, v3;
 
-    if (state_map[0] == "P") v1 = r;
-    else if (state_map[0] == "R") v1 = u + 2. * Math.sqrt(G*p/r) / (G - 1.);
+    if (state_map[0] == "r") v1 = r;
+    else if (state_map[0] == "R1") v1 = u + 2. * Math.sqrt(G * p / r) / (G - 1.);
+    else if (state_map[0] == "s") v1 = Math.log(p / r**G);
 
-    if (state_map[1] == "P") v2 = u;
-    else if (state_map[1] == "R") v2 = u;
-    else if (state_map[1] == "C") v2 = r * u;
+    if (state_map[1] == "u") v2 = u;
+    else if (state_map[1] == "ru") v2 = r * u;
+    else if (state_map[1] == "c") v2 = Math.sqrt(G * p / r);
 
-    if (state_map[2] == "P") v3 = p;
-    else if (state_map[2] == "R") v3 = u - 2. * Math.sqrt(G*p/r) / (G - 1);
-    else if (state_map[2] == "C") v3 = 0.5 * r * u * u + r * e / (G - 1.);
+    if (state_map[2] == "p") v3 = p;
+    else if (state_map[2] == "E") v3 = 0.5 * r * u * u + p / (G - 1.);
+    else if (state_map[2] == "R3") v3 = u - 2. * Math.sqrt(G*p/r) / (G - 1);
+    else if (state_map[2] == "e") v3 = p / ((G - 1.) * r);
+    else if (state_map[2] == "H") v3 = G * p / (r * (G - 1.)) + 0.5 * u * u;
+    else if (state_map[2] == "h") v3 = G * p / (r * (G - 1.));
 
     return [v1, v2, v3];
 }
@@ -712,78 +796,87 @@ function compute_fields(t) {
     let y_array = [];
     // let y_array = [[], [], []];
     let q_map;
-    let state_map = ["P", "P", "P"];
     
     // Add left state
     x_array.push(-x_max);
-    q_map = map_primitive(qL, state_map);
+    q_map = map_primitive(qL);
     y_array.push(q_map);
 
     if (t < EPS) {
 
         x_array.push(0., 0.);
-        q_map = map_primitive(qL, state_map);
+        q_map = map_primitive(qL);
         y_array.push(q_map);
-        q_map = map_primitive(qR, state_map);
+        q_map = map_primitive(qR);
         y_array.push(q_map);
 
     } else {
       
-        // Start of 1-wave
-        x_array.push(positions[0]);
-        y_array.push(q_map);
+        // Start of 1-wave, if qL non-vacuum
+        if (wave_type[0] != "N") {
+            x_array.push(positions[0]);
+            y_array.push(q_map);
+        }
 
         // 1-wave
         if (wave_type[0] == "R") {
             n_step = Math.ceil((positions[1] - positions[0]) / dx_ref);
+            n_step = Math.max(100, n_step);
             dx = (positions[1] - positions[0]) / n_step;
             for (i = 1; i <= n_step; i++) {
                 x = positions[0] + i * dx;
                 q_map = compute_state_fan(x, t, 1);
-                q_map = map_primitive(q_map, state_map);
+                q_map = map_primitive(q_map);
                 x_array.push(x);
                 y_array.push(q_map);
             }
-        } else {
-            q_map = map_primitive(ql, state_map);
+        } else if (wave_type[0] == "S") {
+            q_map = map_primitive(ql);
             x_array.push(positions[1]);
             y_array.push(q_map);
         }
 
-        // Left of contact-wave
-        q_map = map_primitive(ql, state_map);
-        x_array.push(positions[2]);
-        y_array.push(q_map);
+        // Contact-wave, when ql/qr non-vacuum
+        if (!is_vacuum(qr)) {
+            // Left of contact-wave
+            q_map = map_primitive(ql);
+            x_array.push(positions[2]);
+            y_array.push(q_map);
 
-        // Right of contact-wave
-        q_map = map_primitive(qr, state_map);
-        x_array.push(positions[2]);
-        y_array.push(q_map);
+            // Right of contact-wave
+            q_map = map_primitive(qr);
+            x_array.push(positions[2]);
+            y_array.push(q_map);
 
-        // Start of 3-wave
-        x_array.push(positions[3]);
-        y_array.push(q_map);
-
-        // 3-wave
-        if ((wave_type[1] == "S") && (EPS < t)) {
-            q_map = map_primitive(qR, state_map);
+        }
+        
+        // Start of 3-wave, if qR non-vacuum
+        if (wave_type[1] != "N") {
             x_array.push(positions[3]);
             y_array.push(q_map);
-        } else if (EPS < t) {
+        }
+
+        // 3-wave
+        if (wave_type[1] == "R") {
             n_step = Math.ceil((positions[4] - positions[3]) / dx_ref);
+            n_step = Math.max(100, n_step);
             dx = (positions[4] - positions[3]) / n_step;
             for (i = 1; i <= n_step; i++) {
                 x = positions[3] + i * dx;
                 q_map = compute_state_fan(x, t, 3);
-                q_map = map_primitive(q_map, state_map);
+                q_map = map_primitive(q_map);
                 x_array.push(x);
                 y_array.push(q_map);
             }
+        } else if (wave_type[1] == "S") {
+            q_map = map_primitive(qR);
+            x_array.push(positions[3]);
+            y_array.push(q_map);
         }
     }
 
     // Right state
-    q_map = map_primitive(qR, state_map);
+    q_map = map_primitive(qR);
     x_array.push(x_max);
     y_array.push(q_map);
     
@@ -822,9 +915,9 @@ function draw_field(canvas, tsfm, x, y) {
     ctx.restore();
 }
 
-/**
- * 
- */
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////  -  FIND MIDDLE STATE  -  //////////////////////////////////
 
 function find_middle_state(qL, qR) {
     /**
@@ -913,6 +1006,10 @@ function find_middle_state(qL, qR) {
     
     return [f1(x), x];  // (velocity, pressure)
 }
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////  -  HUGONIOT LOCI AND INTEGRAL CURVES  -  //////////////////////////
 
 function draw_loci(canvas, tsfm) {
     canvas.getContext("2d").clearRect(0, 0, canvas.width, canvas.height);
@@ -1127,6 +1224,10 @@ function display_middle_state(canvas, mode) {
     ctx.restore();
 }
 
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////  -  CHARACTERISTICS  -  ///////////////////////////////////
+
 function draw_characteristics(canvas, tsfm, t=0.) {
     let ctx = canvas.getContext("2d");
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -1206,39 +1307,6 @@ function dist_pt_pt(p, q, tsfm) {
     return Math.hypot(tsfm[0]*(p[0] - q[0]), tsfm[3]*(p[1] - q[1]));
 }
 
-function draw_entropic(ctx, tsfm, color) {
-    const normal = 1 * LW;
-    const bold =  3. * LW;
-
-    let nc = 15;  // number of characteristics on each side
-    let xi_max = 1.5 * x_max;
-    let dx = xi_max / nc;
-    let xi;
-
-    let ref_dist = 25;  // max nb pixels away from which to highlight the curve
-    let min_dist = 2 * ref_dist;  // initialize higher than ref_dist
-    let cur_dist, xi_close, kind;
-    
-    // Draw 1-characteristic or 3-characteristic
-    for (side = -1; side <= 1; side += 2) {
-        for (i = 0; i < nc; i++) {
-            xi = side * (0.5 * dx + Math.floor(i) * dx);
-            cur_dist = draw_one_entropic_char(ctx, tsfm, xi, color, normal);
-            if (cur_dist < min_dist) {
-                min_dist = cur_dist;
-                xi_close = xi;
-                kind = "classic";
-            }
-        }
-    }
-
-    // Draw the closest one to the pointer with bold curve
-    if ((kind == "classic") && (min_dist < ref_dist)) 
-        draw_one_entropic_char(ctx, tsfm, xi_close, color, bold);
-    
-    return;
-}
-
 function draw_acoustic(ctx, tsfm, which, color) {
     
     const normal = 1 * LW;
@@ -1287,6 +1355,39 @@ function draw_acoustic(ctx, tsfm, which, color) {
         draw_one_acoustic_char(ctx, tsfm, which, xi_close, color, bold);
     else if ((kind == "fan") && (min_dist < ref_dist))
         draw_one_acoustic_fan(ctx, tsfm, which, xi_close, color, bold); 
+    
+    return;
+}
+
+function draw_entropic(ctx, tsfm, color) {
+    const normal = 1 * LW;
+    const bold =  3. * LW;
+
+    let nc = 15;  // number of characteristics on each side
+    let xi_max = 1.5 * x_max;
+    let dx = xi_max / nc;
+    let xi;
+
+    let ref_dist = 25;  // max nb pixels away from which to highlight the curve
+    let min_dist = 2 * ref_dist;  // initialize higher than ref_dist
+    let cur_dist, xi_close, kind;
+    
+    // Draw 1-characteristic or 3-characteristic
+    for (side = -1; side <= 1; side += 2) {
+        for (i = 0; i < nc; i++) {
+            xi = side * (0.5 * dx + Math.floor(i) * dx);
+            cur_dist = draw_one_entropic_char(ctx, tsfm, xi, color, normal);
+            if (cur_dist < min_dist) {
+                min_dist = cur_dist;
+                xi_close = xi;
+                kind = "classic";
+            }
+        }
+    }
+
+    // Draw the closest one to the pointer with bold curve
+    if ((kind == "classic") && (min_dist < ref_dist)) 
+        draw_one_entropic_char(ctx, tsfm, xi_close, color, bold);
     
     return;
 }
@@ -1480,7 +1581,10 @@ function draw_one_entropic_char(ctx, tsfm, xi, color, lw) {
     return min_dist;
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////  -  BACKGROUNDS  -  /////////////////////////////////////
+
 function display_supersonic(ctx, qs, color) {
 
     function compute_xy(rho, t, d) {
@@ -1535,9 +1639,21 @@ function display_supersonic(ctx, qs, color) {
  */
 
 function set_backgrounds_1(cv1A, cv1B, cv1C) {
-    set_background_1(cv1A, tsfm1A, "\u03C1");
-    set_background_1(cv1B, tsfm1B, "u");
-    set_background_1(cv1C, tsfm1C, "p");
+
+    set_background_1(cv1A, tsfm1A, state_labels[0]);
+    set_background_1(cv1B, tsfm1B, state_labels[1]);
+    set_background_1(cv1C, tsfm1C, state_labels[2]);
+
+    // Draw horizontal line of zero velocity
+    let ctx = cv1B.getContext("2d");
+    ctx.save();
+    ctx.strokeStyle = COLORS[0];
+    ctx.lineWidth = 2. * LW;
+    ctx.beginPath();
+    ctx.moveTo(0., tsfm1B[5]);
+    ctx.lineTo(cv1B.width, tsfm1B[5]);
+    ctx.stroke();
+    ctx.restore();
 }
 
 function set_background_1(canvas, tsfm, label) {
@@ -1546,7 +1662,20 @@ function set_background_1(canvas, tsfm, label) {
     const w = canvas.width;
     const s = origin_shift;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    draw_axes(canvas, ctx, [tsfm[4], tsfm[5]], tsfm[0], -tsfm[3], ["x", label], 1.);
+    // draw_axes(canvas, ctx, [tsfm[4], tsfm[5]], tsfm[0], -tsfm[3], ["x", label], 1.);
+ 
+    let kwargs = {
+        // "ticks": "bottom",
+        // "ticklabels": true,
+        // "label": "x",
+        "fontsize": 1. * window.innerWidth / 200.,
+        "color": COLORS[5],
+        "unit": "",
+    }
+    draw_ext_axes(canvas, ctx, tsfm, "x", ["bottom", true, "x"], kwargs);
+    draw_ext_axes(canvas, ctx, tsfm, "x", ["top", false, ""], kwargs);
+    draw_ext_axes(canvas, ctx, tsfm, "y", ["left", true, label], kwargs);
+    draw_ext_axes(canvas, ctx, tsfm, "y", ["right", false, ""], kwargs);
 }
 
 function set_background_2(canvas) {
@@ -1556,7 +1685,7 @@ function set_background_2(canvas) {
     const w = canvas.width;
     const s = origin_shift;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    draw_axes(canvas, ctx, [w / 2., h * (1 - s)], tsfm2[0], -tsfm2[3], ["u", "p"], 1.);
+    draw_axes(canvas, ctx, [w / 2., h * (1 - s)], tsfm2[0], -tsfm2[3], ["u", "p"], 1., COLORS[5]);
 }
 
 function set_background_3(canvas) {
@@ -1565,10 +1694,10 @@ function set_background_3(canvas) {
     const w = canvas.width;
     const s = origin_shift;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    draw_axes(canvas, ctx, [w / 2., h * (1 - s)], tsfm3[0], -tsfm3[3], ["x", "t"], 1.);
+    draw_axes(canvas, ctx, [w / 2., h * (1 - s)], tsfm3[0], -tsfm3[3], ["x", "t"], 1., COLORS[5]);
 }
 
-function draw_axes(canvas, ctx, origin, dx, dy, labels, k=1., color=COLORS[4] + "80") {
+function draw_axes(canvas, ctx, origin, dx, dy, labels, k=1., color=COLORS[0]) {
     // dx = length in px of a unit
 
     var ctx = canvas.getContext("2d");
@@ -1610,7 +1739,7 @@ function draw_axes(canvas, ctx, origin, dx, dy, labels, k=1., color=COLORS[4] + 
                     tick_size = 6;
                 }
                 ctx.beginPath();
-                ctx.lineWidth = 1 * LW;
+                ctx.lineWidth = 1. * LW;
                 // Draw a tick mark
                 ctx.moveTo(x_pm[j], origin[1] - tick_size / 2.);
                 ctx.lineTo(x_pm[j], origin[1] + tick_size / 2.);
@@ -1664,6 +1793,82 @@ function draw_axes(canvas, ctx, origin, dx, dy, labels, k=1., color=COLORS[4] + 
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
     ctx.fillText(labels[1], origin[0] + w * 0.02, 0.01 * w);  // y-label
+
+    ctx.restore();
+}
+
+function draw_ext_axes(canvas, ctx, tsfm, which, args, kwargs) {
+    // dx = length in px of a unit
+
+    var ctx = canvas.getContext("2d");
+    const canvas_L = (which == "x") ? canvas.width : canvas.height;
+    let [ticks, ticklabels, axis_label] = args;
+    
+    let [unit_px, shift, sign] = (which == "x") ? [tsfm[0], tsfm[4], 1] : [tsfm[3], tsfm[5], -1];
+    let base_1, base_2, base_5, base, n_ticks_per_label, delta, label, tick_size;
+    
+    ctx.save();
+    ctx.fillStyle = kwargs["color"];
+    ctx.strokeStyle = kwargs["color"];
+    ctx.font = kwargs["fontsize"] + 'px Arial';
+    ctx.lineWidth = 1. * LW;
+
+    // Ticks marks along the X-axis
+    base_1 = 1 * Math.pow(10, Math.ceil(Math.log10(min_pixel_per_unit / (1*Math.abs(unit_px)))));
+    base_2 = 2 * Math.pow(10, Math.ceil(Math.log10(min_pixel_per_unit / (2*Math.abs(unit_px)))));
+    base_5 = 5 * Math.pow(10, Math.ceil(Math.log10(min_pixel_per_unit / (5*Math.abs(unit_px)))));
+    base = Math.min(base_1, base_2, base_5);
+    n_ticks_per_label = (base_2 == base) ? 4 : 5;
+    delta = base / n_ticks_per_label;    
+    
+    let corner_coord = -shift / unit_px;
+    let k_start, coord, coords;
+    
+    // K_start = Math.ceil(corner_coord / base);
+    k_start = (which == "x") ? Math.ceil(corner_coord / delta) : Math.floor(corner_coord / delta);
+
+    let positioning;
+    if ((which == "x") && (ticks == "top"))    positioning = [            0, +1, "top"   , "center"];
+    if ((which == "x") && (ticks == "bottom")) positioning = [canvas.height, -1, "bottom", "center"];
+    if ((which == "y") && (ticks == "left"))   positioning = [            0, +1, "middle", "right" ];
+    if ((which == "y") && (ticks == "right"))  positioning = [ canvas.width, -1, "middle", "left"  ];
+    let [where, dir, txt_v, txt_h] = positioning;
+
+    for(i=k_start; shift + i * delta * unit_px <= canvas_L; i += sign) {
+        coord = shift + i * delta * unit_px;
+
+        // Text value at that point
+        if ((i % n_ticks_per_label == 0) && ticklabels 
+            && (0.02 * canvas_L < coord) && (coord < canvas_L * 0.98)) 
+            {
+            ctx.textAlign = txt_h;
+            ctx.textBaseline = txt_v;
+            label = Math.round(i * delta * 1e6) / 1e6 + kwargs["unit"];
+            tick_size = 7;
+            coords = (which == "x") ? [coord, where + dir*tick_size] : [where + 3*dir*tick_size, coord];
+            ctx.fillText(label, coords[0], coords[1]);
+        } else {
+            tick_size = 4;
+        }
+        ctx.beginPath();
+        coords = (which == "x") ? [coord, where] : [where, coord];
+        ctx.moveTo(...coords);
+        coords = (which == "x") ? [coord, where + dir*tick_size] : [where + dir*tick_size, coord];
+        ctx.lineTo(...coords);
+        ctx.stroke();
+    }
+
+    // Label axes
+    ctx.font = (2.5 * kwargs["fontsize"]) + 'px Arial';
+    if ((which == "x") && (ticks == "bottom")) {
+        ctx.textAlign = "right";
+        ctx.textBaseline = "bottom";
+        ctx.fillText(axis_label, canvas.width * 0.98, canvas.height * 0.98);
+    } else if ((which == "y") && (ticks == "left")) {
+        ctx.textAlign = "left";
+        ctx.textBaseline = "top";
+        ctx.fillText(axis_label, canvas.width * 0.015, canvas.height * 0.02);
+    }
 
     ctx.restore();
 }
