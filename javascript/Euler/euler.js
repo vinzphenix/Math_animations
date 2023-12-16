@@ -1,9 +1,9 @@
+// TODO : 
+// axes, zoom, pan canvas2
+// draw physics
+
 // Layout parameters
 const LW = window.innerWidth / 2000;  // line width
-const ORANGE = "#fa7e19";
-const BLUE = "#2d70b3";
-const RED = "#c74440";
-const GREEN = "#388c46";
 const COLORS = [
     "#2e3440", "#3b4252", "#434c5e", "#4c566a", 
     "#d8dee9", "#e5e9f0", "#eceff4", 
@@ -17,7 +17,6 @@ const min_pixel_per_unit = 60;
 const dot_state_radius = 10 * LW;  // same as locus dot size
 const px_per_step = 10;  // discretization of curves
 const n_speed_lines = 20;  // number of speed lines
-const GRAVITY = 9.81;
 
 let G = 1.4;
 let G1 = (G + 1.)/(G - 1);
@@ -25,13 +24,8 @@ let G2 = 2. * G / (G - 1.);
 let G3 = 2. * G * (G - 1.);
 
 let x_max = 8.;
-let y_max;
 let qq_max = [0., 2., -1., 1., 0., 1.];
 let q_max = [-20., 20., 0., 40.];  // [q1, q2] max values
-let f_max = [0.5*GRAVITY**1.5, 2*GRAVITY**2];  // [q1, q2] max values
-let px_grid_size_x;  // nb of px
-let px_grid_size_y;  // nb of px
-
 let tsfm1A, tsfm1B, tsfm1C, tsfm2, tsfm3;
 
 // Interaction parameters
@@ -47,13 +41,13 @@ let state_labels = ["\u03C1", "u", "p"];
 let anim_state = "init";  // init, play, pause, end
 let last_clock = null;
 let last_t = 0.;
-let duration = 1.;
+let duration = 2.;
 let speedup = 0.5;
 let x_speed_lines = [];
 
 // State parameters
-let qL = [1., -3., 30.];  // left state
-let qR = [2., -1., 4.];  // right state
+let qL = [1., +0., 1];  // left state
+let qR = [.125, +0., .1];  // right state
 let ql = [0., +0., 0.];  // middle left state (just for initialization)
 let qr = [0., +0., 0.];  // middle right state (just for initialization)
 
@@ -547,23 +541,18 @@ function adjust_frame() {
             y_value = y_arrays[f][i];
             if (y_arrays[1][i] != undefined) bounds[0] = Math.min(bounds[0], y_value);
             if (y_arrays[1][i] != undefined) bounds[1] = Math.max(bounds[1], y_value);
-            // console.log(f, i, x_array[i], bounds);
         }
         delta = bounds[1] - bounds[0];
-        if (delta < EPS) delta = 0.25 * bounds[0];
-        console.log("  ", f, bounds, y_arrays[f].length);
+        if (delta < 1.e-8) delta = Math.max(0.25 * bounds[0], 11.)
         qq_max_target[2*f + 0] = bounds[0] - 0.1 * delta;
         qq_max_target[2*f + 1] = bounds[1] + 0.1 * delta;
-        console.log("  ", f, bounds, qq_max_target);
     }
 
-
     // Clip to zero for nonegative fields
-    if (state_map[0] != "R1") qq_max_target[2*0 + 0] = Math.max(qq_max_target[2*0 + 0], 0.);
+    if (state_map[0] == "r") qq_max_target[2*0 + 0] = Math.max(qq_max_target[2*0 + 0], 0.);
     if (state_map[1] == "c")  qq_max_target[2*1 + 0] = Math.max(qq_max_target[2*1 + 0], 0.);
     if (state_map[2] != "R3") qq_max_target[2*2 + 0] = Math.max(qq_max_target[2*2 + 0], 0.);
 
-    console.log(qq_max_target);
     requestAnimationFrame(move_frame);
     // set_transforms();
     // set_backgrounds_1(...canvas_axes_list);
@@ -767,20 +756,24 @@ function map_primitive(q) {
     let [r, u, p] = q;
     let v1, v2, v3;
 
+    let c = (is_vacuum(q)) ? 0. : Math.sqrt(G * p / r);
+    let p_r = (is_vacuum(q)) ? 0. : p / r;
+    let s = (is_vacuum(q)) ? 0. : Math.log(p / r**G);
+
     if (state_map[0] == "r") v1 = r;
-    else if (state_map[0] == "R1") v1 = u + 2. * Math.sqrt(G * p / r) / (G - 1.);
-    else if (state_map[0] == "s") v1 = Math.log(p / r**G);
+    else if (state_map[0] == "R1") v1 = u + 2. * c / (G - 1.);
+    else if (state_map[0] == "s") v1 = (is_vacuum(q)) ? undefined : Math.log(p / r**G);
 
     if (state_map[1] == "u") v2 = u;
     else if (state_map[1] == "ru") v2 = r * u;
-    else if (state_map[1] == "c") v2 = Math.sqrt(G * p / r);
+    else if (state_map[1] == "c") v2 = c;
 
     if (state_map[2] == "p") v3 = p;
     else if (state_map[2] == "E") v3 = 0.5 * r * u * u + p / (G - 1.);
-    else if (state_map[2] == "R3") v3 = u - 2. * Math.sqrt(G*p/r) / (G - 1);
-    else if (state_map[2] == "e") v3 = p / ((G - 1.) * r);
-    else if (state_map[2] == "H") v3 = G * p / (r * (G - 1.)) + 0.5 * u * u;
-    else if (state_map[2] == "h") v3 = G * p / (r * (G - 1.));
+    else if (state_map[2] == "R3") v3 = u - 2. * c / (G - 1);
+    else if (state_map[2] == "e") v3 = p_r / (G - 1.);
+    else if (state_map[2] == "H") v3 = G * p_r / (G - 1.) + 0.5 * u * u;
+    else if (state_map[2] == "h") v3 = G * p_r / (G - 1.);
 
     return [v1, v2, v3];
 }
@@ -798,32 +791,33 @@ function compute_fields(t) {
     let q_map;
     
     // Add left state
-    x_array.push(-x_max);
-    q_map = map_primitive(qL);
-    y_array.push(q_map);
+    if (!is_vacuum(qL)) {
+        x_array.push(-x_max);
+        q_map = map_primitive(qL);
+        y_array.push(q_map);
+    }
 
     if (t < EPS) {
 
-        x_array.push(0., 0.);
-        q_map = map_primitive(qL);
-        y_array.push(q_map);
-        q_map = map_primitive(qR);
-        y_array.push(q_map);
-
-    } else {
-      
-        // Start of 1-wave, if qL non-vacuum
-        if (wave_type[0] != "N") {
-            x_array.push(positions[0]);
+        if (!is_vacuum(qL)) {
+            x_array.push(0.);
+            q_map = map_primitive(qL);
             y_array.push(q_map);
         }
+        if (!is_vacuum(qR)) {
+            x_array.push(0.);
+            q_map = map_primitive(qR);
+            y_array.push(q_map);
+        }
+
+    } else {
 
         // 1-wave
         if (wave_type[0] == "R") {
             n_step = Math.ceil((positions[1] - positions[0]) / dx_ref);
             n_step = Math.max(100, n_step);
             dx = (positions[1] - positions[0]) / n_step;
-            for (i = 1; i <= n_step; i++) {
+            for (i = 0; i <= n_step; i++) {
                 x = positions[0] + i * dx;
                 q_map = compute_state_fan(x, t, 1);
                 q_map = map_primitive(q_map);
@@ -831,6 +825,9 @@ function compute_fields(t) {
                 y_array.push(q_map);
             }
         } else if (wave_type[0] == "S") {
+            x_array.push(positions[0]);
+            q_map = map_primitive(qL);
+            y_array.push(q_map);
             q_map = map_primitive(ql);
             x_array.push(positions[1]);
             y_array.push(q_map);
@@ -849,19 +846,13 @@ function compute_fields(t) {
             y_array.push(q_map);
 
         }
-        
-        // Start of 3-wave, if qR non-vacuum
-        if (wave_type[1] != "N") {
-            x_array.push(positions[3]);
-            y_array.push(q_map);
-        }
 
         // 3-wave
         if (wave_type[1] == "R") {
             n_step = Math.ceil((positions[4] - positions[3]) / dx_ref);
             n_step = Math.max(100, n_step);
             dx = (positions[4] - positions[3]) / n_step;
-            for (i = 1; i <= n_step; i++) {
+            for (i = 0; i <= n_step; i++) {
                 x = positions[3] + i * dx;
                 q_map = compute_state_fan(x, t, 3);
                 q_map = map_primitive(q_map);
@@ -869,6 +860,9 @@ function compute_fields(t) {
                 y_array.push(q_map);
             }
         } else if (wave_type[1] == "S") {
+            x_array.push(positions[3]);
+            q_map = map_primitive(qr);
+            y_array.push(q_map);
             q_map = map_primitive(qR);
             x_array.push(positions[3]);
             y_array.push(q_map);
@@ -876,10 +870,12 @@ function compute_fields(t) {
     }
 
     // Right state
-    q_map = map_primitive(qR);
-    x_array.push(x_max);
-    y_array.push(q_map);
-    
+    if (!is_vacuum(qR)) {
+        q_map = map_primitive(qR);
+        x_array.push(x_max);
+        y_array.push(q_map);
+    }
+
     // transpose stuff
     let y_tsp = [[], [], []];
     for (i = 0; i < y_array.length; i++) {
@@ -1279,8 +1275,8 @@ function draw_characteristics(canvas, tsfm, t=0.) {
 
     if ((EPS < t) && (t + EPS < duration)) {
         ctx.lineWidth = 5 * LW;
-        // ctx.strokeStyle = "#999999b0";
-        ctx.strokeStyle = COLORS[4];
+        ctx.setLineDash([]);
+        ctx.strokeStyle = COLORS[6] + "80";
         ctx.beginPath();
         ctx.setTransform(...tsfm);
         ctx.moveTo(-x_max, t);
@@ -1644,16 +1640,6 @@ function set_backgrounds_1(cv1A, cv1B, cv1C) {
     set_background_1(cv1B, tsfm1B, state_labels[1]);
     set_background_1(cv1C, tsfm1C, state_labels[2]);
 
-    // Draw horizontal line of zero velocity
-    let ctx = cv1B.getContext("2d");
-    ctx.save();
-    ctx.strokeStyle = COLORS[0];
-    ctx.lineWidth = 2. * LW;
-    ctx.beginPath();
-    ctx.moveTo(0., tsfm1B[5]);
-    ctx.lineTo(cv1B.width, tsfm1B[5]);
-    ctx.stroke();
-    ctx.restore();
 }
 
 function set_background_1(canvas, tsfm, label) {
@@ -1676,6 +1662,17 @@ function set_background_1(canvas, tsfm, label) {
     draw_ext_axes(canvas, ctx, tsfm, "x", ["top", false, ""], kwargs);
     draw_ext_axes(canvas, ctx, tsfm, "y", ["left", true, label], kwargs);
     draw_ext_axes(canvas, ctx, tsfm, "y", ["right", false, ""], kwargs);
+
+
+    // Draw horizontal line of zero velocity
+    ctx.save();
+    ctx.strokeStyle = COLORS[0];
+    ctx.lineWidth = 2. * LW;
+    ctx.beginPath();
+    ctx.moveTo(0., tsfm[5]);
+    ctx.lineTo(cv1B.width, tsfm[5]);
+    ctx.stroke();
+    ctx.restore();
 }
 
 function set_background_2(canvas) {
@@ -1830,8 +1827,8 @@ function draw_ext_axes(canvas, ctx, tsfm, which, args, kwargs) {
     let positioning;
     if ((which == "x") && (ticks == "top"))    positioning = [            0, +1, "top"   , "center"];
     if ((which == "x") && (ticks == "bottom")) positioning = [canvas.height, -1, "bottom", "center"];
-    if ((which == "y") && (ticks == "left"))   positioning = [            0, +1, "middle", "right" ];
-    if ((which == "y") && (ticks == "right"))  positioning = [ canvas.width, -1, "middle", "left"  ];
+    if ((which == "y") && (ticks == "left"))   positioning = [            0, +1, "middle", "left" ];
+    if ((which == "y") && (ticks == "right"))  positioning = [ canvas.width, -1, "middle", "right"  ];
     let [where, dir, txt_v, txt_h] = positioning;
 
     for(i=k_start; shift + i * delta * unit_px <= canvas_L; i += sign) {
@@ -1845,7 +1842,7 @@ function draw_ext_axes(canvas, ctx, tsfm, which, args, kwargs) {
             ctx.textBaseline = txt_v;
             label = Math.round(i * delta * 1e6) / 1e6 + kwargs["unit"];
             tick_size = 7;
-            coords = (which == "x") ? [coord, where + dir*tick_size] : [where + 3*dir*tick_size, coord];
+            coords = (which == "x") ? [coord, where + dir*tick_size] : [where + 1.25*dir*tick_size, coord];
             ctx.fillText(label, coords[0], coords[1]);
         } else {
             tick_size = 4;
