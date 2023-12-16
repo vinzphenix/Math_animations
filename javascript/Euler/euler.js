@@ -36,6 +36,7 @@ let hoover_position_q = [-1., 0.];
 let hoover_position_xt = [undefined, undefined];
 let state_map = ["r", "u", "p"];
 let state_labels = ["\u03C1", "u", "p"];
+let key_active = {"shift": false, "ctrl": false};
 
 // Animation parameters
 let anim_state = "init";  // init, play, pause, end
@@ -93,8 +94,8 @@ function set_transforms() {
 
     tsfm2 = [
         cv2.width / (q_max[1] - q_max[0]), 0.,
-        0., -cv2.height / (q_max[3] - q_max[2]) * (1. - origin_shift), 
-        cv2.width / 2., cv2.height * (1. - origin_shift),
+        0., -cv2.height / (q_max[3] - q_max[2]), 
+        cv2.width / 2., cv2.height,
     ];
     tsfm3 = [
         cv3.width / (2. * x_max), 0., 
@@ -221,9 +222,11 @@ function handle_inputs(canvas_axes, canvas_list) {
     // Drag and drop left and right states in state space
     canvas2.addEventListener('mousedown', function(e){
         if (anim_state == "init") mouse_select_state(e, tsfm2);
+        if (e.ctrlKey) console.log("pan");
     });
     canvas2.addEventListener('mousemove', function(e){
         if (anim_state == "init") mouse_move_state(e, canvas_list);
+        if (e.ctrlKey) console.log("panning");
     });
     canvas2.addEventListener('mouseup', (e) => {
         // adjust_frame();
@@ -233,7 +236,33 @@ function handle_inputs(canvas_axes, canvas_list) {
         // adjust_frame();
         hoover_position_q[1] = -1;
     });
+
+    window.addEventListener('keydown', (e) => {
+        if (e.ctrlKey) {
+            key_active["ctrl"] = true;
+            canvas2.style.cursor = "grab";
+        }
+    });
+    window.addEventListener('keyup', (e) => {
+        if (e.key == "Control") {
+            key_active["ctrl"] = false;
+            canvas2.style.cursor = "default";
+        }
+    });
     
+    window.addEventListener('keydown', (e) => {
+        if (e.shiftKey) {
+            key_active["shift"] = true;
+            canvas2.style.cursor = "row-resize";
+        }
+    });
+    window.addEventListener('keyup', (e) => {
+        if (e.key == "Shift") {
+            key_active["shift"] = false;
+            canvas2.style.cursor = "default";
+        }
+    });
+
     // Display hoovered characteristics as bold
     canvas3.addEventListener('mousemove', function(e){
         mouse_move_hoover_char(e, canvas3);
@@ -493,6 +522,13 @@ function set_mode(which, value){
     adjust_frame();
 }
 
+function pan_canvas(canvas, canvas_axes, tsfm, dx, dy) {
+    tsfm[4] += dx;
+    tsfm[5] += dy;
+    set_background_2(canvas_axes);
+    draw_loci(canvas, tsfm);
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////  -  MAIN FUNCTIONS FOR INTERACTIVE INTERFACE  -  ///////////////////////
@@ -539,8 +575,8 @@ function adjust_frame() {
         bounds = [+Infinity, -Infinity];
         for (i = 0; i < y_arrays[f].length; i++) {
             y_value = y_arrays[f][i];
-            if (y_arrays[1][i] != undefined) bounds[0] = Math.min(bounds[0], y_value);
-            if (y_arrays[1][i] != undefined) bounds[1] = Math.max(bounds[1], y_value);
+            if (y_value != undefined) bounds[0] = Math.min(bounds[0], y_value);
+            if (y_value != undefined) bounds[1] = Math.max(bounds[1], y_value);
         }
         delta = bounds[1] - bounds[0];
         if (delta < 1.e-8) delta = Math.max(0.25 * bounds[0], 11.)
@@ -737,17 +773,22 @@ function compute_s(which) {
 
 function compute_state_fan(x, t, which) {    
     let xi, r, u, p, R, U, P;
+    let tmp;
     xi = x / t;
     if (which == 1) { // 1-rarefaction
         [R, U, P] = qL;
-        r = R * Math.pow(2.0 / (G+1.) + (G-1.) / (G+1.) * (U - xi) / c_speeds[0], 2./(G-1.));
+        tmp = 2.0 / (G+1.) + (G-1.) / (G+1.) * (U - xi) / c_speeds[0];
+        tmp = Math.max(0., tmp);
+        r = R * Math.pow(tmp, 2./(G-1.));
         u = 2. / (G+1.) * (xi + c_speeds[0] + (G-1.) / 2. * U);
-        p = P * Math.pow(2.0 / (G+1.) + (G-1.) / (G+1.) * (U - xi) / c_speeds[0], 2.*G/(G-1.));
+        p = P * Math.pow(tmp, 2.*G/(G-1.));
     } else {  // 3-rarefaction
         [R, U, P] = qR;
-        r = R * Math.pow(2.0 / (G+1.) - (G-1.) / (G+1.) * (U - xi) / c_speeds[3], 2./(G-1.));
+        tmp = 2.0 / (G+1.) - (G-1.) / (G+1.) * (U - xi) / c_speeds[3];
+        tmp = Math.max(0., tmp);
+        r = R * Math.pow(tmp, 2./(G-1.));
         u = 2. / (G+1.) * (xi - c_speeds[3] + (G-1.) / 2. * U);
-        p = P * Math.pow(2.0 / (G+1.) - (G-1.) / (G+1.) * (U - xi) / c_speeds[3], 2.*G/(G-1.));
+        p = P * Math.pow(tmp, 2.*G/(G-1.));
     }
     return [r, u, p]
 }
@@ -755,25 +796,25 @@ function compute_state_fan(x, t, which) {
 function map_primitive(q) {
     let [r, u, p] = q;
     let v1, v2, v3;
+    let vacuum = (r < EPS) || (p < EPS) || (u == undefined);
 
-    let c = (is_vacuum(q)) ? 0. : Math.sqrt(G * p / r);
-    let p_r = (is_vacuum(q)) ? 0. : p / r;
-    let s = (is_vacuum(q)) ? 0. : Math.log(p / r**G);
+    let c = Math.sqrt(G * p / r);
+    let p_r = p / r;
 
     if (state_map[0] == "r") v1 = r;
-    else if (state_map[0] == "R1") v1 = u + 2. * c / (G - 1.);
-    else if (state_map[0] == "s") v1 = (is_vacuum(q)) ? undefined : Math.log(p / r**G);
+    else if (state_map[0] == "R1") v1 = (vacuum) ? undefined : u + 2. * c / (G - 1.);
+    else if (state_map[0] == "s") v1 = (vacuum) ? undefined : Math.log(p / r**G);
 
     if (state_map[1] == "u") v2 = u;
-    else if (state_map[1] == "ru") v2 = r * u;
-    else if (state_map[1] == "c") v2 = c;
+    else if (state_map[1] == "ru") v2 = (vacuum) ? 0. : r * u;
+    else if (state_map[1] == "c") v2 = (vacuum) ? 0. : c;
 
     if (state_map[2] == "p") v3 = p;
-    else if (state_map[2] == "E") v3 = 0.5 * r * u * u + p / (G - 1.);
-    else if (state_map[2] == "R3") v3 = u - 2. * c / (G - 1);
-    else if (state_map[2] == "e") v3 = p_r / (G - 1.);
-    else if (state_map[2] == "H") v3 = G * p_r / (G - 1.) + 0.5 * u * u;
-    else if (state_map[2] == "h") v3 = G * p_r / (G - 1.);
+    else if (state_map[2] == "E") v3 = (vacuum) ? 0. : 0.5 * r * u * u + p / (G - 1.);
+    else if (state_map[2] == "R3") v3 = (vacuum) ? undefined : u - 2. * c / (G - 1);
+    else if (state_map[2] == "e") v3 = (vacuum) ? 0. : p_r / (G - 1.);
+    else if (state_map[2] == "H") v3 = (vacuum) ? undefined : G * p_r / (G - 1.) + 0.5 * u * u;
+    else if (state_map[2] == "h") v3 = (vacuum) ? 0. : G * p_r / (G - 1.);
 
     return [v1, v2, v3];
 }
@@ -791,24 +832,24 @@ function compute_fields(t) {
     let q_map;
     
     // Add left state
-    if (!is_vacuum(qL)) {
+    // if (!is_vacuum(qL)) {
         x_array.push(-x_max);
         q_map = map_primitive(qL);
         y_array.push(q_map);
-    }
+    // }
 
     if (t < EPS) {
 
-        if (!is_vacuum(qL)) {
+        // if (!is_vacuum(qL)) {
             x_array.push(0.);
             q_map = map_primitive(qL);
             y_array.push(q_map);
-        }
-        if (!is_vacuum(qR)) {
+        // }
+        // if (!is_vacuum(qR)) {
             x_array.push(0.);
             q_map = map_primitive(qR);
             y_array.push(q_map);
-        }
+        // }
 
     } else {
 
@@ -818,9 +859,9 @@ function compute_fields(t) {
             n_step = Math.max(100, n_step);
             dx = (positions[1] - positions[0]) / n_step;
             for (i = 0; i <= n_step; i++) {
-                x = positions[0] + i * dx;
+                x = positions[0] + i * dx - EPS;
                 q_map = compute_state_fan(x, t, 1);
-                q_map = map_primitive(q_map);
+                q_map = map_primitive(q_map);                
                 x_array.push(x);
                 y_array.push(q_map);
             }
@@ -834,7 +875,7 @@ function compute_fields(t) {
         }
 
         // Contact-wave, when ql/qr non-vacuum
-        if (!is_vacuum(qr)) {
+        // if (!is_vacuum(qr)) {
             // Left of contact-wave
             q_map = map_primitive(ql);
             x_array.push(positions[2]);
@@ -845,7 +886,7 @@ function compute_fields(t) {
             x_array.push(positions[2]);
             y_array.push(q_map);
 
-        }
+        // }
 
         // 3-wave
         if (wave_type[1] == "R") {
@@ -853,7 +894,7 @@ function compute_fields(t) {
             n_step = Math.max(100, n_step);
             dx = (positions[4] - positions[3]) / n_step;
             for (i = 0; i <= n_step; i++) {
-                x = positions[3] + i * dx;
+                x = positions[3] + i * dx + EPS;
                 q_map = compute_state_fan(x, t, 3);
                 q_map = map_primitive(q_map);
                 x_array.push(x);
@@ -870,11 +911,11 @@ function compute_fields(t) {
     }
 
     // Right state
-    if (!is_vacuum(qR)) {
+    // if (!is_vacuum(qR)) {
         q_map = map_primitive(qR);
         x_array.push(x_max);
         y_array.push(q_map);
-    }
+    // }
 
     // transpose stuff
     let y_tsp = [[], [], []];
@@ -1201,22 +1242,22 @@ function display_middle_state(canvas, mode) {
         q1_info = (Math.round(100*ql[0])/100).toFixed(2).padStart(4, ' ');
         q2_info = (Math.round(100*qr[0])/100).toFixed(2).padStart(5, ' ');
         info = "\u03C1*l = " + q1_info + "   \u03C1*r = " + q2_info;
-        ctx.textAlign = 'left';
-        position = 0.01 * canvas.width;
+        ctx.textAlign = 'right';
+        position = [0.97 * canvas.width, 0.03 * canvas.height];
     } else {
         q1_info = (Math.round(100*ql[1])/100).toFixed(2).padStart(4, ' ');
         q2_info = (Math.round(100*ql[2])/100).toFixed(2).padStart(5, ' ');
         if (is_vacuum(ql)) q1_info = " /";
         info = " u* = " + q1_info + "    p* = " + q2_info;
         ctx.textAlign = 'right';
-        position = 0.99 * canvas.width;
+        position = [0.97 * canvas.width, 0.09 * canvas.height];
     }
 
     ctx.save();
     ctx.font = canvas.width/30 + 'px Fira Mono';
     ctx.fillStyle = COLORS[6];
     ctx.textBaseline = 'top';
-    ctx.fillText(info, position, 0.01*canvas.height);
+    ctx.fillText(info, ...position);
     ctx.restore();
 }
 
@@ -1651,9 +1692,6 @@ function set_background_1(canvas, tsfm, label) {
     // draw_axes(canvas, ctx, [tsfm[4], tsfm[5]], tsfm[0], -tsfm[3], ["x", label], 1.);
  
     let kwargs = {
-        // "ticks": "bottom",
-        // "ticklabels": true,
-        // "label": "x",
         "fontsize": 1. * window.innerWidth / 200.,
         "color": COLORS[5],
         "unit": "",
@@ -1682,7 +1720,18 @@ function set_background_2(canvas) {
     const w = canvas.width;
     const s = origin_shift;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    draw_axes(canvas, ctx, [w / 2., h * (1 - s)], tsfm2[0], -tsfm2[3], ["u", "p"], 1., COLORS[5]);
+    // draw_axes(canvas, ctx, [w / 2., h * (1 - s)], tsfm2[0], -tsfm2[3], ["u", "p"], 1., COLORS[5]);
+
+    let kwargs = {
+        "fontsize": 1. * window.innerWidth / 200.,
+        "color": COLORS[5],
+        "unit": "",
+    }
+    draw_ext_axes(canvas, ctx, tsfm2, "x", ["bottom", true, "u"], kwargs);
+    draw_ext_axes(canvas, ctx, tsfm2, "x", ["top", false, ""], kwargs);
+    draw_ext_axes(canvas, ctx, tsfm2, "y", ["left", true, "p"], kwargs);
+    draw_ext_axes(canvas, ctx, tsfm2, "y", ["right", false, ""], kwargs);
+
 }
 
 function set_background_3(canvas) {
@@ -1835,15 +1884,13 @@ function draw_ext_axes(canvas, ctx, tsfm, which, args, kwargs) {
         coord = shift + i * delta * unit_px;
 
         // Text value at that point
-        if ((i % n_ticks_per_label == 0) && ticklabels 
-            && (0.02 * canvas_L < coord) && (coord < canvas_L * 0.98)) 
-            {
+        if ((i % n_ticks_per_label == 0) && (0.02 * canvas_L < coord) && (coord < canvas_L * 0.98)) {
             ctx.textAlign = txt_h;
             ctx.textBaseline = txt_v;
             label = Math.round(i * delta * 1e6) / 1e6 + kwargs["unit"];
             tick_size = 7;
             coords = (which == "x") ? [coord, where + dir*tick_size] : [where + 1.25*dir*tick_size, coord];
-            ctx.fillText(label, coords[0], coords[1]);
+            if (ticklabels) ctx.fillText(label, coords[0], coords[1]);
         } else {
             tick_size = 4;
         }
