@@ -1,6 +1,4 @@
-// TODO : 
-// axes, zoom, pan canvas2
-// draw physics
+// TODO : draw physics
 
 // Layout parameters
 const LW = window.innerWidth / 2000;  // line width
@@ -18,25 +16,34 @@ const dot_state_radius = 10 * LW;  // same as locus dot size
 const px_per_step = 10;  // discretization of curves
 const n_speed_lines = 20;  // number of speed lines
 
+// Simulation parameters
 let G = 1.4;
-let G1 = (G + 1.)/(G - 1);
-let G2 = 2. * G / (G - 1.);
-let G3 = 2. * G * (G - 1.);
+let qL = [.125, +0., .5];  // left state
+let qR = [1., +0., 5];  // right state
+let ql = [0., +0., 0.];  // middle left state (just for initialization)
+let qr = [0., +0., 0.];  // middle right state (just for initialization)
 
+let c_speeds = [0., 0., 0., 0.];
+let lambdas = [[0., 0., 0.], [0., 0., 0.], [0., 0., 0.], [0., 0., 0.]];
+let speeds = [0., 0., 0., 0.];
+let wave_type = ["R", "R"];
+const EPS = 1.e-14;
+
+// Axes limits
 let x_max = 8.;
-let qq_max = [0., 2., -1., 1., 0., 1.];
-let q_max = [-20., 20., 0., 40.];  // [q1, q2] max values
+let qq_max = [0., 1., -1., 1., 0., 1.];
+let q_max = [-5., 5., 0., 10.];  // [q1, q2] max values
 let tsfm1A, tsfm1B, tsfm1C, tsfm2, tsfm3;
 
 // Interaction parameters
-let active_char = [true, true, true];
-let entropy_fix = true;
-let drag_flag = -1;
-let hoover_position_q = [-1., 0.];
-let hoover_position_xt = [undefined, undefined];
 let state_map = ["r", "u", "p"];
 let state_labels = ["\u03C1", "u", "p"];
-let key_active = {"shift": false, "ctrl": false};
+let drag_flag = -1;
+let entropy_fix = true;
+let pan_init = [undefined, undefined];
+let hoover_position_q = [-1., 0.];
+let hoover_position_xt = [undefined, undefined];
+let active_char = [true, true, true];
 
 // Animation parameters
 let anim_state = "init";  // init, play, pause, end
@@ -46,19 +53,6 @@ let duration = 2.;
 let speedup = 0.5;
 let x_speed_lines = [];
 
-// State parameters
-let qL = [1., +0., 1];  // left state
-let qR = [.125, +0., .1];  // right state
-let ql = [0., +0., 0.];  // middle left state (just for initialization)
-let qr = [0., +0., 0.];  // middle right state (just for initialization)
-
-let f_LF = [0., 0.];  // Lax-Friedrichs flux
-
-let c_speeds = [0., 0., 0., 0.];
-let lambdas = [[0., 0., 0.], [0., 0., 0.], [0., 0., 0.], [0., 0., 0.]];
-let speeds = [0., 0., 0., 0.];
-let wave_type = ["R", "R"];
-const EPS = 1.e-14;
 
 function main(canvas_axes, canvas_list) {
 
@@ -95,7 +89,8 @@ function set_transforms() {
     tsfm2 = [
         cv2.width / (q_max[1] - q_max[0]), 0.,
         0., -cv2.height / (q_max[3] - q_max[2]), 
-        cv2.width / 2., cv2.height,
+        cv2.width * -q_max[0] / (q_max[1] - q_max[0]),
+        cv2.height * q_max[3] / (q_max[3] - q_max[2]),
     ];
     tsfm3 = [
         cv3.width / (2. * x_max), 0., 
@@ -104,30 +99,27 @@ function set_transforms() {
     ];
 }
 
+function set_q_bounds() {
+    q_max[0] = (0.         - tsfm2[4]) / tsfm2[0];
+    q_max[1] = (cv2.width  - tsfm2[4]) / tsfm2[0];
+    q_max[2] = (cv2.height - tsfm2[5]) / tsfm2[3];
+    q_max[3] = (0.         - tsfm2[5]) / tsfm2[3];
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////  -  HANDLE ALL INPUTS  -  //////////////////////////////////
 
-function handle_play_pause() {
-    if ((anim_state == "init") || (anim_state == "end")) {
-        anim_state = "play";
-        setup_animation();
-        last_clock = performance.now();
-        last_t = 0.;
-        requestAnimationFrame(animate);
-    } else if (anim_state == "pause") {
-        anim_state = "play";
-        last_clock = performance.now();
-        requestAnimationFrame(animate);
-    } else {  // playing
-        anim_state = "pause";
-    }
-}
-
-function handle_stop() {
-    anim_state = "init";
-    last_t = 0.;
-    setup_animation();
+function handle_inputs(canvas_axes_list, canvas_list) {
+    
+    state_space_inputs(canvas_axes_list, canvas_list);
+    characteristic_intputs(canvas_axes_list, canvas_list);
+    limits_inputs(canvas_axes_list, canvas_list);
+    animation_inputs();
+    state_numeric_inputs(canvas_list, canvas_axes_list, qL, qR, "qL");
+    state_numeric_inputs(canvas_list, canvas_axes_list, qR, qL, "qR");
+    gamma_input(canvas_list);
+    
 }
 
 function init_non_vacuum(q) {
@@ -135,7 +127,7 @@ function init_non_vacuum(q) {
     q[2] = 1.;
 }
 
-function handle_state_inputs(canvas_list, canvas_axes, this_q, next_q, this_id) {
+function state_numeric_inputs(canvas_list, canvas_axes, this_q, next_q, this_id) {
     // Density input
     document.getElementById(this_id + 0).value = this_q[0];
     document.getElementById(this_id + 0).addEventListener(
@@ -214,198 +206,73 @@ function handle_state_inputs(canvas_list, canvas_axes, this_q, next_q, this_id) 
     );
 }
 
-function handle_inputs(canvas_axes, canvas_list) {
+function state_space_inputs(canvas_axes_list, canvas_list) {
+    let canvas = canvas_list[3];
+    let canvas_axes = canvas_axes_list[3];
 
-    const canvas2 = canvas_list[3];
-    const canvas3 = canvas_list[4];
-
-    // Drag and drop left and right states in state space
-    canvas2.addEventListener('mousedown', function(e){
+    canvas.addEventListener('mousedown', function(e){
         if (anim_state == "init") mouse_select_state(e, tsfm2);
-        if (e.ctrlKey) console.log("pan");
+        if (drag_flag == -1) start_pan(e);
     });
-    canvas2.addEventListener('mousemove', function(e){
-        if (anim_state == "init") mouse_move_state(e, canvas_list);
-        if (e.ctrlKey) console.log("panning");
-    });
-    canvas2.addEventListener('mouseup', (e) => {
-        // adjust_frame();
-        drag_flag = -1;
-    });
-    canvas2.addEventListener('mouseout', (e) => {
-        // adjust_frame();
-        hoover_position_q[1] = -1;
+    canvas.addEventListener('mousemove', function(e){
+        // if (anim_state == "init") 
+        mouse_move_state(e, canvas_list);
+        if ((pan_init[0] != undefined) && (canvas.style.cursor != "crosshair")) {
+            pan(e, canvas, canvas_axes);
+        }
     });
 
-    window.addEventListener('keydown', (e) => {
-        if (e.ctrlKey) {
-            key_active["ctrl"] = true;
-            canvas2.style.cursor = "grab";
-        }
+    canvas.addEventListener('wheel', function(e){
+        zoom(e, canvas, canvas_axes);
     });
-    window.addEventListener('keyup', (e) => {
-        if (e.key == "Control") {
-            key_active["ctrl"] = false;
-            canvas2.style.cursor = "default";
-        }
+    canvas.addEventListener('mouseup', (e) => {
+        if (drag_flag != -1) stop_move_state(canvas);
+        if (pan_init[0] != undefined) stop_pan(canvas);
     });
-    
-    window.addEventListener('keydown', (e) => {
+    canvas.addEventListener('mouseout', (e) => {
+        hoover_position_q[1] = -1;
+        stop_move_state(canvas);
+        // stop_pan(canvas);
+        draw_loci(canvas, tsfm2);
+    });
+    canvas.addEventListener('mouseenter', (e) => {
+        if (e.buttons != 1) stop_pan(canvas);
+    });
+
+    canvas.addEventListener('keydown', (e) => {
         if (e.shiftKey) {
-            key_active["shift"] = true;
-            canvas2.style.cursor = "row-resize";
+            canvas.style.cursor = "row-resize";
         }
     });
-    window.addEventListener('keyup', (e) => {
+    canvas.addEventListener('keyup', (e) => {
         if (e.key == "Shift") {
-            key_active["shift"] = false;
-            canvas2.style.cursor = "default";
+            canvas.style.cursor = "default";
         }
     });
+
+    // Apply or not entropy condition
+    document.getElementById("entropy").checked = entropy_fix;
+    document.getElementById("entropy").addEventListener(
+        'input', function (e) {
+            entropy_fix = this.checked;
+            draw_loci(canvas2, tsfm2);
+        }
+    );
+}
+
+function characteristic_intputs(canvas_axes_list, canvas_list) {
+    let canvas = canvas_list[4];
+    let canvas_axes = canvas_axes_list[4];
 
     // Display hoovered characteristics as bold
-    canvas3.addEventListener('mousemove', function(e){
-        mouse_move_hoover_char(e, canvas3);
+    canvas.addEventListener('mousemove', function(e){
+        mouse_move_hoover_char(e, canvas);
     });
-    canvas3.addEventListener('mouseout', (e) => {
-        mouse_move_hoover_char(e, canvas3, reset=true);
-    });
-
-    // Set simulation duration
-    document.getElementById("input_T").value = duration;
-    document.getElementById("input_T").addEventListener(
-        'keyup', function (e){
-            if (e.key === 'Enter') this.blur();
-        }
-    );
-    document.getElementById("input_T").addEventListener(
-        'blur', function (e){
-            let value = Number(this.value);
-            if ((EPS < Number(this.value)) && (anim_state == "init")) {
-                tsfm3[3] *= duration / value;
-                duration = value;
-                document.getElementById("range_t").max = duration;
-                set_background_3(canvas_axes[4]);
-                draw_characteristics(canvas_list[4], tsfm3, 0.);
-            } else {
-                this.value = duration;
-            }
-        }
-    );
-
-    // Set x limits
-    document.getElementById("input_x").value = x_max;
-    document.getElementById("input_x").addEventListener(
-        'keyup', function (e){
-            if (e.key === 'Enter') this.blur();
-        }
-    );
-    document.getElementById("input_x").addEventListener(
-        'blur', function (e){
-            let value = Number(this.value);
-            if ((EPS < Number(this.value)) && (anim_state == "init")) {
-                let tsfms = [tsfm1A, tsfm1B, tsfm1C, tsfm3];
-                for (i = 0; i < tsfms.length; i++) tsfms[i][0] *= x_max / value;
-                x_max = value;
-                set_backgrounds_1(canvas_axes[0], canvas_axes[1], canvas_axes[2]);
-                set_background_3(canvas_axes[4]);
-                draw_characteristics(canvas3, tsfm3);
-                setup_animation();
-            } else {
-                this.value = x_max;
-            }
-        }
-    );
-
-    // Set simulation time
-    document.getElementById("range_t").value = 0.;
-    document.getElementById("range_t").min = 0.;
-    document.getElementById("range_t").max = duration;
-    document.getElementById("range_t").addEventListener(
-        'input', function (e) {
-            if (anim_state != "play") {
-                anim_state = "pause";
-                last_t = Number(this.value);
-                last_clock = performance.now();
-                requestAnimationFrame(animate);
-            }
-        }
-    );
-    
-    // Set simulation speed
-    document.getElementById("range_speed").value = Math.log2(speedup);
-    document.getElementById("range_speed").min = -8;
-    document.getElementById("range_speed").max = +2;
-    document.getElementById("range_speed").addEventListener(
-        'input', function (e) {
-            speedup = 2 ** (Number(this.value));
-            if (1 <= speedup) {
-                document.getElementById("text_speed").innerText = "Speed x" + Math.round(speedup);
-            } else {
-                document.getElementById("text_speed").innerText = "Speed /" + Math.round(1./speedup);
-            }
-        }
-    );
-
-    // Set gamma
-    document.getElementById("range_g").value = G;
-    document.getElementById("range_g").min = 1.1;
-    document.getElementById("range_g").max = 1.67;
-    document.getElementById("range_g").addEventListener(
-        'input', function (e) {
-            if (anim_state == "init") {
-                G = Number(this.value);
-                document.getElementById("text_g").innerText = "γ = " + G.toFixed(2);
-                update_all_plots(canvas_list);
-            } else {
-                this.value = G;
-            }
-        }
-    );
-
-    // Handle play/pause and stop buttons
-    document.getElementById("button_play").addEventListener("click", handle_play_pause);
-    document.getElementById("button_stop").addEventListener("click", handle_stop);
-
-    // And related keyboard shortcuts
-    window.addEventListener('keydown', (e) => {
-        if (e.key != " ") return;
-        handle_play_pause();
+    canvas.addEventListener('mouseout', (e) => {
+        mouse_move_hoover_char(e, canvas, reset=true);
     });
 
-    window.addEventListener('keydown', (e) => {
-        if (e.key != "r") return;
-        handle_stop();
-    });
-
-    // Handle re-framing
-    window.addEventListener('keydown', (e) => {
-        if ((e.key != "z") || (anim_state != "init")) return;
-        e.preventDefault();
-        adjust_frame();
-    });
-
-    // Handle play/pause switch
-    const button = document.querySelector(".btn");
-    button.addEventListener(
-        "click",
-        function(e){
-            e.preventDefault();
-            if (this.classList.contains('play')) {
-                this.classList.remove('play');
-                this.classList.add('pause');
-            } else {
-                this.classList.remove('pause');
-                this.classList.add('play');
-            }
-        }
-    );
-
-    // Left density input
-    handle_state_inputs(canvas_list, canvas_axes, qL, qR, "qL");
-    handle_state_inputs(canvas_list, canvas_axes, qR, qL, "qR");
-
-    // Handle with characteristics to display
+    // Handle which characteristics to display
     document.getElementById("1_char").checked = active_char[0];
     document.getElementById("1_char").addEventListener(
         'input', function (e) {
@@ -427,13 +294,167 @@ function handle_inputs(canvas_axes, canvas_list) {
             draw_characteristics(canvas3, tsfm3, last_t);
         }
     );
-    
-    // Apply or not entropy condition
-    document.getElementById("entropy").checked = entropy_fix;
-    document.getElementById("entropy").addEventListener(
+}
+
+function limits_inputs(canvas_axes_list, canvas_list) {
+    // Set simulation duration
+    document.getElementById("input_T").value = duration;
+    document.getElementById("input_T").addEventListener(
+        'keyup', function (e){
+            if (e.key === 'Enter') this.blur();
+        }
+    );
+    document.getElementById("input_T").addEventListener(
+        'blur', function (e){
+            let value = Number(this.value);
+            if ((EPS < Number(this.value)) && (anim_state == "init")) {
+                tsfm3[3] *= duration / value;
+                duration = value;
+                document.getElementById("range_t").max = duration;
+                set_background_3(canvas_axes_list[4]);
+                draw_characteristics(canvas_list[4], tsfm3, 0.);
+            } else {
+                this.value = duration;
+            }
+        }
+    );
+
+    // Set x limits
+    document.getElementById("input_x").value = x_max;
+    document.getElementById("input_x").addEventListener(
+        'keyup', function (e){
+            if (e.key === 'Enter') this.blur();
+        }
+    );
+    document.getElementById("input_x").addEventListener(
+        'blur', function (e){
+            let value = Number(this.value);
+            if ((EPS < Number(this.value)) && (anim_state == "init")) {
+                let tsfms = [tsfm1A, tsfm1B, tsfm1C, tsfm3];
+                for (i = 0; i < tsfms.length; i++) tsfms[i][0] *= x_max / value;
+                x_max = value;
+                set_backgrounds_1(canvas_axes_list[0], canvas_axes_list[1], canvas_axes_list[2]);
+                set_background_3(canvas_axes_list[4]);
+                draw_characteristics(canvas3, tsfm3);
+                setup_animation();
+            } else {
+                this.value = x_max;
+            }
+        }
+    );
+
+    // Handle re-framing
+    window.addEventListener('keydown', (e) => {
+        if ((e.key != "z") || (anim_state != "init")) return;
+        e.preventDefault();
+        adjust_frame();
+    });
+
+    window.addEventListener('keydown', (e) => {
+        if (e.key != "o") return;
+        reset_axes(canvas_list[3], canvas_axes_list[3]);
+    });
+}
+
+function handle_play_pause() {
+    if ((anim_state == "init") || (anim_state == "end")) {
+        anim_state = "play";
+        drag_flag = -1;
+        setup_animation();
+        last_clock = performance.now();
+        last_t = 0.;
+        requestAnimationFrame(animate);
+    } else if (anim_state == "pause") {
+        anim_state = "play";
+        last_clock = performance.now();
+        requestAnimationFrame(animate);
+    } else {  // playing
+        anim_state = "pause";
+    }
+}
+
+function handle_stop() {
+    anim_state = "init";
+    last_t = 0.;
+    setup_animation();
+}
+
+function animation_inputs() {
+    // Set simulation time
+    document.getElementById("range_t").value = 0.;
+    document.getElementById("range_t").min = 0.;
+    document.getElementById("range_t").max = duration;
+    document.getElementById("range_t").addEventListener(
         'input', function (e) {
-            entropy_fix = this.checked;
-            draw_loci(canvas2, tsfm2);
+            if (anim_state != "play") {
+                anim_state = "pause";
+                last_t = Number(this.value);
+                last_clock = performance.now();
+                requestAnimationFrame(animate);
+            }
+        }
+    );
+
+    // Set simulation speed
+    document.getElementById("range_speed").value = Math.log2(speedup);
+    document.getElementById("range_speed").min = -8;
+    document.getElementById("range_speed").max = +2;
+    document.getElementById("range_speed").addEventListener(
+        'input', function (e) {
+            speedup = 2 ** (Number(this.value));
+            if (1 <= speedup) {
+                document.getElementById("text_speed").innerText = "Speed x" + Math.round(speedup);
+            } else {
+                document.getElementById("text_speed").innerText = "Speed /" + Math.round(1./speedup);
+            }
+        }
+    );
+
+    // Handle play/pause and stop buttons
+    document.getElementById("button_play").addEventListener("click", handle_play_pause);
+    document.getElementById("button_stop").addEventListener("click", handle_stop);
+
+    // And related keyboard shortcuts
+    window.addEventListener('keydown', (e) => {
+        if (e.key != " ") return;
+        handle_play_pause();
+    });
+    window.addEventListener('keydown', (e) => {
+        if (e.key != "r") return;
+        handle_stop();
+    });
+
+    // Handle play/pause switch on button
+    const button = document.querySelector(".btn");
+    button.addEventListener(
+        "click",
+        function(e){
+            e.preventDefault();
+            if (this.classList.contains('play')) {
+                this.classList.remove('play');
+                this.classList.add('pause');
+            } else {
+                this.classList.remove('pause');
+                this.classList.add('play');
+            }
+        }
+    );
+}
+
+function gamma_input(canvas_list) {
+    // Set gamma
+    document.getElementById("range_g").value = G;
+    document.getElementById("range_g").min = 1.1;
+    document.getElementById("range_g").max = 1.67;
+    document.getElementById("range_g").addEventListener(
+        'input', function (e) {
+            if (anim_state == "init") {
+                G = Number(this.value);
+                document.getElementById("text_g").innerText = "γ = " + G.toFixed(2);
+                update_all_plots(canvas_list);
+            } else {
+                this.value = G;
+            }
         }
     );
 }
@@ -449,7 +470,7 @@ function mouse_select_state(event, tsfm) {
             tsfm[1] * q_list[i][1] + tsfm[3] * q_list[i][2] + tsfm[5],
         ];
 
-        if (Math.hypot(qs[0] - x, qs[1] - y) < 1.5*dot_state_radius) {
+        if (Math.hypot(qs[0] - x, qs[1] - y) < dot_state_radius) {
             drag_flag = i + 1;  // 1 or 2
         }
     }
@@ -457,11 +478,18 @@ function mouse_select_state(event, tsfm) {
 
 function mouse_move_state(event, canvas_list) {
     
-    function set_new_state(x, y, q, id) {
+    function set_new_state(x, y, q, q_other, id) {
         base_x = Math.pow(10, 3 - Math.floor(Math.log10(q_max[1] - q_max[0])));
         base_y = Math.pow(10, 3 - Math.floor(Math.log10(q_max[3] - q_max[2])));
-        q[1] = Math.round(x * base_x) / base_x;
-        q[2] = Math.round(y * base_y) / base_y;
+        let new_u = Math.round(x * base_x) / base_x;
+        let new_p = Math.round(y * base_y) / base_y;
+        if (EPS < new_p) {  // new state is not vacuum
+            q[1] = new_u;
+            q[2] = new_p;
+        } else if (!is_vacuum(q_other)) {  // other state not vacuum
+            set_vaccum(q);
+            drag_flag = -1;  // stop dragging as the state disappeared
+        }
         document.getElementById(id + 1).value = q[1];
         document.getElementById(id + 2).value = q[2];
     }
@@ -472,10 +500,7 @@ function mouse_move_state(event, canvas_list) {
 
     hoover_position_q[0] = x;
     hoover_position_q[1] = y;
-    draw_state(canvas_list[3], COLORS[13], qL, tsfm2, true);
-    draw_state(canvas_list[3], COLORS[18], qR, tsfm2, true);
-    // draw_loci(canvas_list[3], tsfm2);
-
+    
     if (drag_flag != -1) {
         x -= tsfm2[4];
         y -= tsfm2[5];
@@ -484,12 +509,14 @@ function mouse_move_state(event, canvas_list) {
         det = 1. / (tsfm2[0] * tsfm2[3] - tsfm2[1] * tsfm2[2]);
         new_x = det * (+tsfm2[3] * x - tsfm2[2] * y);
         new_y = det * (-tsfm2[1] * x + tsfm2[0] * y);
-        
-        if (drag_flag == 1) set_new_state(new_x, new_y, qL, "qL");
-        else set_new_state(new_x, new_y, qR, "qR");
+
+        if (drag_flag == 1) set_new_state(new_x, new_y, qL, qR, "qL");
+        else set_new_state(new_x, new_y, qR, qL, "qR");
         
         update_all_plots(canvas_list);
     }
+
+    draw_states(canvas_list[3], tsfm2);
 }
 
 function mouse_move_hoover_char(event, canvas, reset=false) {
@@ -522,11 +549,49 @@ function set_mode(which, value){
     adjust_frame();
 }
 
-function pan_canvas(canvas, canvas_axes, tsfm, dx, dy) {
-    tsfm[4] += dx;
-    tsfm[5] += dy;
+function stop_move_state(canvas) {
+    drag_flag = -1;
+}
+
+function start_pan(e) {
+    pan_init = [e.offsetX - tsfm2[4], e.offsetY - tsfm2[5]];
+}
+
+function pan(e, canvas, canvas_axes) {
+    canvas.style.cursor = "grabbing";
+    tsfm2[4] = e.offsetX - pan_init[0];
+    tsfm2[5] = e.offsetY - pan_init[1];
+    set_q_bounds();
     set_background_2(canvas_axes);
-    draw_loci(canvas, tsfm);
+    draw_loci(canvas, tsfm2);
+}
+
+function stop_pan(canvas) {
+    pan_init = [undefined, undefined];
+    canvas.style.cursor = "default";
+}
+
+function zoom(e, canvas, canvas_axes) {
+    let cursor_coords = [
+        (e.offsetX - tsfm2[4]) / tsfm2[0], 
+        (e.offsetY - tsfm2[5]) / tsfm2[3],
+    ];
+    tsfm2[0] *= (1. - 0.001 * e.deltaY);
+    tsfm2[4] = e.offsetX - tsfm2[0] * cursor_coords[0];
+    if (!e.shiftKey) {
+        tsfm2[3] *= (1. - 0.001 * e.deltaY);
+        tsfm2[5] = e.offsetY - tsfm2[3] * cursor_coords[1];
+    }
+    set_q_bounds();
+    set_background_2(canvas_axes);
+    draw_loci(canvas, tsfm2);
+}
+
+function reset_axes(canvas, canvas_axes) {
+    q_max = [-5., 5., 0., 10.];
+    set_transforms();
+    set_background_2(canvas_axes);
+    draw_loci(canvas, tsfm2);
 }
 
 
@@ -635,6 +700,7 @@ function setup_animation() {
         document.getElementById("canvas1A"),
         document.getElementById("canvas1B"),
         document.getElementById("canvas1C"),
+        document.getElementById("canvas2"),
     ]
     let canvas, ctx;
     let [x_array, y_arrays] = compute_fields(last_t);
@@ -646,6 +712,8 @@ function setup_animation() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         draw_field(canvas, tsfms[f], x_array, y_arrays[f]);
     }
+
+    draw_states(canvas_list[3], tsfm2);
 
     // Set vertical lines that depict the fluid velocity
     /*x_speed_lines.length = 0;
@@ -672,6 +740,7 @@ function animate(current_clock) {
         document.getElementById("canvas1A"),
         document.getElementById("canvas1B"),
         document.getElementById("canvas1C"),
+        document.getElementById("canvas2"),
     ]
     const canvas_xt = document.getElementById('canvas3');
     const button = document.querySelector(".btn");
@@ -875,7 +944,7 @@ function compute_fields(t) {
         }
 
         // Contact-wave, when ql/qr non-vacuum
-        // if (!is_vacuum(qr)) {
+        if (!is_vacuum(qr)) {
             // Left of contact-wave
             q_map = map_primitive(ql);
             x_array.push(positions[2]);
@@ -885,8 +954,14 @@ function compute_fields(t) {
             q_map = map_primitive(qr);
             x_array.push(positions[2]);
             y_array.push(q_map);
-
-        // }
+        } else {
+            x_array.push(positions[1]);
+            q_map = map_primitive(ql);
+            y_array.push(q_map);
+            x_array.push(positions[3]);
+            q_map = map_primitive(qr);
+            y_array.push(q_map);
+        }
 
         // 3-wave
         if (wave_type[1] == "R") {
@@ -929,7 +1004,7 @@ function compute_fields(t) {
 }
 
 function draw_field(canvas, tsfm, x, y) {
-    // const canvas = document.getElementById('canvas1');
+    let pen_up = false;
     const ctx = canvas.getContext("2d");
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -937,12 +1012,17 @@ function draw_field(canvas, tsfm, x, y) {
     ctx.setTransform(...tsfm);
     
     ctx.beginPath();
-    ctx.moveTo(x[0], y[0]);
-    for (i = 1; i < x.length; i++) {
-        // In case of a jump, do not draw vertical lines
-        // if (x[i] - x[i-1] < EPS) ctx.moveTo(x[i], y[i]);  
-        // else ctx.lineTo(x[i], y[i]);
-        ctx.lineTo(x[i], y[i]);
+    // ctx.moveTo(x[0], y[0]);
+    for (i = 0; i < x.length; i++) {
+        
+        if (y[i] == undefined) pen_up = true;
+        
+        if (pen_up) {
+            ctx.moveTo(x[i], y[i]);
+        } else {
+            ctx.lineTo(x[i], y[i]);
+        }
+        if (y[i] != undefined) pen_up = false;
     }
     
     ctx.resetTransform();
@@ -1054,54 +1134,47 @@ function draw_loci(canvas, tsfm) {
     [pts_1_integral, pts_1_hugoniot] = compute_locus(1, qL);
     [pts_2_integral, pts_2_hugoniot] = compute_locus(3, qR);
 
-    display_supersonic(canvas.getContext("2d"), qL, COLORS[13]);
-    display_supersonic(canvas.getContext("2d"), qR, COLORS[18]);
-    display_supersonic(canvas.getContext("2d"), ql, COLORS[5]);
-    display_supersonic(canvas.getContext("2d"), qr, COLORS[5]);
+    display_supersonic(canvas, qL, COLORS[13]);
+    display_supersonic(canvas, qR, COLORS[18]);
+    display_supersonic(canvas, ql, COLORS[5]);
+    display_supersonic(canvas, qr, COLORS[5]);
 
     plot_locus(canvas, tsfm, COLORS[13], pts_1_integral, pts_1_hugoniot);
     plot_locus(canvas, tsfm, COLORS[18], pts_2_integral, pts_2_hugoniot);
-    draw_state(canvas, COLORS[13], qL, tsfm, true);
-    draw_state(canvas, COLORS[18], qR, tsfm, true);
-    draw_state(canvas, COLORS[6], ql, tsfm, false, "left");
-    draw_state(canvas, COLORS[6], qr, tsfm, false, "right");
+    
+    draw_states(canvas, tsfm);
     draw_limit_state(canvas, COLORS[13], qL, tsfm, +1.);
     draw_limit_state(canvas, COLORS[18], qR, tsfm, -1.);
     display_middle_state(canvas, "density");
     display_middle_state(canvas, "others");
+}
 
-    /*
-    canvas_flux.getContext("2d").clearRect(0, 0, canvas_flux.width, canvas_flux.height);
+function draw_states(canvas, tsfm) {
 
-    // Map the loci from (q1, q2) domain to the flux domain (f1, f2)
-    curves = [pts_1_hugoniot, pts_1_integral, pts_2_hugoniot, pts_2_integral]
-    for (c = 0; c < curves.length; c++) {
-        for (i = 0; i < curves[c].length; i++) {
-            curves[c][i] = compute_flux(curves[c][i]);
-        }
-    }
-    plot_locus(canvas_flux, tsfm_flux, COLORS[13], pts_1_integral, pts_1_hugoniot);
-    plot_locus(canvas_flux, tsfm_flux, COLORS[18], pts_2_integral, pts_2_hugoniot);
-    draw_state(canvas_flux, COLORS[13], compute_flux(qL), tsfm_flux);
-    draw_state(canvas_flux, COLORS[18], compute_flux(qR), tsfm_flux);
-    draw_state(canvas_flux, COLORS[6], compute_flux(qm), tsfm_flux);
+    // Draw middle state
+    draw_state(canvas, COLORS[6], ql, tsfm, false, "left");
+    draw_state(canvas, COLORS[6], qr, tsfm, false, "right");
 
-    // Compute approximate Lax-Friedrichs flux
-    [l1l, l2l] = [lambdas[0], lambdas[1]];
-    [l1r, l2r] = [lambdas[4], lambdas[5]];
-    let max_eig = Math.max(Math.abs(l1l), Math.abs(l2l), Math.abs(l2l), Math.abs(l2r));
-    let f_ql = compute_flux(qL);
-    let f_qr = compute_flux(qR);
-    f_LF = [
-        0.5 * (f_ql[0] + f_qr[0]) - 0.5 * max_eig * (qR[0] - qL[0]),
-        0.5 * (f_ql[1] + f_qr[1]) - 0.5 * max_eig * (qR[1] - qL[1]),
-    ];
-    draw_state(canvas_flux, COLORS[0], f_LF, tsfm_flux);*/
+    // Draw the left and right states in color, or not
+    let activeL, activeR;
+    
+    // Need to know if qR is active, so that qL is not drawn below it
+    activeR = draw_state(canvas_list[3], COLORS[18], qR, tsfm2, (anim_state == "init") && (drag_flag != 1));
+    activeL = draw_state(canvas_list[3], COLORS[13], qL, tsfm2, (anim_state == "init") && (drag_flag != 2) && (!activeR));
+    // Need to draw qR again, so that it is on top of qL, as its locus
+    activeR = draw_state(canvas_list[3], COLORS[18], qR, tsfm2, (anim_state == "init") && (drag_flag != 1));
+
+    // Set cursor
+    if (activeL || activeR) canvas_list[3].style.cursor = "crosshair";
+    // Go back to default cursor if not panning
+    else if (canvas_list[3].style.cursor == "crosshair") canvas_list[3].style.cursor = "default";
+    
 }
 
 
 function map_x(xi, x_zero, x_end) {
-    return x_zero + (x_end-x_zero) * (Math.sqrt((xi / (x_end-x_zero))**2 + 1.) - 1.) / (Math.sqrt(2) - 1);
+    val = x_zero + (x_end-x_zero) * ((xi) / (x_end-x_zero)) ** 2.;
+    return val;
 }
 
 function compute_locus(which, qs) {
@@ -1112,7 +1185,7 @@ function compute_locus(which, qs) {
     const alpha = (G + 1.) / (G - 1.);
     const c = (which == 1) ? c_speeds[0] : c_speeds[3];
 
-    let dx_ref = px_per_step / tsfm2[0];
+    let dx_ref = px_per_step / Math.abs(tsfm2[3]);
     let dx, n_step;
     let v, p;
     
@@ -1121,7 +1194,7 @@ function compute_locus(which, qs) {
     
     // Compute Integral curve (rarefaction)
     let p_end = (entropy_fix) ? p_s : q_max[3];
-    n_step = Math.ceil((p_end - 0.) / dx_ref);
+    n_step = Math.max(Math.ceil((p_end - 0.) / dx_ref), 50);
     dx = (p_end - 0.) / n_step;
     for (i = 0; i <= n_step; i++) {
         p = map_x(i * dx, 0., p_end);
@@ -1162,7 +1235,7 @@ function plot_locus(canvas, tsfm, color, pts_integral, pts_hugoniot) {
     ctx.stroke();
 
     // Draw Integral curve (rarefaction)
-    ctx.setLineDash([10*LW, 10*LW]);
+    ctx.setLineDash([5*LW, 5*LW]);
     ctx.setTransform(...tsfm);
     ctx.beginPath();
     ctx.moveTo(...pts_integral[0]);
@@ -1188,8 +1261,7 @@ function draw_state(canvas, color, q, tsfm, intensify=false, middle="") {
     ];
     
     let dist_to_hoover = Math.hypot(q_px[0] - hoover_position_q[0], q_px[1] - hoover_position_q[1]);
-    // let current_radius = ((intensify) && (dist_to_hoover < 2. * dot_state_radius)) ? 1.5 * dot_state_radius : dot_state_radius;
-    let current_radius = dot_state_radius;
+    let radius = 1. * dot_state_radius;
     let supersonic = Math.sqrt(G * q[2]/q[0]) < Math.abs(q[1]);
 
     if ((middle == "left") || (middle == "right")) {
@@ -1197,27 +1269,30 @@ function draw_state(canvas, color, q, tsfm, intensify=false, middle="") {
         // let 
         if (supersonic) {
             ctx.beginPath();
-            ctx.moveTo(q_px[0]-sign/3. + sign * Math.sqrt(2) * current_radius, q_px[1]);
-            ctx.lineTo(q_px[0]-sign/3., q_px[1] + Math.sqrt(2) * current_radius);
-            ctx.lineTo(q_px[0]-sign/3., q_px[1] - Math.sqrt(2) * current_radius);
+            ctx.moveTo(q_px[0]-sign/3. + sign * Math.sqrt(2) * radius, q_px[1]);
+            ctx.lineTo(q_px[0]-sign/3., q_px[1] + Math.sqrt(2) * radius);
+            ctx.lineTo(q_px[0]-sign/3., q_px[1] - Math.sqrt(2) * radius);
             ctx.closePath();
         } else {
-            ctx.arc(q_px[0]-sign/3, q_px[1], current_radius, Math.PI/2., 1.5*Math.PI, middle=="right");
+            ctx.arc(q_px[0]-sign/3, q_px[1], radius, Math.PI/2., 1.5*Math.PI, middle=="right");
         }
     } else {
         if (supersonic) {
             ctx.translate(q_px[0], q_px[1]);
             ctx.rotate(Math.PI/4);
-            ctx.rect(-1.*current_radius, -1.*current_radius, 2*current_radius, 2*current_radius);
+            ctx.rect(-1.*radius, -1.*radius, 2*radius, 2*radius);
             ctx.resetTransform()
         } else {  // subsonic
-            ctx.arc(q_px[0], q_px[1], current_radius, 0, 2. * Math.PI, true);
+            ctx.arc(q_px[0], q_px[1], radius, 0, 2. * Math.PI, true);
         }
     }
     
-    ctx.fillStyle = ((intensify) && (dist_to_hoover < 2. * dot_state_radius)) ? COLORS[11]: color;
+    let active = (intensify) && (dist_to_hoover < dot_state_radius);
+    ctx.fillStyle = (active) ? COLORS[11] : color;
+
     ctx.fill();
     ctx.restore();
+    return active;
 }
 
 function draw_limit_state(canvas, color, q, tsfm, sign) {
@@ -1229,7 +1304,7 @@ function draw_limit_state(canvas, color, q, tsfm, sign) {
         tsfm[0] * (q[1] + sign * 2 * Math.sqrt(G * q[2]/q[0]) / (G-1)) + tsfm[2] * 0. + tsfm[4],
         tsfm[1] * 0. + tsfm[3] * 0. + tsfm[5],
     ];
-    ctx.arc(q_px[0], q_px[1], 0.75*dot_state_radius, 0, 2. * Math.PI, true);
+    ctx.arc(q_px[0], q_px[1], 0.6*dot_state_radius, 0, 2. * Math.PI, true);
     ctx.fill();
     ctx.restore();
 }
@@ -1371,20 +1446,26 @@ function draw_acoustic(ctx, tsfm, which, color) {
         }
     }
 
-    // Draw 1-"characteristic" inside 1-fan, or 3-"characteristic" inside 3-fan
-    let [sh, st] = (which == 1) ? [speeds[0], speeds[1]] : [speeds[3], speeds[4]];
-    let [xa, xb] = [duration * sh, duration * st];
-    dx *= 1.5;
-    nc =  1 + 2 * Math.floor((xb - xa) / (2. * dx));
-    xi = 0.5 * (xa + xb);
-    for (i = 0; i < nc; i++) {
-        cur_dist = draw_one_acoustic_fan(ctx, tsfm, which, xi, color, normal);
-        if (cur_dist < min_dist) {
-            min_dist = cur_dist;
-            xi_close = xi;
-            kind = "fan";
+    let wave = (which == 1) ? wave_type[0] : wave_type[1];
+    if (wave == "R") {
+        // Draw 1-"characteristic" inside 1-fan, or 3-"characteristic" inside 3-fan
+        let [sh, st] = (which == 1) ? [speeds[0], speeds[1]] : [speeds[3], speeds[4]];
+        let [xa, xb] = [duration * sh, duration * st];
+        let T = duration * Math.abs(tsfm[3]) / tsfm[0];
+        let [phi, psi] = [Math.atan(xb / T), Math.atan(xa / T)];
+        let theta = phi - psi;
+        let delta = Math.atan(dx / T);
+        nc = Math.floor(theta / (2*delta));
+
+        for (i = -nc; i <= nc; i++) {
+            xi = T * Math.tan(psi + theta / 2. + i * delta);
+            cur_dist = draw_one_acoustic_fan(ctx, tsfm, which, xi, color, normal);
+            if (cur_dist < min_dist) {
+                min_dist = cur_dist;
+                xi_close = xi;
+                kind = "fan";
+            }
         }
-        xi += (i + 1) * dx * ((i%2==0) ? +1. : -1.);
     }
 
     // Draw the closest one to the pointer with bold curve
@@ -1622,7 +1703,7 @@ function draw_one_entropic_char(ctx, tsfm, xi, color, lw) {
 ///////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////  -  BACKGROUNDS  -  /////////////////////////////////////
 
-function display_supersonic(ctx, qs, color) {
+function display_supersonic(canvas, qs, color) {
 
     function compute_xy(rho, t, d) {
         [xi, yi] = [t, rho * t * t / G];
@@ -1647,6 +1728,7 @@ function display_supersonic(ctx, qs, color) {
     if (is_vacuum(qs)) return;
 
     // Show supersonic regions
+    let ctx = canvas.getContext("2d");
     let n_layers = 60;
     let dx = px_per_step / tsfm2[0];
     let n_step = Math.ceil((q_max[1] - q_max[0]) / dx);
@@ -1658,11 +1740,18 @@ function display_supersonic(ctx, qs, color) {
         d = layer * LW * .5;
         ctx.lineWidth = LW * .5;
         ctx.strokeStyle = color + Math.floor(127 * transition_fade(layer/n_layers)).toString(16).padStart(2, '0');
-        t = q_max[0];
-        [x, y] = compute_xy(qs[0], t, d);
         ctx.beginPath();
+        t = 0.;
+        [x, y] = compute_xy(qs[0], t, d);
         ctx.moveTo(x, y);
-        for (; t <= q_max[1]; t+=dx) {
+        for (; x <= canvas.width; t+=dx) {
+            [x, y] = compute_xy(qs[0], t, d);
+            ctx.lineTo(x, y);
+        }
+        t = 0.;
+        [x, y] = compute_xy(qs[0], t, d);
+        ctx.moveTo(x, y);
+        for (; 0. <= x; t-=dx) {
             [x, y] = compute_xy(qs[0], t, d);
             ctx.lineTo(x, y);
         }
@@ -1695,6 +1784,7 @@ function set_background_1(canvas, tsfm, label) {
         "fontsize": 1. * window.innerWidth / 200.,
         "color": COLORS[5],
         "unit": "",
+        "axis": true,
     }
     draw_ext_axes(canvas, ctx, tsfm, "x", ["bottom", true, "x"], kwargs);
     draw_ext_axes(canvas, ctx, tsfm, "x", ["top", false, ""], kwargs);
@@ -1726,6 +1816,7 @@ function set_background_2(canvas) {
         "fontsize": 1. * window.innerWidth / 200.,
         "color": COLORS[5],
         "unit": "",
+        "axis": true,
     }
     draw_ext_axes(canvas, ctx, tsfm2, "x", ["bottom", true, "u"], kwargs);
     draw_ext_axes(canvas, ctx, tsfm2, "x", ["top", false, ""], kwargs);
@@ -1913,6 +2004,18 @@ function draw_ext_axes(canvas, ctx, tsfm, which, args, kwargs) {
         ctx.textBaseline = "top";
         ctx.fillText(axis_label, canvas.width * 0.015, canvas.height * 0.02);
     }
+
+    ctx.strokeStyle = COLORS[0];
+    ctx.lineWidth = 2. * LW;
+    ctx.beginPath();
+    if (which == "x") {
+        ctx.moveTo(0., tsfm[5]);
+        ctx.lineTo(canvas.width, tsfm[5]);
+    } else {
+        ctx.moveTo(tsfm[4], 0.);
+        ctx.lineTo(tsfm[4], canvas.height);
+    }
+    ctx.stroke();
 
     ctx.restore();
 }
