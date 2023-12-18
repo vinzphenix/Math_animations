@@ -30,4 +30,4 @@ Interactive widget available <a href="https://htmlpreview.github.io/?https://git
 - A projection of the state space: velocity and pressure
 - The space-time diagram with the characteristics, shocks and rarefaction waves
 
-![Example 3 gif](javascript/Euler/example.gif)
+![Example 3 gif](javascript/Euler/example_particles.gif)
