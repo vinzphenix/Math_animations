@@ -41,7 +41,7 @@ let last_clock = null;
 let last_t = 0.;
 let duration = 1.;
 let speedup = 0.5;
-let x_speed_lines = [];
+let x_particles = [];
 
 // State parameters
 let ql = [GRAVITY * 5., 0. * GRAVITY];  // left state
@@ -521,9 +521,9 @@ function setup_animation() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // Set vertical lines that depict the fluid velocity
-    x_speed_lines.length = 0;
+    x_particles.length = 0;
     for (i = 0; i < 2 * n_speed_lines + 2; i++) {
-        x_speed_lines.push(-2.*x_max + 4. * x_max * i / (2. * n_speed_lines + 1.));
+        x_particles.push(-2.*x_max + 4. * x_max * i / (2. * n_speed_lines + 1.));
     }
     
     const canvas_xt = document.getElementById('canvas3');
@@ -716,17 +716,17 @@ function draw_speed_lines(t) {
     // ctx.strokeStyle = "#535353";
     ctx.strokeStyle = COLORS[9];
 
-    for (i = 0; i < x_speed_lines.length; i++) {
+    for (i = 0; i < x_particles.length; i++) {
         // RK2
-        [q1, q2] = compute_state(x_speed_lines[i], last_t);
-        x_mid_rk2 = x_speed_lines[i] + 0.5 * (t - last_t) * compute_u([q1, q2]);
+        [q1, q2] = compute_state(x_particles[i], last_t);
+        x_mid_rk2 = x_particles[i] + 0.5 * (t - last_t) * compute_u([q1, q2]);
         [q1, q2] = compute_state(x_mid_rk2, 0.5 * (last_t + t));
-        x_speed_lines[i] += (t - last_t) * compute_u([q1, q2]);
+        x_particles[i] += (t - last_t) * compute_u([q1, q2]);
 
         // trick for 1 px width
         ctx.beginPath();
-        ctx.moveTo(Math.round(tsfm1[0] * x_speed_lines[i] + tsfm1[4]-0.5)+0.5, tsfm1[5]+0.5);
-        ctx.lineTo(Math.round(tsfm1[0] * x_speed_lines[i] + tsfm1[4]-0.5)+0.5, Math.round(tsfm1[3] * q1 + tsfm1[5]) + 0.5);
+        ctx.moveTo(Math.round(tsfm1[0] * x_particles[i] + tsfm1[4]-0.5)+0.5, tsfm1[5]+0.5);
+        ctx.lineTo(Math.round(tsfm1[0] * x_particles[i] + tsfm1[4]-0.5)+0.5, Math.round(tsfm1[3] * q1 + tsfm1[5]) + 0.5);
         ctx.stroke();
     }
     ctx.restore();

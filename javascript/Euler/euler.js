@@ -49,12 +49,14 @@ let active_char = [true, true, true];
 let anim_state = "init";  // init, play, pause, end
 let last_clock = null;
 let last_t = 0.;
-let duration = 2.;
+let duration = 3.;
 let speedup = 0.5;
-let x_speed_lines = [];
+let x_particles = [];
+let delta_particles = [];
+let min_e, max_e
 
 
-function main(canvas_axes, canvas_list) {
+function main(canvas_axes, canvas_list, canvasParticles) {
 
     set_transforms();
     set_backgrounds_1(canvas_axes[0], canvas_axes[1], canvas_axes[2])
@@ -360,9 +362,9 @@ function handle_play_pause() {
     if ((anim_state == "init") || (anim_state == "end")) {
         anim_state = "play";
         drag_flag = -1;
+        last_t = 0.;
         setup_animation();
         last_clock = performance.now();
-        last_t = 0.;
         requestAnimationFrame(animate);
     } else if (anim_state == "pause") {
         anim_state = "play";
@@ -386,7 +388,7 @@ function animation_inputs() {
     document.getElementById("range_t").max = duration;
     document.getElementById("range_t").addEventListener(
         'input', function (e) {
-            if (anim_state != "play") {
+            if ((anim_state != "play") && (0)) {  // disabled with particles display !
                 anim_state = "pause";
                 last_t = Number(this.value);
                 last_clock = performance.now();
@@ -545,7 +547,7 @@ function set_mode(which, value){
     else state_labels[which-1] = value;
 
     // Update the plots, and the bounding box
-    setup_animation();
+    setup_fields();
     adjust_frame();
 }
 
@@ -691,16 +693,22 @@ function move_frame(current_clock) {
 
     set_transforms();
     set_backgrounds_1(...canvas_axes_list);
-    setup_animation();
+    setup_fields();
 }
 
 function setup_animation() {
+    set_time_cursor(last_t);
+    setup_particles();
+    setup_fields();
+    draw_states(document.getElementById("canvas2"), tsfm2);
+    draw_characteristics(document.getElementById("canvas3"), tsfm3, last_t);
+}
 
+function setup_fields() {
     const canvas_list = [
         document.getElementById("canvas1A"),
         document.getElementById("canvas1B"),
         document.getElementById("canvas1C"),
-        document.getElementById("canvas2"),
     ]
     let canvas, ctx;
     let [x_array, y_arrays] = compute_fields(last_t);
@@ -711,22 +719,29 @@ function setup_animation() {
         ctx = canvas.getContext("2d");
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         draw_field(canvas, tsfms[f], x_array, y_arrays[f]);
+    }   
+}
+
+function setup_particles() {
+    // Set particles
+    let canvasP = document.getElementById("canvasParticles");
+    let w = canvasP.width;
+    let x, delta, q, idx;
+
+    x_particles.length = 0;
+    for (sign = -1 ; sign <= 1; sign += 2) {
+        [q, idx] = (sign == -1) ? [qL, 0] : [qR, 1];
+        if (is_vacuum(q)) continue;
+        else delta_particles[idx] = 10 / Math.cbrt(q[0]);
+        
+        delta = delta_particles[idx];
+        x = w / 2. + sign * delta / 2.;
+        for (; (-w < x) && (x < 2*w); x+=sign * delta) {
+            x_particles.push((x - tsfm1A[4]) / tsfm1A[0]);
+        }
     }
-
-    draw_states(canvas_list[3], tsfm2);
-
-    // Set vertical lines that depict the fluid velocity
-    /*x_speed_lines.length = 0;
-    for (i = 0; i < 2 * n_speed_lines + 2; i++) {
-        x_speed_lines.push(-2.*x_max + 4. * x_max * i / (2. * n_speed_lines + 1.));
-    }*/
-    
-    // draw_physics([0., 0., 0., 0.], [], []);
-
-    set_time_cursor(last_t);
-
-    canvas = document.getElementById("canvas3");
-    draw_characteristics(canvas, tsfm3, last_t);
+    set_colormap_bounds();
+    draw_particles(canvasP, 0.);
 }
 
 function set_time_cursor(t) {
@@ -742,6 +757,7 @@ function animate(current_clock) {
         document.getElementById("canvas1C"),
         document.getElementById("canvas2"),
     ]
+    const canvasP = document.getElementById("canvasParticles");
     const canvas_xt = document.getElementById('canvas3');
     const button = document.querySelector(".btn");
     
@@ -750,14 +766,13 @@ function animate(current_clock) {
 
     if (duration < t) {
         anim_state = "end";
-        t = duration;
+        t = duration; 
     }
 
     // Update t range
     set_time_cursor(t);
 
     // Do the plots !
-    const dx_ref = px_per_step / tsfm1A[0];
     let [x_array, y_arrays] = compute_fields(t)
     let tsfms = [tsfm1A, tsfm1B, tsfm1C];
     for (f = 0; f < 3; f++) {
@@ -767,10 +782,7 @@ function animate(current_clock) {
         draw_field(canvas, tsfms[f], x_array, y_arrays[f]);
     }
 
-    // [positions, pts_1_wave, pts_2_wave] = compute_transitions_curves(t);
-    // draw_physics(positions, pts_1_wave, pts_2_wave);
-    // color_waves(pts_1_wave, pts_2_wave);
-    // draw_speed_lines(t);
+    draw_particles(canvasP, t);
     draw_characteristics(canvas_xt, tsfm3, t);
     
     // Handle animation interaction
@@ -779,7 +791,7 @@ function animate(current_clock) {
         button.classList.remove('play');
         button.classList.add('pause');
         last_clock = current_clock;
-        last_t = t;
+        last_t = Math.max(t, 0.);
     } else {
         button.classList.remove('pause');
         button.classList.add('play');
@@ -789,6 +801,112 @@ function animate(current_clock) {
         }
     }
 
+}
+
+function bwr_colormap(value) {
+    let r, g, b;
+    let v = (value - min_e) / (max_e - min_e);
+    if (v < 0.5) {
+        r = 2. * v;
+        g = 2 * v;
+        b = 1.;
+    } else {
+        r = 1.;
+        g = 2. * (1. - v);
+        b = 2. * (1. - v);
+    }
+
+    // convert to hex
+    r = Math.round(255 * r).toString(16).padStart(2, '0');
+    g = Math.round(255 * g).toString(16).padStart(2, '0');
+    b = Math.round(255 * b).toString(16).padStart(2, '0');
+    
+    // return color as hex
+    return "#" + r + g + b;
+}
+
+function colormap(data, value) {
+    let n = data.length;
+
+    value = (value - min_e) / (max_e - min_e);
+    let i = Math.floor(value * (n - 1));
+    let j = Math.min(i + 1, n - 1);
+    let t = value * (n - 1) - i;
+    let [r1, g1, b1, a1] = data[i];
+    let [r2, g2, b2, a2] = data[j];
+    let r = (1. - t) * r1 + t * r2;
+    let g = (1. - t) * g1 + t * g2;
+    let b = (1. - t) * b1 + t * b2;
+    
+    // convert to hex
+    r = Math.round(255 * r).toString(16).padStart(2, '0');
+    g = Math.round(255 * g).toString(16).padStart(2, '0');
+    b = Math.round(255 * b).toString(16).padStart(2, '0');
+    
+    // return color as hex
+    return "#" + r + g + b;
+}
+
+function set_colormap_bounds() {
+    let [min, max] = [Infinity, -Infinity];
+    let e, x_array, y_arrays, delta;
+    let current_state_map = state_map.slice();
+    state_map = ["r", "u", "p"];
+    
+    for (t = 0; t < 1.1*duration; t += duration) {
+        [x_array, y_arrays] = compute_fields(t);
+        for (i = 0; i < x_array.length; i++) {
+            if (y_arrays[1][i] == undefined) continue;
+            e = (y_arrays[2][i] / y_arrays[0][i]) / (G - 1.);
+            min = Math.min(min, e);
+            max = Math.max(max, e);
+        }
+    }
+    state_map = current_state_map.slice();
+    delta = max - min;
+    min_e = Math.max(0., min - 0.1*delta);
+    max_e = max + 0.1*delta;
+}
+
+function draw_particles(canvas, t) {
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.save();
+
+    let delta;  // vertical dist btw particles
+    let radius = 3; //  radius of each particle
+    let r, u, p, x, y;
+
+    // x_particles
+    for (i = 0; i < x_particles.length; i++) {
+        [_, u, _] = compute_state(x_particles[i], last_t);
+        x = x_particles[i] + 0.5 * (t - last_t) * u;
+        [_, u, _] = compute_state(x, 0.5 * (last_t + t));
+        x_particles[i] += (t - last_t) * u;
+        [r, _, p] = compute_state(x_particles[i], t);
+        
+        x = tsfm1A[0] * x_particles[i] + tsfm1A[4];
+
+        let threshold_speed;
+        if (is_vacuum(qL)) threshold_speed = speeds[3];
+        else if (is_vacuum(qR)) threshold_speed = speeds[1];
+        else if (is_vacuum(ql)) threshold_speed = speeds[1];  // speeds[3](!=speeds[1]) would also work
+        else threshold_speed = speeds[2];  // contact discontinuity
+        delta = (x_particles[i] < threshold_speed*t) ? delta_particles[0] : delta_particles[1];
+        
+        let e =  (p / r) / (G - 1.);
+        ctx.fillStyle = colormap(reds, e);  // should be based on temperature
+
+        for (sign = -1; sign <= 1; sign += 2) {
+            y = canvas.height / 2. + sign*delta/2.
+            for (; (0 < y) && (y < canvas.height); y+=sign*delta) {
+                ctx.beginPath();
+                ctx.arc(x, y, radius, 0, 2. * Math.PI, true);
+                ctx.fill();
+            }
+        }
+    }
+    ctx.restore();
 }
 
 
@@ -860,6 +978,15 @@ function compute_state_fan(x, t, which) {
         p = P * Math.pow(tmp, 2.*G/(G-1.));
     }
     return [r, u, p]
+}
+
+function compute_state(x, t) {
+    if (x <= speeds[0]*t) return qL;
+    else if (x < speeds[1]*t) return compute_state_fan(x, t, 1);
+    else if (x <= speeds[2]*t) return ql;
+    else if (x <= speeds[3]*t) return qr;
+    else if (x < speeds[4]*t) return compute_state_fan(x, t, 3);
+    else return qR;
 }
 
 function map_primitive(q) {
@@ -1268,7 +1395,6 @@ function draw_state(canvas, color, q, tsfm, intensify=false, middle="") {
         let sign = (middle == "left") ? -1.: +1.;
         // let 
         if (supersonic) {
-            ctx.beginPath();
             ctx.moveTo(q_px[0]-sign/3. + sign * Math.sqrt(2) * radius, q_px[1]);
             ctx.lineTo(q_px[0]-sign/3., q_px[1] + Math.sqrt(2) * radius);
             ctx.lineTo(q_px[0]-sign/3., q_px[1] - Math.sqrt(2) * radius);

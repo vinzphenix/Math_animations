@@ -6,6 +6,7 @@
         <meta charset="utf-8">
         <link rel="stylesheet" href="euler.css">
         <link rel="stylesheet" href="nord.css">
+        <script type="text/javascript" src="colormap.js"></script>
         <script type="text/javascript" src="euler.js"></script>
     </head>
 
@@ -116,6 +117,9 @@
         </div>
 
         <div>
+            <canvas id="canvasParticles", style="position: absolute; z-index: 0; background-color: var(--nord2)"></canvas>
+        </div>
+        <div>
             <canvas id="canvas1A_Axes", style="position: absolute; z-index: 0; background-color: var(--nord2)"></canvas>
             <canvas id="canvas1A", style="position: absolute; z-index:1"></canvas>
         </div>
@@ -143,6 +147,7 @@
         <script >
 
             // const canvas0 = document.getElementById("canvasCursors");
+            const canvasParticles = document.getElementById("canvasParticles");
             const canvas1A_Axes = document.getElementById("canvas1A_Axes");
             const canvas1A = document.getElementById("canvas1A");
             const canvas1B_Axes = document.getElementById("canvas1B_Axes");
@@ -158,7 +163,7 @@
             const sep_o = Math.floor(Math.min(window.innerHeight, window.innerWidth) * 0.005);
             const sep_i = Math.floor(Math.min(window.innerHeight, window.innerWidth) * 0.01);
             const widths = [0.12, 0.44, 0.44];
-            const heights_lf = [1./3., 1./3., 1./3.];
+            const heights_lf = [0.16, 0.28, 0.28, 0.28];
             const heights_rg = [0.5, 0.5];
 
             let canvas_axes = [];
@@ -171,13 +176,22 @@
             // canvas0.style.top = sep_o + "px";
             // canvas0.style.border = border + "px solid #020000";
 
+            canvas = canvasParticles;
+            canvas.width = widths[1] * (window.innerWidth - 2 * sep_o) - 2. * border - sep_i;
+            canvas.height = heights_lf[0] * (window.innerHeight - 2 * sep_o) - 2. * border - sep_i;
+            canvas.style.left = canvas0_width + sep_i + 2.*border + "px";
+            canvas.style.top = sep_o + sep_i/2. + "px";
+            canvas.style.border = border + "px solid #020000";
+            canvas.style.border_radius = 10+"px";
+
+
             canvas_list = [canvas1A_Axes, canvas1A]
             for (i = 0; i < 2; i++) {
                 canvas = canvas_list[i];
                 canvas.width = widths[1] * (window.innerWidth - 2 * sep_o) - 2. * border - sep_i;
-                canvas.height = heights_lf[0] * (window.innerHeight - 2 * sep_o) - 2. * border - sep_i;
+                canvas.height = heights_lf[1] * (window.innerHeight - 2 * sep_o) - 2. * border - sep_i;
                 canvas.style.left = canvas0_width + sep_i + 2.*border + "px";
-                canvas.style.top = sep_o + sep_i/2. + "px";
+                canvas.style.top = sep_o + sep_i/2. + canvasParticles.height + 2.*border + sep_i + "px";
                 canvas.style.border = border + "px solid #020000";
                 canvas.style.border_radius = 10+"px";
             }
@@ -186,10 +200,10 @@
             for (i = 0; i < 2; i++) {
                 canvas = canvas_list[i];
                 canvas.width = widths[1] * (window.innerWidth - 2 * sep_o) - 2. * border - sep_i;
-                canvas.height = heights_lf[1] * (window.innerHeight - 2 * sep_o) - 2. * border - sep_i;
+                canvas.height = heights_lf[2] * (window.innerHeight - 2 * sep_o) - 2. * border - sep_i;
                 canvas.style.left = canvas0_width + sep_i + 2.*border + "px";
                 // canvas.style.top = window.innerHeight - canvas.height - sep_o - 2 * border + "px";
-                canvas.style.top = sep_o + sep_i/2. + canvas1A.height + 2 * border + sep_i + "px";
+                canvas.style.top = sep_o + sep_i/2. + canvasParticles.height + canvas1A.height + 4 * border + 2*sep_i + "px";
                 canvas.style.border = border + "px solid #020000";
             }
 
@@ -197,9 +211,9 @@
             for (i = 0; i < 2; i++) {
                 canvas = canvas_list[i];
                 canvas.width = widths[1] * (window.innerWidth - 2 * sep_o) - 2. * border - sep_i;
-                canvas.height = heights_lf[2] * (window.innerHeight - 2 * sep_o) - 2. * border - sep_i;
+                canvas.height = heights_lf[3] * (window.innerHeight - 2 * sep_o) - 2. * border - sep_i;
                 canvas.style.left = canvas0_width + sep_i + 2.*border + "px";
-                canvas.style.top = sep_o + sep_i/2. + canvas1A.height + canvas1B.height + 4*border + 2 * sep_i + "px";
+                canvas.style.top = sep_o + sep_i/2. + canvasParticles.height + canvas1A.height + canvas1B.height + 6*border + 3 * sep_i + "px";
                 // canvas.style.top = window.innerHeight - canvas.height - sep_o - 2 * border + "px";
                 canvas.style.border = border + "px solid #020000";
             }
@@ -226,7 +240,7 @@
             
             canvas_axes = [canvas1A_Axes, canvas1B_Axes, canvas1C_Axes, canvas2_Axes, canvas3_Axes];
             canvas_list = [canvas1A, canvas1B, canvas1C, canvas2, canvas3];
-            main(canvas_axes, canvas_list);
+            main(canvas_axes, canvas_list, canvasParticles);
         </script>
     </body>
 </html>
