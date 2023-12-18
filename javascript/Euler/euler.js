@@ -18,8 +18,8 @@ const n_speed_lines = 20;  // number of speed lines
 
 // Simulation parameters
 let G = 1.4;
-let qL = [.125, +0., .5];  // left state
-let qR = [1., +0., 5];  // right state
+let qL = [1., +0., 5.];  // left state
+let qR = [.125, +0., .5];  // right state
 let ql = [0., +0., 0.];  // middle left state (just for initialization)
 let qr = [0., +0., 0.];  // middle right state (just for initialization)
 
