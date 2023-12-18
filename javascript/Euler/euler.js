@@ -18,8 +18,8 @@ const n_speed_lines = 20;  // number of speed lines
 
 // Simulation parameters
 let G = 1.4;
-let qL = [1., +0., 5.];  // left state
-let qR = [.125, +0., .5];  // right state
+let qL = [1., +0., 10.];  // left state
+let qR = [.125, +0., 1.25];  // right state
 let ql = [0., +0., 0.];  // middle left state (just for initialization)
 let qr = [0., +0., 0.];  // middle right state (just for initialization)
 
@@ -50,7 +50,7 @@ let anim_state = "init";  // init, play, pause, end
 let last_clock = null;
 let last_t = 0.;
 let duration = 3.;
-let speedup = 0.5;
+let speedup = 0.25;  // should be power of 2 
 let x_particles = [];
 let delta_particles = [];
 let min_e, max_e
@@ -876,14 +876,20 @@ function draw_particles(canvas, t) {
     let delta;  // vertical dist btw particles
     let radius = 3; //  radius of each particle
     let r, u, p, x, y;
+    let n_substeps = 5;
 
     // x_particles
     for (i = 0; i < x_particles.length; i++) {
-        [_, u, _] = compute_state(x_particles[i], last_t);
-        x = x_particles[i] + 0.5 * (t - last_t) * u;
-        [_, u, _] = compute_state(x, 0.5 * (last_t + t));
-        x_particles[i] += (t - last_t) * u;
-        [r, _, p] = compute_state(x_particles[i], t);
+        let t_now = last_t;
+        let dt = (t - last_t)/n_substeps;
+        for (j = 0; j < n_substeps; j++) {
+            t_now = last_t + j * dt;
+            [_, u, _] = compute_state(x_particles[i], t_now);
+            x = x_particles[i] + 0.5 * dt * u;
+            [_, u, _] = compute_state(x, t_now + dt/2.);
+            x_particles[i] += dt * u;
+            [r, _, p] = compute_state(x_particles[i], t);
+        }
         
         x = tsfm1A[0] * x_particles[i] + tsfm1A[4];
 
