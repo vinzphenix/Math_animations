@@ -393,6 +393,8 @@ function animation_inputs() {
                 last_t = Number(this.value);
                 last_clock = performance.now();
                 requestAnimationFrame(animate);
+            } else {
+                this.value = last_t;
             }
         }
     );

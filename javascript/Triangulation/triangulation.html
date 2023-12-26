@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+
+    <head>
+        <title>Delaunay Triangulation</title>
+        <meta charset="utf-8">
+        <!-- <link rel="stylesheet" href="euler.css"> -->
+        <link rel="stylesheet" href="nord.css">
+        <style>
+            body {
+                background: linear-gradient(to bottom right, hsl(0, 0%, 85%), hsl(0, 0%, 100%));
+                background-size: 100vw 100vh;
+            }
+        </style>
+        <script type="text/javascript" src="divide_conquer.js"></script>
+        <script type="text/javascript" src="quad_edge.js"></script>
+    </head>
+
+    <body>
+        <div class="inputs">
+            <!-- <button id="incircles">Incircles</button> -->
+        </div>
+        <div>
+            <canvas id="canvas", style="position: absolute; z-index: 0; background-color: var(--nord2)"></canvas>
+            <canvas id="canvas_bis", style="position: absolute; z-index: 1"></canvas>
+        </div>
+
+        <script >
+            const border = 0;
+            const input_width = 0.15;
+            const sep = Math.floor(Math.min(window.innerHeight, window.innerWidth) * 0.01);
+            let canvas_list = [
+                document.getElementById("canvas"),
+                document.getElementById("canvas_bis"),
+            ];
+            for (let canvas of canvas_list){
+                canvas.width = (window.innerWidth - 2 * sep) * (1. - input_width) - sep / 2. - 2*border;
+                canvas.height = window.innerHeight - 2 * sep - 2*border;
+                canvas.style.left = sep + (window.innerWidth - 2 * sep) * input_width + sep / 2. + "px";
+                canvas.style.top = sep + "px";
+                canvas.style.border = border + "px solid #020000";
+            }
+
+            main(canvas_list);
+
+            play_quad_edges();
+
+        </script>
+
+    </body>
+
+</html>
