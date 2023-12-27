@@ -4,32 +4,276 @@
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="timeline.css">
+    <script src="timeline.js"></script>
 </head>
 
 <body>
-    <label for="toggle-1"> Button </label>
-    <input type="checkbox" id="toggle-1">
-    
+    <div class="movables" style="position: absolute;">
+        <p class="period-title"
+            style="display:none; position: absolute; opacity: 1; left:0; top:0; background-color: orange; z-index: 3;"
+            id="P1">Pré-litige</p>
+        <p class="period-title"
+            style="display:none; position: absolute; opacity: 1; left:0; top:0; background-color: blue; z-index: 3;"
+            id="P2">1ère instance</p>
+        <p class="period-title"
+            style="display:none; position: absolute; opacity: 1; left:0; top:0; background-color: green; z-index: 3;"
+            id="P3">Appel</p>
+        <p class="period-title"
+            style="display:none; position: absolute; opacity: 1; left:0; top:0; background-color: red; z-index: 3;"
+            id="P4">Cassation</p>
+
+        <div class="timeline2-bar" style="display:none; background-color: orange; z-index: 1; opacity: 1;"
+            id="P1_line_mv"></div>
+        <div class="timeline2-bar" style="display:none; background-color: blue; z-index: 1; opacity: 1;"
+            id="P2_line_mv"></div>
+        <div class="timeline2-bar" style="display:none; background-color: green; z-index: 1; opacity: 1;"
+            id="P3_line_mv"></div>
+        <div class="timeline2-bar" style="display:none; background-color: red; z-index: 1; opacity: 1;" id="P4_line_mv">
+        </div>
+    </div>
+
     <div class="grid">
         <div class="timeline1">
-            <div class="period">
-                <div class="period-bar" style="background-color: orange"></div>
-                <p class="period-title" style="background-color: orange">Pré-litige</p>
+            <div class="period" id="P1_box">
+                <div class="period-bar" style="background-color: orange" id="P1_line"></div>
+                <p class="period-title" style="background-color: orange" id="P1_ref">Pré-litige</p>
             </div>
-            <div class="period">
-                <div class="period-bar" style="background-color: blue"></div>
-                <p class="period-title" style="background-color: blue">1ère instance</p>
+            <div class="period" id="P2_box">
+                <div class="period-bar" style="background-color: blue" id="P2_line"></div>
+                <p class="period-title" style="background-color: blue" id="P2_ref">1ère instance</p>
             </div>
-            <div class="period">
-                <div class="period-bar" style="background-color: green"></div>
-                <p class="period-title" style="background-color: green">Appel</p>
+            <div class="period" id="P3_box">
+                <div class="period-bar" style="background-color: green" id="P3_line"></div>
+                <p class="period-title" style="background-color: green" id="P3_ref">Appel</p>
             </div>
-            <div class="period">
-                <div class="period-bar" style="background-color: red"></div>
-                <p class="period-title" style="background-color: red">Cassation</p>
+            <div class="period" id="P4_box">
+                <div class="period-bar" style="background-color: red" id="P4_line"></div>
+                <p class="period-title" style="background-color: red" id="P4_ref">Cassation</p>
             </div>
         </div>
-        <div class="timeline">
+        <div class="timeline2" style="display:none" id="tl1">
+            <!-- <div class="timeline2-container">
+                <p class="timeline2-title" style="background-color: orange" id="P1_bis">Pré-litige</p>
+            </div> -->
+            <div class="timeline2-container">
+                <div class="timeline2-bar" style="background-color: orange" id="P1_line_bis"></div>
+                <div class="event">
+                    <label class="icon icon-orange" style="left: calc(50% - 0.5em)"></label>
+                    <div class="info-general info-right">
+                        <h3>Geil,Danke! GmbH</h3>
+                        <p>Lorem ipsum dolor sit amet</p>
+                    </div>
+                </div>
+                <div class="event" style="flex-direction: row-reverse;">
+                    <label class="icon icon-orange" style="right: calc(50% - 0.5em)"></label>
+                    <div class="info-general info-left">
+                        <h3>Geil,Danke! GmbH</h3>
+                        <p>Lorem ipsum dolor sit amet</p>
+                    </div>
+                </div>
+                <div class="event">
+                    <label class="icon icon-orange" style="left: calc(50% - 0.5em)"></label>
+                    <div class="info-general info-right">
+                        <h3>Geil,Danke! GmbH</h3>
+                        <p>Lorem ipsum dolor sit amet</p>
+                    </div>
+                </div>
+                <div class="event" style="flex-direction: row-reverse;">
+                    <label class="icon icon-orange" style="right: calc(50% - 0.5em)"></label>
+                    <div class="info-general info-left">
+                        <h3>Geil,Danke! GmbH</h3>
+                        <p>Lorem ipsum dolor sit amet</p>
+                    </div>
+                </div>
+                <div class="event">
+                    <label class="icon icon-orange" style="left: calc(50% - 0.5em)"></label>
+                    <div class="info-general info-right">
+                        <h3>Geil,Danke! GmbH</h3>
+                        <p>Lorem ipsum dolor sit amet</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="timeline2" style="display:none" id="tl2">
+            <!-- <div class="timeline2-container">
+                <p class="timeline2-title" style="background-color: blue" id="P2_bis">1ère instance</p>
+            </div> -->
+            <div class="timeline2-container">
+                <div class="timeline2-bar" style="background-color: blue" id="P2_line_bis"></div>
+                <div class="event">
+                    <label class="icon icon-blue" style="left: calc(50% - 0.5em)"></label>
+                    <div class="info-general info-right">
+                        <h3>Geil,Danke! GmbH</h3>
+                        <p>Lorem ipsum dolor sit amet</p>
+                    </div>
+                </div>
+                <div class="event" style="flex-direction: row-reverse;">
+                    <label class="icon icon-blue" style="right: calc(50% - 0.5em)"></label>
+                    <div class="info-general info-left">
+                        <h3>Geil,Danke! GmbH</h3>
+                        <p>Lorem ipsum dolor sit amet</p>
+                    </div>
+                </div>
+                <div class="event">
+                    <label class="icon icon-blue" style="left: calc(50% - 0.5em)"></label>
+                    <div class="info-general info-right">
+                        <h3>Geil,Danke! GmbH</h3>
+                        <p>Lorem ipsum dolor sit amet</p>
+                    </div>
+                </div>
+                <div class="event" style="flex-direction: row-reverse;">
+                    <label class="icon icon-blue" style="right: calc(50% - 0.5em)"></label>
+                    <div class="info-general info-left">
+                        <h3>Geil,Danke! GmbH</h3>
+                        <p>Lorem ipsum dolor sit amet</p>
+                    </div>
+                </div>
+                <div class="event">
+                    <label class="icon icon-blue" style="left: calc(50% - 0.5em)"></label>
+                    <div class="info-general info-right">
+                        <h3>Geil,Danke! GmbH</h3>
+                        <p>Lorem ipsum dolor sit amet</p>
+                    </div>
+                </div>
+                <div class="event" style="flex-direction: row-reverse;">
+                    <label class="icon icon-blue" style="right: calc(50% - 0.5em)"></label>
+                    <div class="info-general info-left">
+                        <h3>Geil,Danke! GmbH</h3>
+                        <p>Lorem ipsum dolor sit amet</p>
+                    </div>
+                </div><div class="event">
+                    <label class="icon icon-blue" style="left: calc(50% - 0.5em)"></label>
+                    <div class="info-general info-right">
+                        <h3>Geil,Danke! GmbH</h3>
+                        <p>Lorem ipsum dolor sit amet</p>
+                    </div>
+                </div>
+                <div class="event" style="flex-direction: row-reverse;">
+                    <label class="icon icon-blue" style="right: calc(50% - 0.5em)"></label>
+                    <div class="info-general info-left">
+                        <h3>Geil,Danke! GmbH</h3>
+                        <p>Lorem ipsum dolor sit amet</p>
+                    </div>
+                </div><div class="event">
+                    <label class="icon icon-blue" style="left: calc(50% - 0.5em)"></label>
+                    <div class="info-general info-right">
+                        <h3>Geil,Danke! GmbH</h3>
+                        <p>Lorem ipsum dolor sit amet</p>
+                    </div>
+                </div>
+                <div class="event" style="flex-direction: row-reverse;">
+                    <label class="icon icon-blue" style="right: calc(50% - 0.5em)"></label>
+                    <div class="info-general info-left">
+                        <h3>Geil,Danke! GmbH</h3>
+                        <p>Lorem ipsum dolor sit amet</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="timeline2" style="display:none" id="tl3">
+            <!-- <div class="timeline2-container">
+                <p class="timeline2-title" style="background-color: green" id="P3_bis">Appel</p>
+            </div> -->
+            <div class="timeline2-container">
+                <div class="timeline2-bar" style="background-color: green" id="P3_line_bis"></div>
+                <div class="event">
+                    <label class="icon icon-green" style="left: calc(50% - 0.5em)"></label>
+                    <div class="info-general info-right">
+                        <h3>Geil,Danke! GmbH</h3>
+                        <p>Lorem ipsum dolor sit amet</p>
+                    </div>
+                </div>
+                <div class="event" style="flex-direction: row-reverse;">
+                    <label class="icon icon-green" style="right: calc(50% - 0.5em)"></label>
+                    <div class="info-general info-left">
+                        <h3>Geil,Danke! GmbH</h3>
+                        <p>Lorem ipsum dolor sit amet</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="timeline2" style="display:none" id="tl4">
+            <!-- <div class="timeline2-container">
+                <p class="timeline2-title" style="background-color: red" id="P4_bis">Cassation</p>
+            </div> -->
+            <div class="timeline2-container">
+                <div class="timeline2-bar" style="background-color: red" id="P4_line_bis"></div>
+                <div class="event">
+                    <label class="icon icon-red" style="left: calc(50% - 0.5em)"></label>
+                    <div class="info-general info-right">
+                        <h3>Geil,Danke! GmbH</h3>
+                        <p>Lorem ipsum dolor sit amet</p>
+                    </div>
+                </div>
+                <div class="event" style="flex-direction: row-reverse;">
+                    <label class="icon icon-red" style="right: calc(50% - 0.5em)"></label>
+                    <div class="info-general info-left">
+                        <h3>Geil,Danke! GmbH</h3>
+                        <p>Lorem ipsum dolor sit amet</p>
+                    </div>
+                </div>
+                <div class="event">
+                    <label class="icon icon-red" style="left: calc(50% - 0.5em)"></label>
+                    <div class="info-general info-right">
+                        <h3>Geil,Danke! GmbH</h3>
+                        <p>Lorem ipsum dolor sit amet</p>
+                    </div>
+                </div>
+                <div class="event" style="flex-direction: row-reverse;">
+                    <label class="icon icon-red" style="right: calc(50% - 0.5em)"></label>
+                    <div class="info-general info-left">
+                        <h3>Geil,Danke! GmbH</h3>
+                        <p>Lorem ipsum dolor sit amet</p>
+                    </div>
+                </div>
+                <div class="event">
+                    <label class="icon icon-red" style="left: calc(50% - 0.5em)"></label>
+                    <div class="info-general info-right">
+                        <h3>Geil,Danke! GmbH</h3>
+                        <p>Lorem ipsum dolor sit amet</p>
+                    </div>
+                </div>
+                <div class="event" style="flex-direction: row-reverse;">
+                    <label class="icon icon-red" style="right: calc(50% - 0.5em)"></label>
+                    <div class="info-general info-left">
+                        <h3>Geil,Danke! GmbH</h3>
+                        <p>Lorem ipsum dolor sit amet</p>
+                    </div>
+                </div><div class="event">
+                    <label class="icon icon-red" style="left: calc(50% - 0.5em)"></label>
+                    <div class="info-general info-right">
+                        <h3>Geil,Danke! GmbH</h3>
+                        <p>Lorem ipsum dolor sit amet</p>
+                    </div>
+                </div>
+                <div class="event" style="flex-direction: row-reverse;">
+                    <label class="icon icon-red" style="right: calc(50% - 0.5em)"></label>
+                    <div class="info-general info-left">
+                        <h3>Geil,Danke! GmbH</h3>
+                        <p>Lorem ipsum dolor sit amet</p>
+                    </div>
+                </div><div class="event">
+                    <label class="icon icon-red" style="left: calc(50% - 0.5em)"></label>
+                    <div class="info-general info-right">
+                        <h3>Geil,Danke! GmbH</h3>
+                        <p>Lorem ipsum dolor sit amet</p>
+                    </div>
+                </div>
+                <div class="event" style="flex-direction: row-reverse;">
+                    <label class="icon icon-red" style="right: calc(50% - 0.5em)"></label>
+                    <div class="info-general info-left">
+                        <h3>Geil,Danke! GmbH</h3>
+                        <p>Lorem ipsum dolor sit amet</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="explainer">
+
+        </div>
+
+        <!-- <div class="timeline">
             <div class="event">
                 <label class="icon"></label>
                 <div class="info-general info-right">
@@ -70,32 +314,19 @@
                         iusto primis ea eam.</p>
                 </div>
             </div>
-            <!-- <li class="timeline-event-right">
-                <label class="icon"></label>
-                <div class="timeline-event-copy">
-                    <p class="timeline-event-thumbnail">November 2009 - März 2011</p>
-                    <h3>Freelancer</h3>
-                    <h4>Designer und Autor</h4>
-                    <p>Konzeption, Design und Produktion von Digitalen Magazinen mit InDesign, der Adobe Digital Publishing
-                        Suite und HTML5. Co-Autorin der Fachbücher "Digitales Publizieren für Tablets" und "Adobe Digital
-                        Publishing Suite" erschienen im dpunkt.verlag.</p>
-                </div>
-            </li>
-            <li class="timeline-event-right">
-                <label class="icon"></label>
-                <div class="timeline-event-copy">
-                    <p class="timeline-event-thumbnail">April 2011 - heute</p>
-                    <h3>konplan gmbh</h3>
-                    <h4>IT-Consultant</h4>
-                    <p><strong>Systemarchitektur, Consulting</strong><br>Konzeption und Modellierung von Systemen und APIs
-                        für Digital Publishing und Entitlement nach SOA</p>
-                </div>
-            </li> -->
-        </div>
+        </div> -->
     </div>
-    <div style="height: 500px;">
-        <p>fill with emptyness</p>
-    </div>
+
+    <script>
+        main();
+    </script>
+    
+    <!-- <label for="toggle-1"> Button </label> -->
+    <!-- <input type="checkbox" id="toggle-1">         -->
+
+    <!-- <div style="height: 500px;"> -->
+    <!-- <p>fill with emptyness</p> -->
+    <!-- </div> -->
 </body>
 
 </html>
