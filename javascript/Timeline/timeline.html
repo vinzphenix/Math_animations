@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 
+<!-- TODO : make it cross-platform -->
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="timeline.css">
@@ -9,324 +10,395 @@
 
 <body>
     <div class="movables" style="position: absolute;">
-        <p class="period-title"
-            style="display:none; position: absolute; opacity: 1; left:0; top:0; background-color: orange; z-index: 3;"
-            id="P1">Pré-litige</p>
-        <p class="period-title"
-            style="display:none; position: absolute; opacity: 1; left:0; top:0; background-color: blue; z-index: 3;"
-            id="P2">1ère instance</p>
-        <p class="period-title"
-            style="display:none; position: absolute; opacity: 1; left:0; top:0; background-color: green; z-index: 3;"
-            id="P3">Appel</p>
-        <p class="period-title"
-            style="display:none; position: absolute; opacity: 1; left:0; top:0; background-color: red; z-index: 3;"
-            id="P4">Cassation</p>
-
-        <div class="timeline2-bar" style="display:none; background-color: orange; z-index: 1; opacity: 1;"
-            id="P1_line_mv"></div>
-        <div class="timeline2-bar" style="display:none; background-color: blue; z-index: 1; opacity: 1;"
-            id="P2_line_mv"></div>
-        <div class="timeline2-bar" style="display:none; background-color: green; z-index: 1; opacity: 1;"
-            id="P3_line_mv"></div>
-        <div class="timeline2-bar" style="display:none; background-color: red; z-index: 1; opacity: 1;" id="P4_line_mv">
+        <div class="movable-bar periodA" id="P1_line_mv"></div>
+        <div class="movable-bar periodB" id="P2_line_mv"></div>
+        <div class="movable-bar periodC" id="P3_line_mv"></div>
+        <div class="movable-bar periodD" id="P4_line_mv">
         </div>
     </div>
 
     <div class="grid">
-        <div class="timeline1">
-            <div class="period" id="P1_box">
-                <div class="period-bar" style="background-color: orange" id="P1_line"></div>
-                <p class="period-title" style="background-color: orange" id="P1_ref">Pré-litige</p>
+        <div class="timeline1"> <!-- Global timeline  -->
+            <div class="period" id="P1_box"> <!-- 1st part of global timeline  -->
+                <div class="period-bar periodA" id="P1_line"></div>  <!-- Here : create the leftermost line  -->
+                <p class="period-title periodA" id="P1_ref">Pré-litige</p> <!-- Here : set the period title  -->
             </div>
             <div class="period" id="P2_box">
-                <div class="period-bar" style="background-color: blue" id="P2_line"></div>
-                <p class="period-title" style="background-color: blue" id="P2_ref">1ère instance</p>
+                <div class="period-bar periodB" id="P2_line"></div>
+                <p class="period-title periodB" id="P2_ref">1ère instance</p>
             </div>
             <div class="period" id="P3_box">
-                <div class="period-bar" style="background-color: green" id="P3_line"></div>
-                <p class="period-title" style="background-color: green" id="P3_ref">Appel</p>
+                <div class="period-bar periodC" id="P3_line"></div>
+                <p class="period-title periodC" id="P3_ref">Appel</p>
             </div>
             <div class="period" id="P4_box">
-                <div class="period-bar" style="background-color: red" id="P4_line"></div>
-                <p class="period-title" style="background-color: red" id="P4_ref">Cassation</p>
+                <div class="period-bar periodD" id="P4_line"></div>
+                <p class="period-title periodD" id="P4_ref">Cassation</p>
             </div>
         </div>
-        <div class="timeline2" style="display:none" id="tl1">
-            <!-- <div class="timeline2-container">
-                <p class="timeline2-title" style="background-color: orange" id="P1_bis">Pré-litige</p>
-            </div> -->
-            <div class="timeline2-container">
-                <div class="timeline2-bar" style="background-color: orange" id="P1_line_bis"></div>
-                <div class="event">
-                    <label class="icon icon-orange" style="left: calc(50% - 0.5em)"></label>
-                    <div class="info-general info-right">
-                        <h3>Geil,Danke! GmbH</h3>
-                        <p>Lorem ipsum dolor sit amet</p>
+        <div class="timeline2">  <!-- Where the timeline is developped, with specific events  -->
+            <div class="timeline2-container" id="tl1">  <!-- 1st part of the global timeline  -->
+                <div class="timeline2-bar periodA" id="P1_line_bis"></div>  <!-- Here : create the vertical line  -->
+                <div class="event right">  <!-- Create a new event  -->
+                    <label class="icon periodA right"></label>  <!-- Create its square icon  -->
+                    <div class="event-label right">  
+                        <h3>Geil,Danke! GmbH Geil,Danke! GmbH Geil,Danke! GmbH</h3>  <!-- Set event title  -->
+                        <p>Lorem ipsum dolor sit amet</p>  <!-- Set the event quick description  -->
+                        <div class="detail">  <!-- Set the event details, that appears in the last column after clicking  -->
+                            <!-- can be composed of several paragraphs  -->
+                            <p>Loooooooooong details. Lorem ipsum dolor sit amet Lorem ipsum dolor sit amet Lorem ipsum
+                                dolor sit amet. Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet</p> 
+                            <p>Loooooooooong details. Lorem ipsum dolor sit amet Lorem ipsum dolor sit amet Lorem ipsum
+                                dolor sit amet. Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet</p>
+                            <p>Loooooooooong details. Lorem ipsum dolor sit amet Lorem ipsum dolor sit amet Lorem ipsum
+                                dolor sit amet. Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet</p>
+                        </div>
                     </div>
                 </div>
-                <div class="event" style="flex-direction: row-reverse;">
-                    <label class="icon icon-orange" style="right: calc(50% - 0.5em)"></label>
-                    <div class="info-general info-left">
-                        <h3>Geil,Danke! GmbH</h3>
+                <div class="event left">
+                    <label class="icon periodA left"></label>
+                    <div class="event-label left">
+                        <h3>Label 2</h3>
                         <p>Lorem ipsum dolor sit amet</p>
+                        <div class="detail">
+                            <p>A somewhat short detail</p>
+                        </div>
                     </div>
                 </div>
-                <div class="event">
-                    <label class="icon icon-orange" style="left: calc(50% - 0.5em)"></label>
-                    <div class="info-general info-right">
-                        <h3>Geil,Danke! GmbH</h3>
+                <div class="event right">
+                    <label class="icon periodA right"></label>
+                    <div class="event-label right">
+                        <h3>Label 3</h3>
                         <p>Lorem ipsum dolor sit amet</p>
+                        <div class="detail">
+                            <p>A little bit longer... no just kidding... now it is</p>
+                        </div>
                     </div>
                 </div>
-                <div class="event" style="flex-direction: row-reverse;">
-                    <label class="icon icon-orange" style="right: calc(50% - 0.5em)"></label>
-                    <div class="info-general info-left">
-                        <h3>Geil,Danke! GmbH</h3>
+                <div class="event left">
+                    <label class="icon periodA left"></label>
+                    <div class="event-label left">
+                        <h3>Label 4</h3>
                         <p>Lorem ipsum dolor sit amet</p>
+                        <div class="detail">
+                            <p>POPOPOPOPOPOLOLLLO</p>
+                            <p>POPOPOPOPOPOLOLLLO</p>
+                            <p>POPOPOPOPOPOLOLLLO</p>
+                            <p>POPOPOPOPOPOLOLLLO</p>
+                            <p>POPOPOPOPOPOLOLLLO</p>
+                            <p>POPOPOPOPOPOLOLLLO</p>
+                            <p>POPOPOPOPOPOLOLLLO</p>
+                        </div>
                     </div>
                 </div>
-                <div class="event">
-                    <label class="icon icon-orange" style="left: calc(50% - 0.5em)"></label>
-                    <div class="info-general info-right">
-                        <h3>Geil,Danke! GmbH</h3>
+                <div class="event right">
+                    <label class="icon periodA right"></label>
+                    <div class="event-label right">
+                        <h3>Label 5</h3>
                         <p>Lorem ipsum dolor sit amet</p>
+                        <div class="detail">
+                            <p>Welcome to RG, the French Open I should say</p>
+                        </div>
                     </div>
                 </div>
-            </div>
-        </div>
-        <div class="timeline2" style="display:none" id="tl2">
-            <!-- <div class="timeline2-container">
-                <p class="timeline2-title" style="background-color: blue" id="P2_bis">1ère instance</p>
-            </div> -->
-            <div class="timeline2-container">
-                <div class="timeline2-bar" style="background-color: blue" id="P2_line_bis"></div>
-                <div class="event">
-                    <label class="icon icon-blue" style="left: calc(50% - 0.5em)"></label>
-                    <div class="info-general info-right">
+                <div class="event left">
+                    <label class="icon periodA left"></label>
+                    <div class="event-label left">
                         <h3>Geil,Danke! GmbH</h3>
                         <p>Lorem ipsum dolor sit amet</p>
-                    </div>
-                </div>
-                <div class="event" style="flex-direction: row-reverse;">
-                    <label class="icon icon-blue" style="right: calc(50% - 0.5em)"></label>
-                    <div class="info-general info-left">
-                        <h3>Geil,Danke! GmbH</h3>
-                        <p>Lorem ipsum dolor sit amet</p>
-                    </div>
-                </div>
-                <div class="event">
-                    <label class="icon icon-blue" style="left: calc(50% - 0.5em)"></label>
-                    <div class="info-general info-right">
-                        <h3>Geil,Danke! GmbH</h3>
-                        <p>Lorem ipsum dolor sit amet</p>
-                    </div>
-                </div>
-                <div class="event" style="flex-direction: row-reverse;">
-                    <label class="icon icon-blue" style="right: calc(50% - 0.5em)"></label>
-                    <div class="info-general info-left">
-                        <h3>Geil,Danke! GmbH</h3>
-                        <p>Lorem ipsum dolor sit amet</p>
-                    </div>
-                </div>
-                <div class="event">
-                    <label class="icon icon-blue" style="left: calc(50% - 0.5em)"></label>
-                    <div class="info-general info-right">
-                        <h3>Geil,Danke! GmbH</h3>
-                        <p>Lorem ipsum dolor sit amet</p>
-                    </div>
-                </div>
-                <div class="event" style="flex-direction: row-reverse;">
-                    <label class="icon icon-blue" style="right: calc(50% - 0.5em)"></label>
-                    <div class="info-general info-left">
-                        <h3>Geil,Danke! GmbH</h3>
-                        <p>Lorem ipsum dolor sit amet</p>
-                    </div>
-                </div><div class="event">
-                    <label class="icon icon-blue" style="left: calc(50% - 0.5em)"></label>
-                    <div class="info-general info-right">
-                        <h3>Geil,Danke! GmbH</h3>
-                        <p>Lorem ipsum dolor sit amet</p>
-                    </div>
-                </div>
-                <div class="event" style="flex-direction: row-reverse;">
-                    <label class="icon icon-blue" style="right: calc(50% - 0.5em)"></label>
-                    <div class="info-general info-left">
-                        <h3>Geil,Danke! GmbH</h3>
-                        <p>Lorem ipsum dolor sit amet</p>
-                    </div>
-                </div><div class="event">
-                    <label class="icon icon-blue" style="left: calc(50% - 0.5em)"></label>
-                    <div class="info-general info-right">
-                        <h3>Geil,Danke! GmbH</h3>
-                        <p>Lorem ipsum dolor sit amet</p>
-                    </div>
-                </div>
-                <div class="event" style="flex-direction: row-reverse;">
-                    <label class="icon icon-blue" style="right: calc(50% - 0.5em)"></label>
-                    <div class="info-general info-left">
-                        <h3>Geil,Danke! GmbH</h3>
-                        <p>Lorem ipsum dolor sit amet</p>
+                        <div class="detail">
+                            <p>It is already over... for the frenchmen in Paris</p>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-        <div class="timeline2" style="display:none" id="tl3">
-            <!-- <div class="timeline2-container">
-                <p class="timeline2-title" style="background-color: green" id="P3_bis">Appel</p>
-            </div> -->
-            <div class="timeline2-container">
-                <div class="timeline2-bar" style="background-color: green" id="P3_line_bis"></div>
-                <div class="event">
-                    <label class="icon icon-green" style="left: calc(50% - 0.5em)"></label>
-                    <div class="info-general info-right">
+            <div class="timeline2-container" style="display: none" id="tl2">
+                <div class="timeline2-bar periodB" id="P2_line_bis"></div>
+                <div class="event right">
+                    <label class="icon periodB right"></label>
+                    <div class="event-label right">
                         <h3>Geil,Danke! GmbH</h3>
                         <p>Lorem ipsum dolor sit amet</p>
+                        <div class="detail">
+                            <p>A</p>
+                        </div>
                     </div>
                 </div>
-                <div class="event" style="flex-direction: row-reverse;">
-                    <label class="icon icon-green" style="right: calc(50% - 0.5em)"></label>
-                    <div class="info-general info-left">
+                <div class="event left">
+                    <label class="icon periodB left"></label>
+                    <div class="event-label left">
                         <h3>Geil,Danke! GmbH</h3>
                         <p>Lorem ipsum dolor sit amet</p>
+                        <div class="detail">
+                            <p>E</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="event right">
+                    <label class="icon periodB right"></label>
+                    <div class="event-label right">
+                        <h3>Geil,Danke! GmbH</h3>
+                        <p>Lorem ipsum dolor sit amet</p>
+                        <div class="detail">
+                            <p>I</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="event left">
+                    <label class="icon periodB left"></label>
+                    <div class="event-label left">
+                        <h3>Geil,Danke! GmbH</h3>
+                        <p>Lorem ipsum dolor sit amet</p>
+                        <div class="detail">
+                            <p>O</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="event right">
+                    <label class="icon periodB right"></label>
+                    <div class="event-label right">
+                        <h3>Geil,Danke! GmbH</h3>
+                        <p>Lorem ipsum dolor sit amet</p>
+                        <div class="detail">
+                            <p>I</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="event left">
+                    <label class="icon periodB left"></label>
+                    <div class="event-label left">
+                        <h3>Geil,Danke! GmbH</h3>
+                        <p>Lorem ipsum dolor sit amet</p>
+                        <div class="detail">
+                            <p>O</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="event right">
+                    <label class="icon periodB right"></label>
+                    <div class="event-label right">
+                        <h3>Geil,Danke! GmbH</h3>
+                        <p>Lorem ipsum dolor sit amet</p>
+                        <div class="detail">
+                            <p>I</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="event left">
+                    <label class="icon periodB left"></label>
+                    <div class="event-label left">
+                        <h3>Geil,Danke! GmbH</h3>
+                        <p>Lorem ipsum dolor sit amet</p>
+                        <div class="detail">
+                            <p>O</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="event right">
+                    <label class="icon periodB right"></label>
+                    <div class="event-label right">
+                        <h3>Geil,Danke! GmbH</h3>
+                        <p>Lorem ipsum dolor sit amet</p>
+                        <div class="detail">
+                            <p>I</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="event left">
+                    <label class="icon periodB left"></label>
+                    <div class="event-label left">
+                        <h3>Geil,Danke! GmbH</h3>
+                        <p>Lorem ipsum dolor sit amet</p>
+                        <div class="detail">
+                            <p>O</p>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-        <div class="timeline2" style="display:none" id="tl4">
-            <!-- <div class="timeline2-container">
-                <p class="timeline2-title" style="background-color: red" id="P4_bis">Cassation</p>
-            </div> -->
-            <div class="timeline2-container">
-                <div class="timeline2-bar" style="background-color: red" id="P4_line_bis"></div>
-                <div class="event">
-                    <label class="icon icon-red" style="left: calc(50% - 0.5em)"></label>
-                    <div class="info-general info-right">
+            <div class="timeline2-container" id="tl3">
+                <div class="timeline2-bar periodC" id="P3_line_bis"></div>
+                <div class="event right">
+                    <label class="icon periodC right"></label>
+                    <div class="event-label right">
                         <h3>Geil,Danke! GmbH</h3>
                         <p>Lorem ipsum dolor sit amet</p>
+                        <div class="detail">
+                            <p>one</p>
+                        </div>
                     </div>
                 </div>
-                <div class="event" style="flex-direction: row-reverse;">
-                    <label class="icon icon-red" style="right: calc(50% - 0.5em)"></label>
-                    <div class="info-general info-left">
+                <div class="event left">
+                    <label class="icon periodC left"></label>
+                    <div class="event-label left">
                         <h3>Geil,Danke! GmbH</h3>
                         <p>Lorem ipsum dolor sit amet</p>
+                        <div class="detail">
+                            <p>Two</p>
+                        </div>
                     </div>
                 </div>
-                <div class="event">
-                    <label class="icon icon-red" style="left: calc(50% - 0.5em)"></label>
-                    <div class="info-general info-right">
+                <div class="event right">
+                    <label class="icon periodC right"></label>
+                    <div class="event-label right">
                         <h3>Geil,Danke! GmbH</h3>
                         <p>Lorem ipsum dolor sit amet</p>
+                        <div class="detail">
+                            <p>Three</p>
+                        </div>
                     </div>
                 </div>
-                <div class="event" style="flex-direction: row-reverse;">
-                    <label class="icon icon-red" style="right: calc(50% - 0.5em)"></label>
-                    <div class="info-general info-left">
+                <div class="event left">
+                    <label class="icon periodC left"></label>
+                    <div class="event-label left">
                         <h3>Geil,Danke! GmbH</h3>
                         <p>Lorem ipsum dolor sit amet</p>
+                        <div class="detail">
+                            <p>Four</p>
+                        </div>
                     </div>
                 </div>
-                <div class="event">
-                    <label class="icon icon-red" style="left: calc(50% - 0.5em)"></label>
-                    <div class="info-general info-right">
+                <div class="event right">
+                    <label class="icon periodC right"></label>
+                    <div class="event-label right">
                         <h3>Geil,Danke! GmbH</h3>
                         <p>Lorem ipsum dolor sit amet</p>
+                        <div class="detail">
+                            <p>Five</p>
+                        </div>
                     </div>
                 </div>
-                <div class="event" style="flex-direction: row-reverse;">
-                    <label class="icon icon-red" style="right: calc(50% - 0.5em)"></label>
-                    <div class="info-general info-left">
+                <div class="event left">
+                    <label class="icon periodC left"></label>
+                    <div class="event-label left">
                         <h3>Geil,Danke! GmbH</h3>
                         <p>Lorem ipsum dolor sit amet</p>
-                    </div>
-                </div><div class="event">
-                    <label class="icon icon-red" style="left: calc(50% - 0.5em)"></label>
-                    <div class="info-general info-right">
-                        <h3>Geil,Danke! GmbH</h3>
-                        <p>Lorem ipsum dolor sit amet</p>
+                        <div class="detail">
+                            <p>Six</p>
+                        </div>
                     </div>
                 </div>
-                <div class="event" style="flex-direction: row-reverse;">
-                    <label class="icon icon-red" style="right: calc(50% - 0.5em)"></label>
-                    <div class="info-general info-left">
+            </div>
+            <div class="timeline2-container" id="tl4">
+                <div class="timeline2-bar periodD" id="P4_line_bis"></div>
+                <div class="event right">
+                    <label class="icon periodD right"></label>
+                    <div class="event-label right">
                         <h3>Geil,Danke! GmbH</h3>
                         <p>Lorem ipsum dolor sit amet</p>
-                    </div>
-                </div><div class="event">
-                    <label class="icon icon-red" style="left: calc(50% - 0.5em)"></label>
-                    <div class="info-general info-right">
-                        <h3>Geil,Danke! GmbH</h3>
-                        <p>Lorem ipsum dolor sit amet</p>
+                        <div class="detail">
+                            <p>Apple</p>
+                        </div>
                     </div>
                 </div>
-                <div class="event" style="flex-direction: row-reverse;">
-                    <label class="icon icon-red" style="right: calc(50% - 0.5em)"></label>
-                    <div class="info-general info-left">
+                <div class="event left">
+                    <label class="icon periodD left"></label>
+                    <div class="event-label left">
                         <h3>Geil,Danke! GmbH</h3>
                         <p>Lorem ipsum dolor sit amet</p>
+                        <div class="detail">
+                            <p>Banana</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="event right">
+                    <label class="icon periodD right"></label>
+                    <div class="event-label right">
+                        <h3>Geil,Danke! GmbH</h3>
+                        <p>Lorem ipsum dolor sit amet</p>
+                        <div class="detail">
+                            <p>Citrus</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="event left">
+                    <label class="icon periodD left"></label>
+                    <div class="event-label left">
+                        <h3>Geil,Danke! GmbH</h3>
+                        <p>Lorem ipsum dolor sit amet</p>
+                        <div class="detail">
+                            <p>Detail ?</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="event right">
+                    <label class="icon periodD right"></label>
+                    <div class="event-label right">
+                        <h3>Geil,Danke! GmbH</h3>
+                        <p>Lorem ipsum dolor sit amet</p>
+                        <div class="detail">
+                            <p>Eggplant</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="event left">
+                    <label class="icon periodD left"></label>
+                    <div class="event-label left">
+                        <h3>Geil,Danke! GmbH</h3>
+                        <p>Lorem ipsum dolor sit amet</p>
+                        <div class="detail">
+                            <p>French (aargh) fries</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="event right">
+                    <label class="icon periodD right"></label>
+                    <div class="event-label right">
+                        <h3>Geil,Danke! GmbH</h3>
+                        <p>Lorem ipsum dolor sit amet</p>
+                        <div class="detail">
+                            <p>Garlic</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="event left">
+                    <label class="icon periodD left"></label>
+                    <div class="event-label left">
+                        <h3>Geil,Danke! GmbH</h3>
+                        <p>Lorem ipsum dolor sit amet</p>
+                        <div class="detail">
+                            <p>Haricot beans</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="event right">
+                    <label class="icon periodD right"></label>
+                    <div class="event-label right">
+                        <h3>Geil,Danke! GmbH</h3>
+                        <p>Lorem ipsum dolor sit amet</p>
+                        <div class="detail">
+                            <p>Ice cream</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="event left">
+                    <label class="icon periodD left"></label>
+                    <div class="event-label left">
+                        <h3>Geil,Danke! GmbH</h3>
+                        <p>Lorem ipsum dolor sit amet</p>
+                        <div class="detail">
+                            <p>Jelly</p>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
         <div class="explainer">
-
+            <div class="explainer-container" id="explainer">
+                <div class="title">
+                    <h1 style="width: 100%;"> </h1>
+                </div>
+                <div class="description">
+                    <div></div>
+                </div>
+            </div>
         </div>
-
-        <!-- <div class="timeline">
-            <div class="event">
-                <label class="icon"></label>
-                <div class="info-general info-right">
-                    <p class="thumbnail">April 2011 - heute</p>
-                    <h3>Geil,Danke! GmbH</h3>
-                    <p>Lorem ipsum dolor sit amet, quo ei simul congue exerci, ad nec admodum perfecto mnesarchum, vim
-                        ea mazim fierent detracto. Ea quis iuvaret expetendis his, te elit voluptua dignissim per, habeo
-                        iusto primis ea eam.</p>
-                </div>
-            </div>
-            <div class="event">
-                <label class="icon"></label>
-                <div class="info-general info-left">
-                    <p class="thumbnail">April 2011 - heute</p>
-                    <h3>Geil,Danke! GmbH</h3>
-                    <p>Lorem ipsum dolor sit amet, quo ei simul congue exerci, ad nec admodum perfecto mnesarchum, vim
-                        ea mazim fierent detracto. Ea quis iuvaret expetendis his, te elit voluptua dignissim per, habeo
-                        iusto primis ea eam.</p>
-                </div>
-            </div>
-            <div class="event">
-                <label class="icon"></label>
-                <div class="info-general info-right">
-                    <p class="thumbnail">April 2011 - heute</p>
-                    <h3>Geil,Danke! GmbH</h3>
-                    <p>Lorem ipsum dolor sit amet, quo ei simul congue exerci, ad nec admodum perfecto mnesarchum, vim
-                        ea mazim fierent detracto. Ea quis iuvaret expetendis his, te elit voluptua dignissim per, habeo
-                        iusto primis ea eam.</p>
-                </div>
-            </div>
-            <div class="event">
-                <label class="icon"></label>
-                <div class="info-general info-left">
-                    <p class="thumbnail">April 2011 - heute</p>
-                    <h3>Geil,Danke! GmbH</h3>
-                    <p>Lorem ipsum dolor sit amet, quo ei simul congue exerci, ad nec admodum perfecto mnesarchum, vim
-                        ea mazim fierent detracto. Ea quis iuvaret expetendis his, te elit voluptua dignissim per, habeo
-                        iusto primis ea eam.</p>
-                </div>
-            </div>
-        </div> -->
+    </div>
     </div>
 
     <script>
         main();
     </script>
-    
-    <!-- <label for="toggle-1"> Button </label> -->
-    <!-- <input type="checkbox" id="toggle-1">         -->
-
-    <!-- <div style="height: 500px;"> -->
-    <!-- <p>fill with emptyness</p> -->
-    <!-- </div> -->
 </body>
 
 </html>

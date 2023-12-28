@@ -1,5 +1,8 @@
-let current = undefined;
-let ongoing = false;
+let current_period = undefined;
+let ongoing_period = false;
+
+let current_event = undefined;
+let ongoing_event = false;
 
 function main() {
     handle_inputs();
@@ -10,20 +13,61 @@ function handle_inputs() {
     function handle_input_period(i) {
         let rect = document.getElementById("P" + i + "_box");
         rect.addEventListener("click", function (e) {
-            if (ongoing) {
+            if (ongoing_period) {
                 return;
             }
-            
-            ongoing = true;
-            if (current != undefined)
-                anim_leave_period(current, i, duration = 0.5);
+            ongoing_period = true;
+            if (current_period != undefined)
+                anim_leave_period(current_period, i, duration = 0.5);
 
-            if (current == i) {
-                current = undefined;
+            if (current_period == i) {
+                current_period = undefined;
             } else {
-                anim_enter_period(i, duration = 1.);
-                current = i;
+                anim_enter_period(i, duration = 0.5);
+                current_period = i;
             }
+        });
+    }
+
+    function handle_event(event_box) {
+        let detail_box = document.getElementById("explainer");
+        let children = event_box.children;
+        let event_subbox = undefined;
+        for (let j = 0; j < children.length; j++) {
+            if (children[j].classList.contains("event-label")) {
+                event_subbox = children[j];
+            }
+        }
+        if (event_subbox == undefined) {
+            console.log("Error: no event-label found in the event", event_box);
+            return;
+        }
+
+        children = event_subbox.children;
+        let event_title = undefined;
+        let event_detail = undefined;
+        for (let j = 0; j < children.length; j++) {
+            if (children[j].classList.contains("detail")) {
+                event_detail = children[j];
+            } else if (children[j].tagName == "H3") {
+                event_title = children[j];
+            }
+        }
+        if (event_title == undefined) {
+            console.log("Error: no title found in the event", event_box);
+            return;
+        }
+        if (event_detail == undefined) {
+            console.log("Error: no detail found in the event", event_box);
+            return;
+        }
+
+        event_box.addEventListener("click", function (e) {
+            if (ongoing_period || ongoing_event) {
+                return;
+            }
+            ongoing_event = true;
+            switch_description(event_subbox, detail_box, event_title, event_detail, 0.5);
         });
     }
 
@@ -31,6 +75,13 @@ function handle_inputs() {
     handle_input_period(2);
     handle_input_period(3);
     handle_input_period(4);
+
+    let events = document.getElementsByClassName("event");
+    console.log(events);
+    for (let event of events) {
+        handle_event(event);
+    }
+
 }
 
 function easeInOut(t) {
@@ -57,26 +108,7 @@ function anim_enter_period(which, duration = 2.) {
     duration *= 1000;
 
     let timeline = document.getElementById("tl" + which);
-    if (timeline.style.display != "none") {
-        return;
-    } else {
-        timeline.style.display = "flex";
-    }
-    
-    // let box_org = document.getElementById("P" + which + "_ref");
-    // let box_mve = document.getElementById("P" + which);
-    // let box_dst = document.getElementById("P" + which + "_bis");
-    // box_mve.style.display = "flex";
-    // box_mve.style.transitionProperty = "none";
-    // box_mve.style.position = "absolute";
-
-    // let rect_org = cumulativeOffset(box_org);
-    // let rect_dst = cumulativeOffset(box_dst);
-    // let style = box_mve.currentStyle || window.getComputedStyle(box_mve);
-    // let marginLeft = parseInt(style.marginLeft);
-    // let marginTop = parseInt(style.marginTop);
-    // let init_left = rect_org.left;
-    // let init_top = rect_org.top + box_org.offsetHeight / 2. - box_mve.offsetHeight / 2.;
+    timeline.style.display = "flex";
 
     let line_org = document.getElementById("P" + which + "_line");
     let line_mve = document.getElementById("P" + which + "_line_mv");
@@ -90,8 +122,6 @@ function anim_enter_period(which, duration = 2.) {
     function step_line(timestamp) {
         if (!start) {    
             start = timestamp;
-            // box_mve.style.top = init_top + "px";
-            // box_mve.style.left = init_left + "px";
             line_mve.style.top = line_org_.top + "px";
             line_mve.style.left = line_org_.left + "px";
         } 
@@ -103,15 +133,11 @@ function anim_enter_period(which, duration = 2.) {
             start = null;
         }
 
-        // box_mve.style.left = (init_left * (1. - t) + rect_dst.left * t) - marginLeft + "px";
-        // box_mve.style.top = (init_top * (1. - t) + rect_dst.top * t) - marginTop + "px";
         line_mve.style.height = line_org.offsetHeight * (1. - t) + line_dst.offsetHeight * t + "px";
         line_mve.style.top = line_org_.top * (1. - t) + line_dst_.top * t + "px";
         line_mve.style.left = line_org_.left * (1. - t) + line_dst_.left * t + "px";
 
         if ((start == null)) {
-            // box_mve.style.display = "none";
-            // box_dst.style.opacity = 1.0;
             line_mve.style.display = "none";
             line_dst.style.opacity = 1.0;
             anim_events(which);
@@ -121,12 +147,12 @@ function anim_enter_period(which, duration = 2.) {
     window.requestAnimationFrame(step_line);
 }
 
-function anim_events(which, duration = 2.) {
+function anim_events(which, duration = 1.) {
 
     let all_events = document.getElementsByClassName("event");
     let events = []
     for (i = 0; i < all_events.length; i++) {
-        if (all_events[i].parentElement.parentElement.id[2] == which) {
+        if (all_events[i].parentElement.id[2] == which) {
             events.push(all_events[i]);
         }
     }
@@ -166,54 +192,124 @@ function anim_events(which, duration = 2.) {
             }
         }
 
-        if (start == null) ongoing = false;
+        if (start == null) ongoing_period = false;
     }
 
     window.requestAnimationFrame(step);
 }
 
-function anim_leave_period(to_fadeout, to_fadein, duration = 5.) {
-    
-    let timeline = document.getElementById("tl" + to_fadeout);
-
+function anim_leave_period(to_fadeout, to_fadein, duration = 2.) {
     let start = null;
     duration *= 1000;
+
+    let timeline = document.getElementById("tl" + to_fadeout);
     
-    // let box_title = document.getElementById("P" + which + "_bis");
-    let line = document.getElementById("P" + to_fadeout + "_line_bis");
-    
+    let line_org = document.getElementById("P" + to_fadeout + "_line");
+    let line_mve = document.getElementById("P" + to_fadeout + "_line_mv");
+    let line_dst = document.getElementById("P" + to_fadeout + "_line_bis");    
+    line_mve.style.display = "flex";
+    line_mve.style.position = "absolute";
+    let line_org_ = cumulativeOffset(line_org);
+    let line_dst_ = cumulativeOffset(line_dst);
+    let dst_height = line_dst.offsetHeight;
+    line_dst.style.opacity = 0;
+
     let all_events = document.getElementsByClassName("event");
     let events = []
     for (i = 0; i < all_events.length; i++) {
-        if (all_events[i].parentElement.parentElement.id[2] == to_fadeout) {
+        if (all_events[i].parentElement.id[2] == to_fadeout) {
             events.push(all_events[i]);
         }
     }
 
-    function step(timestamp) {
+    function step_line(timestamp) {
         if (!start) {    
             start = timestamp;
+            line_mve.style.top = line_dst_.top + "px";
+            line_mve.style.left = line_dst_.left + "px";
         } 
         let t = easeInOut((timestamp - start) / duration);
         if (timestamp - start < duration) {
-            window.requestAnimationFrame(step);
+            window.requestAnimationFrame(step_line);
         } else {
             t = 1.;
             start = null;
         }
 
-        // box_title.style.opacity = 1. - t;
-        line.style.opacity = 1. - t;
+        // Move back the line
+        line_mve.style.height = line_org.offsetHeight * t + dst_height * (1. - t) + "px";
+        line_mve.style.top = line_org_.top * t + line_dst_.top * (1. - t) + "px";
+        line_mve.style.left = line_org_.left * t + line_dst_.left * (1. - t) + "px";
+
+        // Fade out the events
         for (i = 0; i < events.length; i++) {
             events[i].style.opacity = 1. - t;
         }
 
         if (start == null) {
             timeline.style.display = "none";
-            if (to_fadeout == to_fadein) ongoing = false;
+            line_mve.style.display = "none";
+            if (to_fadeout == to_fadein) ongoing_period = false;
         }
     }
 
-    window.requestAnimationFrame(step);
+    document.getElementById("explainer").style.opacity = 0.;
+    window.requestAnimationFrame(step_line);
+}
 
+function switch_description(event_box, info_box, title_elem, detail_elem, duration=1.) {
+    let start = null;
+    let init_width = event_box.getBoundingClientRect().width;
+    
+    console.log(((current_event == undefined) || (current_event != event_box)));
+    if ((current_event == undefined) || (current_event != event_box)) {
+        // Complicated stuff, just to have the correct size, as fit-content is not dynamic !
+        let outer_box = info_box.children[0];
+        let inner_box = outer_box.children[0];
+        let padding = parseInt(window.getComputedStyle(outer_box, null).getPropertyValue('padding-top'));
+        inner_box.textContent = title_elem.textContent;
+        outer_box.style.height = 2*padding + inner_box.offsetHeight + "px";
+        
+        outer_box = info_box.children[1];
+        inner_box = outer_box.children[0];
+        padding = parseInt(window.getComputedStyle(outer_box, null).getPropertyValue('padding-top'))
+        inner_box.innerHTML = detail_elem.innerHTML;
+        let inner_margin = 0.;
+        inner_margin += parseInt(window.getComputedStyle(inner_box.children[0], null).getPropertyValue('margin-top'));
+        inner_margin += parseInt(window.getComputedStyle(inner_box.children[inner_box.children.length-1], null).getPropertyValue('margin-bottom'));
+        outer_box.style.height = 2*padding + inner_margin + inner_box.offsetHeight + "px";
+        // End of complicated stuff
+        
+        info_box.style.opacity = 1.;
+        current_event = event_box;
+    } else {
+        info_box.style.opacity = 0.;
+        current_event = undefined;
+    }
+
+
+    function step(timestamp) {
+        if (!start) start = timestamp;
+        let t = easeInOut((timestamp - start) / (duration * 1000));
+
+        if (timestamp - start < duration * 1000) {
+            window.requestAnimationFrame(step);
+        } else {
+            t = 1.;
+            start = null;
+        }
+
+        let delta = 4 * t * (1. - t) * 15;
+        event_box.style.marginTop = delta + "px";
+        event_box.style.marginBottom = delta + "px";
+        event_box.style.paddingTop = delta + "px";
+        event_box.style.paddingBottom = delta + "px";
+        event_box.style.width = init_width - delta + "px";
+        
+        if (start == null) {
+            ongoing_event = false;
+        }
+    }
+    
+    window.requestAnimationFrame(step);
 }
