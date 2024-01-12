@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+
+    <head>
+        <title>Grains</title>
+        <meta charset="utf-8">
+        <link rel="stylesheet" href="nord.css">
+        <style>
+            body {
+                background: linear-gradient(to bottom right, hsl(0, 0%, 85%), hsl(0, 0%, 100%));
+                background-size: 100vw 100vh;
+            }
+        </style>
+        <script type="text/javascript" src="grains.js"></script>
+    </head>
+
+    <body>
+        <div>
+            <canvas id="canvas", style="position: absolute; z-index: 0; background-color: var(--nord2)"></canvas>
+        </div>
+
+        <script >
+            const border = 0;
+            const sep = Math.floor(Math.min(window.innerHeight, window.innerWidth) * 0.01);
+            let canvas_ = document.getElementById("canvas")
+            
+            // for (let canvas of canvas_list){
+            canvas_.width = (window.innerWidth - 2 * sep) - 2*border;
+            canvas_.height = window.innerHeight - 2 * sep - 2*border;
+            canvas_.style.left = sep + "px";
+            canvas_.style.top = sep + "px";
+            canvas_.style.border = border + "px solid #020000";
+            // }
+
+            main();
+        </script>
+
+    </body>
+
+</html>
