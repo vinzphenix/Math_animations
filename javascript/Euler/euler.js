@@ -43,7 +43,7 @@ let entropy_fix = true;
 let pan_init = [undefined, undefined];
 let hoover_position_q = [-1., 0.];
 let hoover_position_xt = [undefined, undefined];
-let active_char = [true, true, true];
+let active_char = [false, true, false];
 
 // Animation parameters
 let anim_state = "init";  // init, play, pause, end
@@ -296,6 +296,25 @@ function characteristic_intputs(canvas_axes_list, canvas_list) {
             draw_characteristics(canvas3, tsfm3, last_t);
         }
     );
+
+    window.addEventListener('keydown', (e) => {
+        if (e.key != "1") return;
+        active_char[0] = !active_char[0];
+        document.getElementById("1_char").checked = active_char[0];
+        draw_characteristics(canvas3, tsfm3, last_t);
+    });
+    window.addEventListener('keydown', (e) => {
+        if (e.key != "2") return;
+        active_char[1] = !active_char[1];
+        document.getElementById("2_char").checked = active_char[1];
+        draw_characteristics(canvas3, tsfm3, last_t);
+    });
+    window.addEventListener('keydown', (e) => {
+        if (e.key != "3") return;
+        active_char[2] = !active_char[2];
+        document.getElementById("3_char").checked = active_char[2];
+        draw_characteristics(canvas3, tsfm3, last_t);
+    });
 }
 
 function limits_inputs(canvas_axes_list, canvas_list) {
@@ -655,7 +674,7 @@ function adjust_frame() {
 
     // Clip to zero for nonegative fields
     if (state_map[0] == "r") qq_max_target[2*0 + 0] = Math.max(qq_max_target[2*0 + 0], 0.);
-    if (state_map[1] == "c")  qq_max_target[2*1 + 0] = Math.max(qq_max_target[2*1 + 0], 0.);
+    if ((state_map[1] == "c") || (state_map[1] == "M"))  qq_max_target[2*1 + 0] = Math.max(qq_max_target[2*1 + 0], 0.);
     if (state_map[2] != "R3") qq_max_target[2*2 + 0] = Math.max(qq_max_target[2*2 + 0], 0.);
 
     requestAnimationFrame(move_frame);
@@ -1012,6 +1031,7 @@ function map_primitive(q) {
     if (state_map[1] == "u") v2 = u;
     else if (state_map[1] == "ru") v2 = (vacuum) ? 0. : r * u;
     else if (state_map[1] == "c") v2 = (vacuum) ? 0. : c;
+    else if (state_map[1] == "M") v2 = (vacuum) ? undefined : Math.abs(u/c);
 
     if (state_map[2] == "p") v3 = p;
     else if (state_map[2] == "E") v3 = (vacuum) ? 0. : 0.5 * r * u * u + p / (G - 1.);

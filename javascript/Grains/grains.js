@@ -9,53 +9,25 @@ const COLORS = [
 const LINE_COLOR = COLORS[4];
 const LINE_WIDTH = 3;
 let TOL = 1e-6;
+let scale = 0.01;
+let duration_anim = 10.;  //duration simu
 
 let canvas;
 let ctx;
 let tsfm;
 
-let duration_anim = 5.;
+let amplitude = 10;  // should be 1 !!!
+let scale_comp = 0.2;  // should be 0 !!!
 
-let coords_x = [
-    [0., 4., 3, 0.],
-    [4., 7., 7., 3.],
-    [0., 3, 0.],
-];
-let coords_y = [
-    [0., 0., 4., 3.],
-    [0., 0., 4., 4.],
-    [3., 4., 6.],
-]
 
-let coords_x_end = [
-    [0., 6., 4.5, 0.],
-    [6., 10.5, 10.5, 4.5],
-    [0., 4.5, 0.],
-];
-let coords_y_end = [
-    [0., 0., 4., 3.],
-    [0., 0., 4., 4.],
-    [3., 4., 6.],
-]
-
-let orientations = [  // Rigid orientation for each grain)
-    0., 
-    Math.PI/4,
-    Math.PI/2
-]
-let orientation_end = [
-    Math.PI/4,
-    0.,
-    Math.PI,
-]
-
+// definition orentation debut et fin 
 function main() {
-    canvas = document.getElementById("canvas");
-    ctx = canvas.getContext("2d");
+    canvas = document.getElementById("canvas");  //creer le plot
+    ctx = canvas.getContext("2d");  //ecrire avec du 2D
 
-    let xmin = -3;
-    let xmax = 12;
-    let ymin = -1;
+    let xmin = -0.75;
+    let xmax = 1.50;
+    let ymin = -0.15;
     let ymax = ymin + (xmax - xmin) * canvas.height / canvas.width;
     tsfm = [
         canvas.width / (xmax - xmin), 0.,
@@ -63,46 +35,176 @@ function main() {
         -xmin * canvas.width / (xmax - xmin),
         canvas.height + ymin * canvas.height / (ymax - ymin)
     ];
-    display_traction(duration_anim);
+    document.getElementById('input-file').addEventListener('change', getFile);
 }
 
 
+let times;
+let coords_x_new;
+let coords_y_new;
+let angles_new;
+let polygons;
 
+// gestion des fichiers input (peut surement faire mieux)
+function getFile(event) {
+    let name;
+    const input = event.target;
+    
+    for (let i = 0; i < input.files.length; i++) {
+        name = input.files[i].name;
+        if (name.startsWith('time') && name.endsWith('.txt')) {
+            readFileContent(input.files[i]).then(
+                content => {
+                    // console.log("Time file");
+                    times = text_to_array(content);
+                    // console.log(times);
+                    if (coords_x_new && coords_y_new && angles_new && times && polygons) {
+                        display_traction(duration_anim);
+                    }
+                }
+            ).catch(error => console.log(error));                
+        } else if (name.startsWith('nodes_x') && name.endsWith('.txt')) {
+            readFileContent(input.files[i]).then(
+                content => {
+                    // console.log("X file");
+                    coords_x_new = text_to_array(content);
+                    // console.log(coords_x_new);
+                    if (coords_x_new && coords_y_new && angles_new && times && polygons) {
+                        display_traction(duration_anim);
+                    }
+                }
+            ).catch(error => console.log(error));
+        } else if (name.startsWith('nodes_y') && name.endsWith('.txt')) {
+            readFileContent(input.files[i]).then(
+                content => {
+                    // console.log("Y file");
+                    coords_y_new = text_to_array(content);
+                    // console.log(coords_y_new);
+                    if (coords_x_new && coords_y_new && angles_new && times && polygons) {
+                        display_traction(duration_anim);
+                    }
+                }
+            ).catch(error => console.log(error));
+        } else if (name.startsWith('angles') && name.endsWith('.txt')) {
+            readFileContent(input.files[i]).then(
+                content => {
+                    // console.log("A file");
+                    angles_new = text_to_array(content);
+                    // console.log(angles_new);
+                    if (coords_x_new && coords_y_new && angles_new && times && polygons) {
+                        display_traction(duration_anim);
+                    }
+                }
+            ).catch(error => console.log(error));
+        } else if (name.startsWith('polygons') && name.endsWith('.txt')) {
+            readFileContent(input.files[i]).then(
+                content => {
+                    // console.log("P file");
+                    polygons = text_to_array(content);
+                    // console.log(polygons);
+                    if (coords_x_new && coords_y_new && angles_new && times && polygons) {
+                        display_traction(duration_anim);
+                    }
+                }
+            ).catch(error => console.log(error));
+        }
+    }
+}
+
+function readFileContent(file) {
+	const reader = new FileReader()
+    return new Promise((resolve, reject) => {
+        reader.onload = event => resolve(event.target.result);
+        reader.onerror = error => reject(error);
+        reader.readAsText(file);
+        setTimeout(function() {
+            resolve();
+        }, 1000);
+    })
+}
+
+function text_to_array(text) {
+    let lines = text.split('\n');
+    let array = [];
+    let line;
+    let n = lines.length;
+    for (let i = 0; i < n; i++) {
+        line = lines[i].split(' ');
+        if ((0 < line.length) && (line[0] != '')) {
+            array.push([]);
+            for (let j = 0; j < line.length; j++) {
+                if (line[j] != '') {
+                    array[i].push(parseFloat(line[j]));
+                }
+            }
+        }
+    }
+    return array;
+}
+
+function add_fictitious_deformation(x, y) {
+    for (let j = 0; j < x[0].length; j++) {
+        dx = x[0][j] * scale_comp;
+        dy = -y[0][j] * scale_comp;
+        for (let i = 0; i < x.length; i++) {
+            x[i][j] += dx * (i+1) / x.length;
+            y[i][j] += dy * (i+1) / x.length;
+        }
+    }
+}
+
+// fonction qui va faire le refresh de mon ecran
 function display_traction(duration) {
 
     let start = null;
     duration *= 1000;
+    let current_idx = 0;
+
+    add_fictitious_deformation(coords_x_new, coords_y_new);
     
     function step(timestamp) {
-        if (!start) start = timestamp;
-        let t = (timestamp - start) / duration;
+        if (!start) start = timestamp; 
+        let t = (timestamp - start) / duration * times[times.length-1];
         if (timestamp < start + duration) {
             window.requestAnimationFrame(step);
         } else {
-            t = 1.;
+            t = times[times.length-1] - 1e-10;
             start = null;
         }
 
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        draw_orientations(t);
-        draw_grains(t);
+        if (times[current_idx + 1] < t) {
+            current_idx += 1;
+        }
+        console.log(t);
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);  //tt efacer 
+        draw_orientations(t, current_idx);  //tt redessiner
+        draw_grains(t, current_idx);
     }
 
     window.requestAnimationFrame(step);
 }
 
-function draw_grains(t) {
-    ctx.strokeStyle = LINE_COLOR;
+function interp(x, x0, x1, y0, y1) {
+    return y0 + (y1 - y0) * (x - x0) / (x1 - x0);
+}
+
+function draw_grains(t, t_idx) {
+    ctx.strokeStyle = LINE_COLOR;  //definir la couleur de ma ligne
+    let t_prev = times[t_idx  ];
+    let t_next = times[t_idx+1];
     let x, y;
-    for (let i = 0; i < coords_x.length; i++) {
+    let nodes;
+    for (let i = 0; i < polygons.length; i++) {
+        nodes = polygons[i];
         ctx.beginPath();
         ctx.setTransform(...tsfm);
-        x = coords_x[i][0]*(1-t) + coords_x_end[i][0]*t;
-        y = coords_y[i][0]*(1-t) + coords_y_end[i][0]*t;
+        x = interp(t, t_prev, t_next, coords_x_new[t_idx][nodes[0]], coords_x_new[t_idx+1][nodes[0]]);
+        y = interp(t, t_prev, t_next, coords_y_new[t_idx][nodes[0]], coords_y_new[t_idx+1][nodes[0]]);
         ctx.moveTo(x, y);
-        for (let j = 0; j < coords_x[i].length; j++) {
-            x = coords_x[i][j]*(1-t) + coords_x_end[i][j]*t;
-            y = coords_y[i][j]*(1-t) + coords_y_end[i][j]*t;
+        for (let j = 0; j < nodes.length; j++) {
+            x = interp(t, t_prev, t_next, coords_x_new[t_idx][nodes[j]], coords_x_new[t_idx+1][nodes[j]]);
+            y = interp(t, t_prev, t_next, coords_y_new[t_idx][nodes[j]], coords_y_new[t_idx+1][nodes[j]]);
             ctx.lineTo(x, y);
         }
         ctx.closePath();
@@ -112,23 +214,29 @@ function draw_grains(t) {
     }
 }
 
-function draw_orientations(t) {
-    for (i = 0; i < orientations.length; i++) {
-        draw_orientation(t, i);
+function draw_orientations(t, t_idx) {
+    for (i = 0; i < polygons.length; i++) {
+        draw_orientation(t, i, t_idx);
     }
 }
 
 show = 0;
-function draw_orientation(t, i) {
+function draw_orientation(t, i, t_idx) {
 
     let cg = [0., 0.];  // center of gravity
-    let pts_x = [];
-    let pts_y = [];
-    let n_sides = coords_x[i].length;  // number of sides of the grain
+    let pts_x = [];  // liste des sommets du grains
+    let pts_y = [];  
+    let n_sides = polygons[i].length;  // number of sides of the grain
+    let nodes = polygons[i];  // nombre de cote du polygone
+    let t_prev = times[t_idx  ];
+    let t_next = times[t_idx+1];
 
+    //fonction pour trouver CG
     for (let j = 0; j < n_sides; j++) {
-        pts_x.push(coords_x[i][j]*(1-t) + coords_x_end[i][j]*t);
-        pts_y.push(coords_y[i][j]*(1-t) + coords_y_end[i][j]*t);
+        x = interp(t, t_prev, t_next, coords_x_new[t_idx][nodes[j]], coords_x_new[t_idx+1][nodes[j]]);
+        y = interp(t, t_prev, t_next, coords_y_new[t_idx][nodes[j]], coords_y_new[t_idx+1][nodes[j]]);
+        pts_x.push(x);
+        pts_y.push(y);
         cg[0] += pts_x[j];
         cg[1] += pts_y[j];
     }
@@ -139,7 +247,17 @@ function draw_orientation(t, i) {
     let endpts = [];
     let flag_continue;
 
-    let alpha = orientations[i] * (1-t) + orientation_end[i] * t;
+    // let alpha = orientations[i] * (1-t) + orientation_end[i] * t;
+    let alpha_prev = angles_new[t_idx  ][i] * amplitude;
+    let alpha_next = angles_new[t_idx+1][i] * amplitude;
+    let s_ap = Math.sin(alpha_prev);
+    let c_ap = Math.cos(alpha_prev);
+    let s_an = Math.sin(alpha_next);
+    let c_an = Math.cos(alpha_next);
+    let alpha = Math.atan2(
+        interp(t, times[t_idx], times[t_idx+1], s_ap, s_an),
+        interp(t, times[t_idx], times[t_idx+1], c_ap, c_an)
+    );
 
     for (sign = -1; sign <= 1; sign += 2) {
         p = [cg[0], cg[1]];
@@ -170,8 +288,8 @@ function draw_orientation(t, i) {
                 flag_continue = false;
             } else {
                 draw_line(endpts[0], endpts[1], COLORS[11+(i%5)], LINE_WIDTH/2.);
-                p[0] -= sign * Math.sin(alpha);
-                p[1] += sign * Math.cos(alpha);
+                p[0] -= sign * Math.sin(alpha) * scale;
+                p[1] += sign * Math.cos(alpha) * scale;
             }
         }
     }
