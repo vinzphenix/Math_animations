@@ -10,14 +10,15 @@ const LINE_COLOR = COLORS[4];
 const LINE_WIDTH = 3;
 let TOL = 1e-6;
 let scale = 0.01;
-let duration_anim = 10.;  //duration simu
+let duration_anim = 5.;  //duration animation
+let restart_delay = 2.;  //delay to restart animation
 
 let canvas;
 let ctx;
 let tsfm;
 
-let amplitude = 10;  // should be 1 !!!
-let scale_comp = 0.2;  // should be 0 !!!
+let amplitude = 1.0;  // should be 1 !!!
+let scale_comp = 0.;  // should be 0 !!!
 
 
 // definition orentation debut et fin 
@@ -40,9 +41,9 @@ function main() {
 
 
 let times;
-let coords_x_new;
-let coords_y_new;
-let angles_new;
+let coords_x;
+let coords_y;
+let angles;
 let polygons;
 
 // gestion des fichiers input (peut surement faire mieux)
@@ -58,7 +59,7 @@ function getFile(event) {
                     // console.log("Time file");
                     times = text_to_array(content);
                     // console.log(times);
-                    if (coords_x_new && coords_y_new && angles_new && times && polygons) {
+                    if (coords_x && coords_y && angles && times && polygons) {
                         display_traction(duration_anim);
                     }
                 }
@@ -67,9 +68,9 @@ function getFile(event) {
             readFileContent(input.files[i]).then(
                 content => {
                     // console.log("X file");
-                    coords_x_new = text_to_array(content);
+                    coords_x = text_to_array(content);
                     // console.log(coords_x_new);
-                    if (coords_x_new && coords_y_new && angles_new && times && polygons) {
+                    if (coords_x && coords_y && angles && times && polygons) {
                         display_traction(duration_anim);
                     }
                 }
@@ -78,9 +79,9 @@ function getFile(event) {
             readFileContent(input.files[i]).then(
                 content => {
                     // console.log("Y file");
-                    coords_y_new = text_to_array(content);
+                    coords_y = text_to_array(content);
                     // console.log(coords_y_new);
-                    if (coords_x_new && coords_y_new && angles_new && times && polygons) {
+                    if (coords_x && coords_y && angles && times && polygons) {
                         display_traction(duration_anim);
                     }
                 }
@@ -89,9 +90,9 @@ function getFile(event) {
             readFileContent(input.files[i]).then(
                 content => {
                     // console.log("A file");
-                    angles_new = text_to_array(content);
+                    angles = text_to_array(content);
                     // console.log(angles_new);
-                    if (coords_x_new && coords_y_new && angles_new && times && polygons) {
+                    if (coords_x && coords_y && angles && times && polygons) {
                         display_traction(duration_anim);
                     }
                 }
@@ -102,7 +103,7 @@ function getFile(event) {
                     // console.log("P file");
                     polygons = text_to_array(content);
                     // console.log(polygons);
-                    if (coords_x_new && coords_y_new && angles_new && times && polygons) {
+                    if (coords_x && coords_y && angles && times && polygons) {
                         display_traction(duration_anim);
                     }
                 }
@@ -157,29 +158,53 @@ function add_fictitious_deformation(x, y) {
 function display_traction(duration) {
 
     let start = null;
+    let mode = 0;  // 0 for ready, 1 for running, -1 for waiting
+    let n_runs = 0;  // number of runs completed
     duration *= 1000;
     let current_idx = 0;
 
-    add_fictitious_deformation(coords_x_new, coords_y_new);
+    add_fictitious_deformation(coords_x, coords_y);
     
     function step(timestamp) {
-        if (!start) start = timestamp; 
+        if (!start) {
+            start = timestamp;
+            mode = 1;
+        }
+        
         let t = (timestamp - start) / duration * times[times.length-1];
         if (timestamp < start + duration) {
             window.requestAnimationFrame(step);
-        } else {
+        } else if (mode == 1) {
             t = times[times.length-1] - 1e-10;
-            start = null;
+            mode = -1;
+            n_runs += 1;
+            window.requestAnimationFrame(step);
+        } else if (mode == -1) {
+            let waiting_progress = (timestamp - (start + duration)) / (restart_delay * 1000);
+            let alpha1 = Math.max(0., (0.4 - waiting_progress) / (0.4 - 0.0))**2;
+            let alpha2 = Math.max(0., (waiting_progress - 0.6) / (1.0 - 0.6))**2;
+            if (waiting_progress < 0.5) t = times[times.length-1] - 1e-10;
+            else t = 0.0;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);  //tt efacer 
+            draw_orientations(t, current_idx, Math.max(alpha1, alpha2));  //tt redessiner
+            draw_grains(t, current_idx, Math.max(alpha1, alpha2));
+            if (1.0 <= waiting_progress) {
+                start = null;
+            }
+            if (n_runs < 3) {
+                window.requestAnimationFrame(step);
+            }
         }
 
-        if (times[current_idx + 1] < t) {
-            current_idx += 1;
+        if (mode == 1) {
+            if (times[current_idx + 1] < t) {
+                current_idx += 1;
+            }
+    
+            ctx.clearRect(0, 0, canvas.width, canvas.height);  //tt efacer 
+            draw_orientations(t, current_idx);  //tt redessiner
+            draw_grains(t, current_idx);
         }
-        console.log(t);
-
-        ctx.clearRect(0, 0, canvas.width, canvas.height);  //tt efacer 
-        draw_orientations(t, current_idx);  //tt redessiner
-        draw_grains(t, current_idx);
     }
 
     window.requestAnimationFrame(step);
@@ -189,8 +214,8 @@ function interp(x, x0, x1, y0, y1) {
     return y0 + (y1 - y0) * (x - x0) / (x1 - x0);
 }
 
-function draw_grains(t, t_idx) {
-    ctx.strokeStyle = LINE_COLOR;  //definir la couleur de ma ligne
+function draw_grains(t, t_idx, alpha=1.0) {
+    ctx.strokeStyle = addAlpha(LINE_COLOR, alpha);  //definir la couleur de ma ligne
     let t_prev = times[t_idx  ];
     let t_next = times[t_idx+1];
     let x, y;
@@ -199,12 +224,12 @@ function draw_grains(t, t_idx) {
         nodes = polygons[i];
         ctx.beginPath();
         ctx.setTransform(...tsfm);
-        x = interp(t, t_prev, t_next, coords_x_new[t_idx][nodes[0]], coords_x_new[t_idx+1][nodes[0]]);
-        y = interp(t, t_prev, t_next, coords_y_new[t_idx][nodes[0]], coords_y_new[t_idx+1][nodes[0]]);
+        x = interp(t, t_prev, t_next, coords_x[t_idx][nodes[0]], coords_x[t_idx+1][nodes[0]]);
+        y = interp(t, t_prev, t_next, coords_y[t_idx][nodes[0]], coords_y[t_idx+1][nodes[0]]);
         ctx.moveTo(x, y);
         for (let j = 0; j < nodes.length; j++) {
-            x = interp(t, t_prev, t_next, coords_x_new[t_idx][nodes[j]], coords_x_new[t_idx+1][nodes[j]]);
-            y = interp(t, t_prev, t_next, coords_y_new[t_idx][nodes[j]], coords_y_new[t_idx+1][nodes[j]]);
+            x = interp(t, t_prev, t_next, coords_x[t_idx][nodes[j]], coords_x[t_idx+1][nodes[j]]);
+            y = interp(t, t_prev, t_next, coords_y[t_idx][nodes[j]], coords_y[t_idx+1][nodes[j]]);
             ctx.lineTo(x, y);
         }
         ctx.closePath();
@@ -214,14 +239,14 @@ function draw_grains(t, t_idx) {
     }
 }
 
-function draw_orientations(t, t_idx) {
+function draw_orientations(t, t_idx, alpha=1.0) {
     for (i = 0; i < polygons.length; i++) {
-        draw_orientation(t, i, t_idx);
+        draw_orientation(t, i, t_idx, alpha);
     }
 }
 
 show = 0;
-function draw_orientation(t, i, t_idx) {
+function draw_orientation(t, i, t_idx, alpha=1.0) {
 
     let cg = [0., 0.];  // center of gravity
     let pts_x = [];  // liste des sommets du grains
@@ -233,8 +258,8 @@ function draw_orientation(t, i, t_idx) {
 
     //fonction pour trouver CG
     for (let j = 0; j < n_sides; j++) {
-        x = interp(t, t_prev, t_next, coords_x_new[t_idx][nodes[j]], coords_x_new[t_idx+1][nodes[j]]);
-        y = interp(t, t_prev, t_next, coords_y_new[t_idx][nodes[j]], coords_y_new[t_idx+1][nodes[j]]);
+        x = interp(t, t_prev, t_next, coords_x[t_idx][nodes[j]], coords_x[t_idx+1][nodes[j]]);
+        y = interp(t, t_prev, t_next, coords_y[t_idx][nodes[j]], coords_y[t_idx+1][nodes[j]]);
         pts_x.push(x);
         pts_y.push(y);
         cg[0] += pts_x[j];
@@ -247,14 +272,14 @@ function draw_orientation(t, i, t_idx) {
     let endpts = [];
     let flag_continue;
 
-    // let alpha = orientations[i] * (1-t) + orientation_end[i] * t;
-    let alpha_prev = angles_new[t_idx  ][i] * amplitude;
-    let alpha_next = angles_new[t_idx+1][i] * amplitude;
-    let s_ap = Math.sin(alpha_prev);
-    let c_ap = Math.cos(alpha_prev);
-    let s_an = Math.sin(alpha_next);
-    let c_an = Math.cos(alpha_next);
-    let alpha = Math.atan2(
+    // let theta = orientations[i] * (1-t) + orientation_end[i] * t;
+    let theta_prev = angles[t_idx  ][i] * amplitude;
+    let theta_next = angles[t_idx+1][i] * amplitude;
+    let s_ap = Math.sin(theta_prev);
+    let c_ap = Math.cos(theta_prev);
+    let s_an = Math.sin(theta_next);
+    let c_an = Math.cos(theta_next);
+    let theta = Math.atan2(
         interp(t, times[t_idx], times[t_idx+1], s_ap, s_an),
         interp(t, times[t_idx], times[t_idx+1], c_ap, c_an)
     );
@@ -264,9 +289,9 @@ function draw_orientation(t, i, t_idx) {
         flag_continue = true;
         
         while (flag_continue) {
-            // console.log("\n", "New level set", p, alpha*180/Math.PI);
+            // console.log("\n", "New level set", p, theta*180/Math.PI);
             endpts.length = 0;  // clear array
-            q = [p[0] + Math.cos(alpha), p[1] + Math.sin(alpha)];  // unit vector along the orientation line
+            q = [p[0] + Math.cos(theta), p[1] + Math.sin(theta)];  // unit vector along the orientation line
             
             // look for an intersection with each side of the grain
             for (j = 0; j < n_sides; j++) {
@@ -274,7 +299,7 @@ function draw_orientation(t, i, t_idx) {
                 r = [pts_x[j], pts_y[j]];
                 s = [pts_x[(j+1)%n_sides], pts_y[(j+1)%n_sides]];
                 res = get_line_segment_intersection(p, q, r, s);
-                // if (show<10000) {console.log(i, r, s, res, p, q, alpha); show+=1;}
+                // if (show<10000) {console.log(i, r, s, res, p, q, theta); show+=1;}
                 if (res != null) {
                     if ((endpts.length > 0) && (Math.hypot(endpts[0][0] - res[0], endpts[0][1] - res[1]) < TOL)) {
                         continue;
@@ -287,9 +312,9 @@ function draw_orientation(t, i, t_idx) {
             if (endpts.length != 2) {
                 flag_continue = false;
             } else {
-                draw_line(endpts[0], endpts[1], COLORS[11+(i%5)], LINE_WIDTH/2.);
-                p[0] -= sign * Math.sin(alpha) * scale;
-                p[1] += sign * Math.cos(alpha) * scale;
+                draw_line(endpts[0], endpts[1], COLORS[11+(i%5)], LINE_WIDTH/2., alpha);
+                p[0] -= sign * Math.sin(theta) * scale;
+                p[1] += sign * Math.cos(theta) * scale;
             }
         }
     }
@@ -317,7 +342,15 @@ function get_line_segment_intersection(p_org, p_dst, q_org, q_dst) {
     }
 }
 
-function draw_line(p, q, color=LINE_COLOR, width=LINE_WIDTH) {
+function addAlpha(color, opacity) {
+    // coerce values so ti is between 0 and 1.
+    var _opacity = Math.floor(Math.min(Math.max(opacity, 0), 1) * 255);
+    return color + _opacity.toString(16).toUpperCase().padStart(2, '0');
+}
+
+function draw_line(p, q, color=LINE_COLOR, width=LINE_WIDTH, alpha=1.0) {
+    color = addAlpha(color, alpha);
+    // if (alpha < 0.5) console.log(color);
     ctx.beginPath();
     ctx.strokeStyle = color;
     ctx.setTransform(...tsfm);
