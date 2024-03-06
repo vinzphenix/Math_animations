@@ -37,7 +37,7 @@ def evalSpline(n, p, knots, control_X, control_Y, nEval):
     return eval_x, eval_y
 
 
-def getCurve(coords, p=3, openCurve=1, nEval=500):
+def getCurve(coords, p=3, openCurve=1, nEval=200):
     X = coords[:, 0]
     Y = coords[:, 1]
     cut = len(X)
@@ -53,7 +53,7 @@ def getCurve(coords, p=3, openCurve=1, nEval=500):
         cut = -p + 1
 
     x, y = evalSpline(n, p, T, X, Y, nEval)
-    return X[:cut], Y[:cut], x, y
+    return x, y
 
 
 def onClick(event):
@@ -86,7 +86,7 @@ def onClick(event):
             typeCurve = -1
             curve.set_data([], [])
         else:
-            X, Y, x, y = getCurve(coords, p, openCurve=typeCurve, nEval=500)
+            x, y = getCurve(coords, p, openCurve=typeCurve)
             curve.set_data(x, y)
 
     fig.canvas.draw()
@@ -112,7 +112,7 @@ def whileClick(event):
         edge.set_data(coords[np.r_[-1:1]].T)
 
     if typeCurve != -1:
-        X, Y, x, y = getCurve(coords, p, openCurve=typeCurve, nEval=500)
+        x, y = getCurve(coords, p, openCurve=typeCurve)
         curve.set_data(x, y)
 
     fig.canvas.draw()
@@ -149,7 +149,7 @@ def onKey(event):
             typeCurve = -1
             print("Not enough points to draw the B-spline")
             return
-        X, Y, x, y = getCurve(coords, p, openCurve=typeCurve, nEval=500)
+        x, y = getCurve(coords, p, openCurve=typeCurve)
         curve.set_data(x, y)
 
     fig.canvas.draw()
@@ -182,7 +182,7 @@ if __name__ == '__main__':
     points, = ax.plot(coords[:, 0], coords[:, 1], color='C0', alpha=0.75,
                       marker='o', markersize=10, markeredgecolor='none')
     edge, = ax.plot([], [], ls='--', color='C0', alpha=0.75, marker='o', markersize=10, markeredgecolor='none')
-    curve, = ax.plot([], [], ls='-', lw=1.5, color='C1')
+    curve, = ax.plot([], [], ls='-', marker="", lw=1.5, color='C1')
 
     left, width = .25, .5
     bottom, height = .25, .5

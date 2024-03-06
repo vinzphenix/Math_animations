@@ -18,8 +18,8 @@ const n_speed_lines = 20;  // number of speed lines
 
 // Simulation parameters
 let G = 1.4;
-let qL = [1., +0., 10.];  // left state
-let qR = [.125, +0., 1.25];  // right state
+let qL = [1.0, -1., 10.];  // left state
+let qR = [.11, +0., 1.25];  // right state
 let ql = [0., +0., 0.];  // middle left state (just for initialization)
 let qr = [0., +0., 0.];  // middle right state (just for initialization)
 
@@ -49,7 +49,7 @@ let active_char = [false, true, false];
 let anim_state = "init";  // init, play, pause, end
 let last_clock = null;
 let last_t = 0.;
-let duration = 3.;
+let duration = 1.00;
 let speedup = 0.25;  // should be power of 2 
 let x_particles = [];
 let delta_particles = [];
@@ -63,8 +63,9 @@ function main(canvas_axes, canvas_list, canvasParticles) {
     set_background_2(canvas_axes[3]);
     set_background_3(canvas_axes[4]);
 
-    handle_inputs(canvas_axes, canvas_list);  // Handle input interactions
+    handle_inputs(canvas_axes, canvas_list, canvasParticles);  // Handle input interactions
     update_all_plots(canvas_list);  // Initial figure display
+    download();
     adjust_frame();
 }
 
@@ -112,7 +113,7 @@ function set_q_bounds() {
 ///////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////  -  HANDLE ALL INPUTS  -  //////////////////////////////////
 
-function handle_inputs(canvas_axes_list, canvas_list) {
+function handle_inputs(canvas_axes_list, canvas_list, canvasParticles) {
     
     state_space_inputs(canvas_axes_list, canvas_list);
     characteristic_intputs(canvas_axes_list, canvas_list);
@@ -121,13 +122,23 @@ function handle_inputs(canvas_axes_list, canvas_list) {
     state_numeric_inputs(canvas_list, canvas_axes_list, qL, qR, "qL");
     state_numeric_inputs(canvas_list, canvas_axes_list, qR, qL, "qR");
     gamma_input(canvas_list);
-    
+    // screenshot_input(canvasParticles);
 }
 
 function init_non_vacuum(q) {
     q[0] = 1.;
     q[2] = 1.;
 }
+
+// let idx_ss = 1;
+// function screenshot_input(canvas) {
+//     window.addEventListener('keydown', (e) => {
+//         if (e.key == "s") {
+//             const img = canvas.toDataURL('image/png');
+//             const win = window.open(img, '_blank');
+//         }
+//     });
+// }
 
 function state_numeric_inputs(canvas_list, canvas_axes, this_q, next_q, this_id) {
     // Density input
@@ -299,18 +310,30 @@ function characteristic_intputs(canvas_axes_list, canvas_list) {
 
     window.addEventListener('keydown', (e) => {
         if (e.key != "1") return;
+        inputs = document.getElementsByTagName("input");
+        for (i = 0; i < inputs.length; i++) {
+            if (inputs[i].matches(":focus")) return;
+        }
         active_char[0] = !active_char[0];
         document.getElementById("1_char").checked = active_char[0];
         draw_characteristics(canvas3, tsfm3, last_t);
     });
     window.addEventListener('keydown', (e) => {
         if (e.key != "2") return;
+        inputs = document.getElementsByTagName("input");
+        for (i = 0; i < inputs.length; i++) {
+            if (inputs[i].matches(":focus")) return;
+        }
         active_char[1] = !active_char[1];
         document.getElementById("2_char").checked = active_char[1];
         draw_characteristics(canvas3, tsfm3, last_t);
     });
     window.addEventListener('keydown', (e) => {
         if (e.key != "3") return;
+        inputs = document.getElementsByTagName("input");
+        for (i = 0; i < inputs.length; i++) {
+            if (inputs[i].matches(":focus")) return;
+        }
         active_char[2] = !active_char[2];
         document.getElementById("3_char").checked = active_char[2];
         draw_characteristics(canvas3, tsfm3, last_t);
@@ -563,7 +586,8 @@ function set_mode(which, value){
     state_map[which-1] = value;
     
     // Set state labels
-    if (value == "r") state_labels[0] = "\u03C1";
+    console.log(which, value);
+    if (value == "r") state_labels[0] = "\u03C1 [kg/m3]";
     else if (value == "ru") state_labels[1] = "\u03C1u";
     else state_labels[which-1] = value;
 
@@ -770,6 +794,17 @@ function set_time_cursor(t) {
     document.getElementById("text_t").innerText = "t = " + (Math.round(100*t)/100).toFixed(2).padStart(4, ' ');
 }
 
+let idx_ss = 1;
+function download() {
+    if (false) {
+        var link = document.createElement('a');
+        link.download = 'riemann_euler_app_' + idx_ss + '.png';
+        link.href = document.getElementById('canvasParticles').toDataURL('image/png');
+        link.click();
+        idx_ss += 1;
+    }
+}
+
 function animate(current_clock) {
 
     const canvas_list = [
@@ -784,6 +819,12 @@ function animate(current_clock) {
     
     let t = last_t;
     if (anim_state == "play") t += (current_clock - last_clock) * 1e-3 * speedup;
+
+    let itv = 0.25;
+    if ((last_t/itv) - Math.floor(last_t/itv) > (t/itv) - Math.floor(t/itv)) {
+        console.log("check");
+        download();
+    }
 
     if (duration < t) {
         anim_state = "end";
@@ -893,6 +934,9 @@ function draw_particles(canvas, t) {
     const ctx = canvas.getContext("2d");
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.save();
+
+    ctx.fillStyle = COLORS[2];
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     let delta;  // vertical dist btw particles
     let radius = 3; //  radius of each particle
@@ -1940,7 +1984,12 @@ function set_background_1(canvas, tsfm, label) {
         "unit": "",
         "axis": true,
     }
-    draw_ext_axes(canvas, ctx, tsfm, "x", ["bottom", true, "x"], kwargs);
+
+    if (label == "\u03C1") label += " [kg/m3]";
+    else if (label == "u") label += " [m/s]";
+    else if (label == "p") label += " [N/m2]";
+
+    draw_ext_axes(canvas, ctx, tsfm, "x", ["bottom", true, "x [m]"], kwargs);
     draw_ext_axes(canvas, ctx, tsfm, "x", ["top", false, ""], kwargs);
     draw_ext_axes(canvas, ctx, tsfm, "y", ["left", true, label], kwargs);
     draw_ext_axes(canvas, ctx, tsfm, "y", ["right", false, ""], kwargs);

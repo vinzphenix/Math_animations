@@ -76,7 +76,7 @@ def offClick(_):
 
 if __name__ == "__main__":
     n_int = 3
-    p = 2
+    p = 3
     n = n_int + 2 * p
     nt = 500
 
