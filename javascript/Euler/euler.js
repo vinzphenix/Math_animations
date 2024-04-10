@@ -1,7 +1,7 @@
-// TODO : draw physics
-
 // Layout parameters
-const LW = window.innerWidth / 2000;  // line width
+const LW = Math.sqrt(window.innerWidth*window.innerHeight) / 2000;  // line width
+const FS = Math.min(window.innerWidth,window.innerHeight) / 50;  // font size
+const FS_ticks = FS / 2.;  // font size
 const COLORS = [
     "#2e3440", "#3b4252", "#434c5e", "#4c566a", 
     "#d8dee9", "#e5e9f0", "#eceff4", 
@@ -22,6 +22,9 @@ let qL = [1.0, -1., 10.];  // left state
 let qR = [.11, +0., 1.25];  // right state
 let ql = [0., +0., 0.];  // middle left state (just for initialization)
 let qr = [0., +0., 0.];  // middle right state (just for initialization)
+
+// qL = [1., -1., 1.];
+// qR = [2., 5., 1.];
 
 let c_speeds = [0., 0., 0., 0.];
 let lambdas = [[0., 0., 0.], [0., 0., 0.], [0., 0., 0.], [0., 0., 0.]];
@@ -764,7 +767,7 @@ function setup_fields() {
         ctx = canvas.getContext("2d");
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         draw_field(canvas, tsfms[f], x_array, y_arrays[f]);
-    }   
+    }
 }
 
 function setup_particles() {
@@ -776,12 +779,18 @@ function setup_particles() {
     x_particles.length = 0;
     for (sign = -1 ; sign <= 1; sign += 2) {
         [q, idx] = (sign == -1) ? [qL, 0] : [qR, 1];
+        if (is_vacuum(q)) delta_particles[idx] = NaN;
+        else delta_particles[idx] = Math.max((x_max / 30.) / Math.cbrt(q[0]), x_max/75.);
+    }
+    
+    for (sign = -1 ; sign <= 1; sign += 2) {
+        [q, idx] = (sign == -1) ? [qL, 0] : [qR, 1];
         if (is_vacuum(q)) continue;
-        else delta_particles[idx] = 10 / Math.cbrt(q[0]);
         
+        // delta = Math.max(delta_particles[idx], 1.);
         delta = delta_particles[idx];
-        x = w / 2. + sign * delta / 2.;
-        for (; (-w < x) && (x < 2*w); x+=sign * delta) {
+        x = w / 2. + sign * delta / 2. * tsfm1A[0];
+        for (; (-w < x) && (x < 2*w); x+=sign * delta * tsfm1A[0]) {
             x_particles.push((x - tsfm1A[4]) / tsfm1A[0]);
         }
     }
@@ -822,7 +831,7 @@ function animate(current_clock) {
 
     let itv = 0.25;
     if ((last_t/itv) - Math.floor(last_t/itv) > (t/itv) - Math.floor(t/itv)) {
-        console.log("check");
+        // console.log("check");
         download();
     }
 
@@ -970,7 +979,7 @@ function draw_particles(canvas, t) {
 
         for (sign = -1; sign <= 1; sign += 2) {
             y = canvas.height / 2. + sign*delta/2.
-            for (; (0 < y) && (y < canvas.height); y+=sign*delta) {
+            for (; (0 < y) && (y < canvas.height); y+=sign*delta*tsfm1A[0]) {
                 ctx.beginPath();
                 ctx.arc(x, y, radius, 0, 2. * Math.PI, true);
                 ctx.fill();
@@ -1079,10 +1088,10 @@ function map_primitive(q) {
 
     if (state_map[2] == "p") v3 = p;
     else if (state_map[2] == "E") v3 = (vacuum) ? 0. : 0.5 * r * u * u + p / (G - 1.);
-    else if (state_map[2] == "R3") v3 = (vacuum) ? undefined : u - 2. * c / (G - 1);
     else if (state_map[2] == "e") v3 = (vacuum) ? 0. : p_r / (G - 1.);
-    else if (state_map[2] == "H") v3 = (vacuum) ? undefined : G * p_r / (G - 1.) + 0.5 * u * u;
-    else if (state_map[2] == "h") v3 = (vacuum) ? 0. : G * p_r / (G - 1.);
+    else if (state_map[2] == "H") v3 = (vacuum) ? 0. : 0.5 * r * u * u + p / (G - 1.) + p;
+    else if (state_map[2] == "h") v3 = (vacuum) ? 0. : p_r / (G - 1.) + p_r;
+    else if (state_map[2] == "R3") v3 = (vacuum) ? undefined : u - 2. * c / (G - 1);
 
     return [v1, v2, v3];
 }
@@ -1203,6 +1212,7 @@ function compute_fields(t) {
 }
 
 function draw_field(canvas, tsfm, x, y) {
+    let value;
     let pen_up = false;
     const ctx = canvas.getContext("2d");
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -1228,6 +1238,18 @@ function draw_field(canvas, tsfm, x, y) {
     ctx.strokeStyle = COLORS[6];
     ctx.lineWidth = 5 * LW;
     ctx.stroke();
+
+    // DIsplay value at zero
+    q_zero = compute_state(0., 1.);
+    ctx.font = FS + 'px Arial';
+    ctx.fillStyle = "rgba(255, 255, 255, " + 0.5 + ")";
+    ctx.textAlign = "right";
+    ctx.textBaseline = "top";
+    if (! is_vacuum(q_zero)) {
+        value = map_primitive(q_zero)[f].toFixed(3);
+        ctx.fillText(value, canvas.width * 0.985, canvas.height * 0.035);
+    }
+
     ctx.restore();
 }
 
@@ -1318,6 +1340,7 @@ function find_middle_state(qL, qR) {
         x = Math.max(p_min, x - delta);  // avoids negative pressures... very very rare with such pressure guesses
         delta = 0.5 * Math.abs(delta) / (2 * x - delta);  // 1/2*[p(n+1) - p(n)]/[p(n+1) + p(n)] = 1/2|delta|/[2p(n) - delta]
         n ++;
+        // console.log(x, delta);
     }
     
     return [f1(x), x];  // (velocity, pressure)
@@ -1335,8 +1358,8 @@ function draw_loci(canvas, tsfm) {
 
     display_supersonic(canvas, qL, COLORS[13]);
     display_supersonic(canvas, qR, COLORS[18]);
-    display_supersonic(canvas, ql, COLORS[5]);
-    display_supersonic(canvas, qr, COLORS[5]);
+    // display_supersonic(canvas, ql, COLORS[5]);
+    // display_supersonic(canvas, qr, COLORS[5]);
 
     plot_locus(canvas, tsfm, COLORS[13], pts_1_integral, pts_1_hugoniot);
     plot_locus(canvas, tsfm, COLORS[18], pts_2_integral, pts_2_hugoniot);
@@ -1367,7 +1390,7 @@ function draw_states(canvas, tsfm) {
     if (activeL || activeR) canvas_list[3].style.cursor = "crosshair";
     // Go back to default cursor if not panning
     else if (canvas_list[3].style.cursor == "crosshair") canvas_list[3].style.cursor = "default";
-    
+
 }
 
 
@@ -1527,7 +1550,7 @@ function display_middle_state(canvas, mode) {
     }
 
     ctx.save();
-    ctx.font = canvas.width/30 + 'px Fira Mono';
+    ctx.font = FS + 'px Fira Mono';
     ctx.fillStyle = COLORS[6];
     ctx.textBaseline = 'top';
     ctx.fillText(info, ...position);
@@ -1979,7 +2002,6 @@ function set_background_1(canvas, tsfm, label) {
     // draw_axes(canvas, ctx, [tsfm[4], tsfm[5]], tsfm[0], -tsfm[3], ["x", label], 1.);
  
     let kwargs = {
-        "fontsize": 1. * window.innerWidth / 200.,
         "color": COLORS[5],
         "unit": "",
         "axis": true,
@@ -1993,7 +2015,6 @@ function set_background_1(canvas, tsfm, label) {
     draw_ext_axes(canvas, ctx, tsfm, "x", ["top", false, ""], kwargs);
     draw_ext_axes(canvas, ctx, tsfm, "y", ["left", true, label], kwargs);
     draw_ext_axes(canvas, ctx, tsfm, "y", ["right", false, ""], kwargs);
-
 
     // Draw horizontal line of zero velocity
     ctx.save();
@@ -2013,10 +2034,9 @@ function set_background_2(canvas) {
     const w = canvas.width;
     const s = origin_shift;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    // draw_axes(canvas, ctx, [w / 2., h * (1 - s)], tsfm2[0], -tsfm2[3], ["u", "p"], 1., COLORS[5]);
 
     let kwargs = {
-        "fontsize": 1. * window.innerWidth / 200.,
+        "fontsize": FS,
         "color": COLORS[5],
         "unit": "",
         "axis": true,
@@ -2034,10 +2054,10 @@ function set_background_3(canvas) {
     const w = canvas.width;
     const s = origin_shift;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    draw_axes(canvas, ctx, [w / 2., h * (1 - s)], tsfm3[0], -tsfm3[3], ["x", "t"], 1., COLORS[5]);
+    draw_axes(canvas, ctx, [w / 2., h * (1 - s)], tsfm3[0], -tsfm3[3], ["x", "t"], COLORS[5]);
 }
 
-function draw_axes(canvas, ctx, origin, dx, dy, labels, k=1., color=COLORS[0]) {
+function draw_axes(canvas, ctx, origin, dx, dy, labels, color=COLORS[0]) {
     // dx = length in px of a unit
 
     var ctx = canvas.getContext("2d");
@@ -2045,7 +2065,7 @@ function draw_axes(canvas, ctx, origin, dx, dy, labels, k=1., color=COLORS[0]) {
     var y_axis_starting_point = { number: 1, suffix: ''};
     const h = canvas.height;
     const w = canvas.width;
-    const fontsize = k * window.innerWidth / 200;
+    // const fontsize = k * FS;
     let base_1, base_2, base_5, base, n_ticks_per_label, delta, sign, label, tick_size;
 
     ctx.save();
@@ -2069,7 +2089,7 @@ function draw_axes(canvas, ctx, origin, dx, dy, labels, k=1., color=COLORS[0]) {
                 sign = (j == 0) ? -1 : 1;
                 // Text value at that point
                 if ((i % n_ticks_per_label == 0) && (w*0.02 < x_pm[j]) && (x_pm[j] < w*0.95)) {
-                    ctx.font = fontsize + 'px Arial';
+                    ctx.font = FS_ticks + 'px Arial';
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'top';
                     label = Math.round(sign*i*delta*1e6)/1e6 + x_axis_starting_point.suffix
@@ -2106,7 +2126,7 @@ function draw_axes(canvas, ctx, origin, dx, dy, labels, k=1., color=COLORS[0]) {
                 sign = (j == 0) ? -1 : 1;
                 // Text value at that point
                 if ((i % n_ticks_per_label == 0) && (h*0.05 < y_pm[j]) && (y_pm[j] < h*0.98)) {
-                    ctx.font = fontsize + 'px Arial';
+                    ctx.font = FS_ticks + 'px Arial';
                     ctx.textAlign = 'right';
                     ctx.textBaseline = 'middle';
                     label = Math.round(sign*i*delta*1e6)/1e6 + y_axis_starting_point.suffix
@@ -2126,13 +2146,13 @@ function draw_axes(canvas, ctx, origin, dx, dy, labels, k=1., color=COLORS[0]) {
     }
 
     // Label axes
-    ctx.font = (2. * fontsize) + 'px Arial';
+    ctx.font = FS + 'px Arial';
     ctx.textBaseline = 'bottom';
     ctx.textAlign = 'right';
-    ctx.fillText(labels[0], w * 0.975, origin[1] - w * 0.02);  // x-label
+    ctx.fillText(labels[0], w - 2*FS, origin[1] - 1.*FS);  // x-label
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
-    ctx.fillText(labels[1], origin[0] + w * 0.02, 0.01 * w);  // y-label
+    ctx.fillText(labels[1], origin[0] + FS, 1*FS);  // y-label
 
     ctx.restore();
 }
@@ -2150,7 +2170,7 @@ function draw_ext_axes(canvas, ctx, tsfm, which, args, kwargs) {
     ctx.save();
     ctx.fillStyle = kwargs["color"];
     ctx.strokeStyle = kwargs["color"];
-    ctx.font = kwargs["fontsize"] + 'px Arial';
+    ctx.font = FS_ticks + 'px Arial';
     ctx.lineWidth = 1. * LW;
 
     // Ticks marks along the X-axis
@@ -2197,15 +2217,16 @@ function draw_ext_axes(canvas, ctx, tsfm, which, args, kwargs) {
     }
 
     // Label axes
-    ctx.font = (2.5 * kwargs["fontsize"]) + 'px Arial';
+    ctx.font = FS + 'px Arial';
+    ctx.fillStyle = "rgba(255, 255, 255, " + 0.5 + ")";
     if ((which == "x") && (ticks == "bottom")) {
         ctx.textAlign = "right";
         ctx.textBaseline = "bottom";
-        ctx.fillText(axis_label, canvas.width * 0.98, canvas.height * 0.98);
+        ctx.fillText(axis_label, canvas.width - FS, canvas.height - 0.75*FS);
     } else if ((which == "y") && (ticks == "left")) {
         ctx.textAlign = "left";
         ctx.textBaseline = "top";
-        ctx.fillText(axis_label, canvas.width * 0.015, canvas.height * 0.02);
+        ctx.fillText(axis_label, FS, 0.75*FS);
     }
 
     ctx.strokeStyle = COLORS[0];

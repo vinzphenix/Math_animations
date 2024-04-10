@@ -90,10 +90,10 @@
                     <div class="dropdown-content">
                         <a onclick="set_mode(3, 'p')">p</a>
                         <a onclick="set_mode(3, 'E')">E</a>
-                        <a onclick="set_mode(3, 'R3')">u-2a/(g-1)</a>
                         <a onclick="set_mode(3, 'e')">e</a>
                         <a onclick="set_mode(3, 'H')">H</a>
                         <a onclick="set_mode(3, 'h')">h</a>
+                        <a onclick="set_mode(3, 'R3')">u-2a/(g-1)</a>
                     </div>
                 </div>
             </div>
@@ -219,6 +219,7 @@
                 // canvas.style.top = window.innerHeight - canvas.height - sep_o - 2 * border + "px";
                 canvas.style.border = border + "px solid #020000";
             }
+            const bot = parseFloat(canvas.style.top) + canvas.height;
 
             canvas_list = [canvas2_Axes, canvas2]
             for (i = 0; i < 2; i++) {
@@ -234,10 +235,11 @@
             for (i = 0; i < 2; i++) {
                 canvas = canvas_list[i];
                 canvas.width = widths[2] * (window.innerWidth - 2 * sep_o) - 4. * border - sep_i;
-                canvas.height = heights_rg[1] * (window.innerHeight - 2 * sep_o) - 2. * border - sep_i;
                 canvas.style.left = canvas0_width + canvas1A.width + 2 * sep_i + 4 * border + "px";
                 canvas.style.top = sep_o + sep_i/2. + canvas2.height + 2*border + sep_i + "px";
                 canvas.style.border = border + "px solid #020000";
+                canvas.height = bot - parseFloat(canvas.style.top);
+                // heights_rg[1] * (window.innerHeight - 2 * sep_o) - 2. * border - sep_i;
             }
             
             canvas_axes = [canvas1A_Axes, canvas1B_Axes, canvas1C_Axes, canvas2_Axes, canvas3_Axes];
