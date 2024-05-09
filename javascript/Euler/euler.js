@@ -18,8 +18,9 @@ const n_speed_lines = 20;  // number of speed lines
 
 // Simulation parameters
 let G = 1.4;
-let qL = [1.0, -1., 10.];  // left state
-let qR = [.11, +0., 1.25];  // right state
+let cv_dry_air = 717.5;
+let qL = [1.0, -0., 1.0e5];  // left state
+let qR = [0.125, +0., 0.1e5];  // right state
 let ql = [0., +0., 0.];  // middle left state (just for initialization)
 let qr = [0., +0., 0.];  // middle right state (just for initialization)
 
@@ -35,7 +36,7 @@ const EPS = 1.e-14;
 // Axes limits
 let x_max = 8.;
 let qq_max = [0., 1., -1., 1., 0., 1.];
-let q_max = [-5., 5., 0., 10.];  // [q1, q2] max values
+let q_max = [-500., 500., 0., 2.2*1e5];  // [q1, q2] max values
 let tsfm1A, tsfm1B, tsfm1C, tsfm2, tsfm3;
 
 // Interaction parameters
@@ -47,13 +48,14 @@ let pan_init = [undefined, undefined];
 let hoover_position_q = [-1., 0.];
 let hoover_position_xt = [undefined, undefined];
 let active_char = [false, true, false];
+let set_density = [true, true];
 
 // Animation parameters
 let anim_state = "init";  // init, play, pause, end
 let last_clock = null;
 let last_t = 0.;
-let duration = 1.00;
-let speedup = 0.25;  // should be power of 2 
+let duration = 0.01;
+let speedup = 1./256.;  // should be power of 2 
 let x_particles = [];
 let delta_particles = [];
 let min_e, max_e
@@ -122,8 +124,8 @@ function handle_inputs(canvas_axes_list, canvas_list, canvasParticles) {
     characteristic_intputs(canvas_axes_list, canvas_list);
     limits_inputs(canvas_axes_list, canvas_list);
     animation_inputs();
-    state_numeric_inputs(canvas_list, canvas_axes_list, qL, qR, "qL");
-    state_numeric_inputs(canvas_list, canvas_axes_list, qR, qL, "qR");
+    state_numeric_inputs(canvas_list, canvas_axes_list, qL, qR, "qL", 0);
+    state_numeric_inputs(canvas_list, canvas_axes_list, qR, qL, "qR", 1);
     gamma_input(canvas_list);
     // screenshot_input(canvasParticles);
 }
@@ -143,7 +145,32 @@ function init_non_vacuum(q) {
 //     });
 // }
 
-function state_numeric_inputs(canvas_list, canvas_axes, this_q, next_q, this_id) {
+function set_forms_colors(obj_id, set_density_flag) {
+    if (set_density_flag) {
+        document.getElementById(obj_id + 0).style.color = "black";
+        document.getElementById(obj_id + 0).style.backgroundColor = "white";
+        document.getElementById(obj_id + 3).style.color = "gray";
+        document.getElementById(obj_id + 3).style.backgroundColor = "lightgray";
+    } else {
+        document.getElementById(obj_id + 0).style.color = "gray";
+        document.getElementById(obj_id + 0).style.backgroundColor = "lightgray";
+        document.getElementById(obj_id + 3).style.color = "black";
+        document.getElementById(obj_id + 3).style.backgroundColor = "white";
+    }
+}
+
+function get_temperature(q) {
+    return q[2] / (cv_dry_air * q[0] * (G - 1.));
+}
+
+function get_density(q, temperature) {
+    return q[2] / (cv_dry_air * temperature * (G - 1.));
+}
+
+function state_numeric_inputs(canvas_list, canvas_axes, this_q, other_q, this_id, left_right_idx) {
+    
+    set_forms_colors(this_id, set_density[left_right_idx]);
+    
     // Density input
     document.getElementById(this_id + 0).value = this_q[0];
     document.getElementById(this_id + 0).addEventListener(
@@ -153,21 +180,29 @@ function state_numeric_inputs(canvas_list, canvas_axes, this_q, next_q, this_id)
     );
     document.getElementById(this_id + 0).addEventListener(
         'blur', function (e){
+            let temperature;
             if (anim_state != "init") {
                 this.value = this_q[0];
                 return;
             }
+            set_density[left_right_idx] = true;
+            set_forms_colors(this_id, true);
             this.value = Math.max(0., this.value);
-            if ((is_vacuum(next_q)) && (this.value < EPS)) this.value = this_q[0];
+            if ((is_vacuum(other_q)) && (this.value < EPS)) this.value = this_q[0];
             else this_q[0] = Number(this.value);
             if (this_q[0] < EPS) {  // set vacuum
                 set_vaccum(this_q);
+                temperature = NaN;
             } else if (is_vacuum(this_q)) {  // leave vacuum
                 this_q[1] = (q_max[0] + q_max[1]) / 2.;
-                this_q[2] = 1.;
+                this_q[2] = 1.e5;
+                temperature = get_temperature(this_q);
+            } else {
+                temperature = get_temperature(this_q);
             }
             document.getElementById(this_id + 1).value = this_q[1];
-            document.getElementById(this_id + 2).value = this_q[2];
+            document.getElementById(this_id + 2).value = Math.round(this_q[2] * 1e-5*100.)/100.;  // in bar
+            document.getElementById(this_id + 3).value = Math.round(temperature);
             update_all_plots(canvas_list);
             adjust_frame();
         }
@@ -193,7 +228,7 @@ function state_numeric_inputs(canvas_list, canvas_axes, this_q, next_q, this_id)
     );
 
     // Pressure input
-    document.getElementById(this_id + 2).value = this_q[2];
+    document.getElementById(this_id + 2).value = Math.round(this_q[2] * 1e-5*100.)/100.;  // in bar
     document.getElementById(this_id + 2).addEventListener(
         'keypress', function (e){
             if (e.key === 'Enter') this.blur();
@@ -201,25 +236,57 @@ function state_numeric_inputs(canvas_list, canvas_axes, this_q, next_q, this_id)
     );
     document.getElementById(this_id + 2).addEventListener(
         'blur', function (e){
+            let temperature;
             if (anim_state != "init") {
-                this.value = this_q[2];
+                this.value = this_q[2] * 1e-5;
                 return;
             }
             this.value = Math.max(0., this.value);
-            if ((is_vacuum(next_q)) && (this.value < EPS)) this.value = this_q[2];
-            else this_q[2] = Number(this.value);
+            if ((is_vacuum(other_q)) && (this.value < EPS)) this.value = this_q[2] * 1e-5;
+            else this_q[2] = Number(this.value) * 1e5;
             if (this_q[2] < EPS) {
                 set_vaccum(this_q);
+                temperature = NaN;
             } else if (is_vacuum(this_q)) {  // leave vacuum
                 this_q[0] = 1.;
                 this_q[1] = (q_max[0] + q_max[1]) / 2.;
+                temperature = get_temperature(this_q);
+            } else if (set_density[left_right_idx]) {  // keep density, adjust temperature
+                temperature = get_temperature(this_q);
+            } else {  // keep temperature, adjust density
+                temperature = document.getElementById(this_id + 3).value;
+                this_q[0] = get_density(this_q, temperature);
             }
             document.getElementById(this_id + 0).value = this_q[0];
             document.getElementById(this_id + 1).value = this_q[1];
+            document.getElementById(this_id + 3).value = Math.round(temperature);
             update_all_plots(canvas_list);
             adjust_frame();
         }
     );
+
+    // Temperature input
+    document.getElementById(this_id + 3).value = Math.round(get_temperature(this_q)*1.)/1.;
+    document.getElementById(this_id + 3).addEventListener(
+        'keypress', function (e){
+            if (e.key === 'Enter') this.blur();
+        }
+    );
+    document.getElementById(this_id + 3).addEventListener(
+        'blur', function (e){
+            if ((anim_state != "init") || (this.value < EPS) || (is_vacuum(this_q))) {
+                this.value = Math.round(get_temperature(this_q)*1.)/1.;
+                return;
+            }
+            set_density[left_right_idx] = false;
+            set_forms_colors(this_id, false);
+            this_q[0] = this_q[2] / (cv_dry_air * Number(this.value) * (G - 1.));
+            document.getElementById(this_id + 0).value = Math.round(this_q[0]*100.)/100.;
+            update_all_plots(canvas_list);
+            adjust_frame();
+        }
+    );
+
 }
 
 function state_space_inputs(canvas_axes_list, canvas_list) {
@@ -345,7 +412,7 @@ function characteristic_intputs(canvas_axes_list, canvas_list) {
 
 function limits_inputs(canvas_axes_list, canvas_list) {
     // Set simulation duration
-    document.getElementById("input_T").value = duration;
+    document.getElementById("input_T").value = duration * 1e3;
     document.getElementById("input_T").addEventListener(
         'keyup', function (e){
             if (e.key === 'Enter') this.blur();
@@ -353,11 +420,11 @@ function limits_inputs(canvas_axes_list, canvas_list) {
     );
     document.getElementById("input_T").addEventListener(
         'blur', function (e){
-            let value = Number(this.value);
+            let value = Number(this.value) * 1e-3;
             if ((EPS < Number(this.value)) && (anim_state == "init")) {
                 tsfm3[3] *= duration / value;
-                duration = value;
-                document.getElementById("range_t").max = duration;
+                duration = value;  // [s]
+                document.getElementById("range_t").max = 1e3*duration;  // [ms]
                 set_background_3(canvas_axes_list[4]);
                 draw_characteristics(canvas_list[4], tsfm3, 0.);
             } else {
@@ -430,24 +497,25 @@ function animation_inputs() {
     // Set simulation time
     document.getElementById("range_t").value = 0.;
     document.getElementById("range_t").min = 0.;
-    document.getElementById("range_t").max = duration;
+    document.getElementById("range_t").max = 1e3*duration;
     document.getElementById("range_t").addEventListener(
         'input', function (e) {
             if ((anim_state != "play") && (0)) {  // disabled with particles display !
                 anim_state = "pause";
-                last_t = Number(this.value);
+                last_t = Number(this.value) * 1e-3;
                 last_clock = performance.now();
                 requestAnimationFrame(animate);
             } else {
-                this.value = last_t;
+                this.value = last_t * 1e3;
             }
         }
     );
 
     // Set simulation speed
-    document.getElementById("range_speed").value = Math.log2(speedup);
-    document.getElementById("range_speed").min = -8;
+    document.getElementById("range_speed").min = -10;
     document.getElementById("range_speed").max = +2;
+    document.getElementById("range_speed").value = Math.log2(speedup);
+    document.getElementById("text_speed").innerText = "Speed /" + Math.round(1./speedup);
     document.getElementById("range_speed").addEventListener(
         'input', function (e) {
             speedup = 2 ** (Number(this.value));
@@ -539,8 +607,16 @@ function mouse_move_state(event, canvas_list) {
             set_vaccum(q);
             drag_flag = -1;  // stop dragging as the state disappeared
         }
-        document.getElementById(id + 1).value = q[1];
-        document.getElementById(id + 2).value = q[2];
+        document.getElementById(id + 1).value = Math.round(q[1] * 100) / 100.;
+        document.getElementById(id + 2).value = Math.round(q[2] * 1e-5*100) / 100.;  // in bar
+        let set_density_flag = (id == "qL") ? set_density[0] : set_density[1];
+        if (set_density_flag) {
+            document.getElementById(id + 3).value = Math.round(get_temperature(q));
+        } else {
+            let temperature = document.getElementById(id + 3).value;
+            q[0] = get_density(q, temperature);
+            document.getElementById(id + 0).value = Math.round(q[0]*100.)/100.;
+        }
     }
     
     let x = event.offsetX;
@@ -590,7 +666,7 @@ function set_mode(which, value){
     
     // Set state labels
     console.log(which, value);
-    if (value == "r") state_labels[0] = "\u03C1 [kg/m3]";
+    if (value == "r") state_labels[0] = "\u03C1";
     else if (value == "ru") state_labels[1] = "\u03C1u";
     else state_labels[which-1] = value;
 
@@ -638,7 +714,7 @@ function zoom(e, canvas, canvas_axes) {
 }
 
 function reset_axes(canvas, canvas_axes) {
-    q_max = [-5., 5., 0., 10.];
+    q_max = [-500., 500., 0., 2.2*1.e5];
     set_transforms();
     set_background_2(canvas_axes);
     draw_loci(canvas, tsfm2);
@@ -701,7 +777,7 @@ function adjust_frame() {
 
     // Clip to zero for nonegative fields
     if (state_map[0] == "r") qq_max_target[2*0 + 0] = Math.max(qq_max_target[2*0 + 0], 0.);
-    if ((state_map[1] == "c") || (state_map[1] == "M"))  qq_max_target[2*1 + 0] = Math.max(qq_max_target[2*1 + 0], 0.);
+    if ((state_map[1] == "a") || (state_map[1] == "M"))  qq_max_target[2*1 + 0] = Math.max(qq_max_target[2*1 + 0], 0.);
     if (state_map[2] != "R3") qq_max_target[2*2 + 0] = Math.max(qq_max_target[2*2 + 0], 0.);
 
     requestAnimationFrame(move_frame);
@@ -799,8 +875,8 @@ function setup_particles() {
 }
 
 function set_time_cursor(t) {
-    document.getElementById("range_t").value = t;
-    document.getElementById("text_t").innerText = "t = " + (Math.round(100*t)/100).toFixed(2).padStart(4, ' ');
+    document.getElementById("range_t").value = 1e3*t;
+    document.getElementById("text_t").innerText = "t = " + (Math.round(100*1e3*t)/100).toFixed(2).padStart(4, ' ') + " ms";
 }
 
 let idx_ss = 1;
@@ -922,13 +998,13 @@ function set_colormap_bounds() {
     let [min, max] = [Infinity, -Infinity];
     let e, x_array, y_arrays, delta;
     let current_state_map = state_map.slice();
-    state_map = ["r", "u", "p"];
+    state_map = ["r", "u", "e"];
     
     for (t = 0; t < 1.1*duration; t += duration) {
         [x_array, y_arrays] = compute_fields(t);
         for (i = 0; i < x_array.length; i++) {
             if (y_arrays[1][i] == undefined) continue;
-            e = (y_arrays[2][i] / y_arrays[0][i]) / (G - 1.);
+            e = y_arrays[2][i] * 1e3;  // [kJ/kg] --> [J/kg]
             min = Math.min(min, e);
             max = Math.max(max, e);
         }
@@ -1083,14 +1159,15 @@ function map_primitive(q) {
 
     if (state_map[1] == "u") v2 = u;
     else if (state_map[1] == "ru") v2 = (vacuum) ? 0. : r * u;
-    else if (state_map[1] == "c") v2 = (vacuum) ? 0. : c;
+    else if (state_map[1] == "a") v2 = (vacuum) ? 0. : c;
     else if (state_map[1] == "M") v2 = (vacuum) ? undefined : Math.abs(u/c);
 
-    if (state_map[2] == "p") v3 = p;
-    else if (state_map[2] == "E") v3 = (vacuum) ? 0. : 0.5 * r * u * u + p / (G - 1.);
-    else if (state_map[2] == "e") v3 = (vacuum) ? 0. : p_r / (G - 1.);
-    else if (state_map[2] == "H") v3 = (vacuum) ? 0. : 0.5 * r * u * u + p / (G - 1.) + p;
-    else if (state_map[2] == "h") v3 = (vacuum) ? 0. : p_r / (G - 1.) + p_r;
+    if (state_map[2] == "p") v3 = p * 1e-5;  // Pascal to bar
+    else if (state_map[2] == "E") v3 = (vacuum) ? 0. : 1e-3*(0.5 * r * u * u + p / (G - 1.));
+    else if (state_map[2] == "e") v3 = (vacuum) ? 0. : 1e-3*(p_r / (G - 1.));
+    else if (state_map[2] == "T") v3 = (vacuum) ? 0. : p_r / (cv_dry_air * (G - 1.));
+    else if (state_map[2] == "H") v3 = (vacuum) ? 0. : 1e-3*(0.5 * r * u * u + p / (G - 1.) + p);
+    else if (state_map[2] == "h") v3 = (vacuum) ? 0. : 1e-3*(p_r / (G - 1.) + p_r);
     else if (state_map[2] == "R3") v3 = (vacuum) ? undefined : u - 2. * c / (G - 1);
 
     return [v1, v2, v3];
@@ -1363,7 +1440,7 @@ function draw_loci(canvas, tsfm) {
 
     plot_locus(canvas, tsfm, COLORS[13], pts_1_integral, pts_1_hugoniot);
     plot_locus(canvas, tsfm, COLORS[18], pts_2_integral, pts_2_hugoniot);
-    
+
     draw_states(canvas, tsfm);
     draw_limit_state(canvas, COLORS[13], qL, tsfm, +1.);
     draw_limit_state(canvas, COLORS[18], qR, tsfm, -1.);
@@ -1542,7 +1619,7 @@ function display_middle_state(canvas, mode) {
         position = [0.97 * canvas.width, 0.03 * canvas.height];
     } else {
         q1_info = (Math.round(100*ql[1])/100).toFixed(2).padStart(4, ' ');
-        q2_info = (Math.round(100*ql[2])/100).toFixed(2).padStart(5, ' ');
+        q2_info = (Math.round(100*ql[2]*1e-5)/100).toFixed(2).padStart(5, ' ');
         if (is_vacuum(ql)) q1_info = " /";
         info = " u* = " + q1_info + "    p* = " + q2_info;
         ctx.textAlign = 'right';
@@ -1928,20 +2005,19 @@ function display_supersonic(canvas, qs, color) {
 
     function compute_xy(rho, t, d) {
         [xi, yi] = [t, rho * t * t / G];
+        [nxx, nyy] = [1., 2. * rho/G * t];
+        nx = tsfm2[0]*nxx / Math.hypot(tsfm2[0]*nxx, tsfm2[3]*nyy);
+        ny = tsfm2[3]*nyy / Math.hypot(tsfm2[0]*nxx, tsfm2[3]*nyy);
         xi = tsfm2[0] * xi + tsfm2[4];
         yi = tsfm2[3] * yi + tsfm2[5];
-        [nx, ny] = [-2. * rho/G * t, +1.];
-        nx = tsfm2[0] * nx;
-        ny = tsfm2[3] * ny;
-        nx /= Math.hypot(nx, ny);
-        ny /= Math.hypot(nx, ny);
-        xi -= nx * d;
-        yi -= ny * d;
+        xi -= d * ny;
+        yi += d * nx;
         return [xi, yi];
     }
 
     function transition_fade(x) {
         k = 2.;
+        // return 1.;
         // return (Math.exp(-k) - Math.exp(-k*x)) / (Math.exp(-k) - 1.);
         return Math.pow(1. - x, 2);
     }
@@ -1958,24 +2034,24 @@ function display_supersonic(canvas, qs, color) {
     
     ctx.save();
     for (layer = 0; layer < n_layers; layer++) {
-        d = layer * LW * .5;
+        d = 0.5 * LW * layer;
         ctx.lineWidth = LW * .5;
         ctx.strokeStyle = color + Math.floor(127 * transition_fade(layer/n_layers)).toString(16).padStart(2, '0');
         ctx.beginPath();
-        t = 0.;
+        t = q_max[0];
         [x, y] = compute_xy(qs[0], t, d);
         ctx.moveTo(x, y);
         for (; x <= canvas.width; t+=dx) {
             [x, y] = compute_xy(qs[0], t, d);
             ctx.lineTo(x, y);
         }
-        t = 0.;
-        [x, y] = compute_xy(qs[0], t, d);
-        ctx.moveTo(x, y);
-        for (; 0. <= x; t-=dx) {
-            [x, y] = compute_xy(qs[0], t, d);
-            ctx.lineTo(x, y);
-        }
+        // t = 0.;
+        // [x, y] = compute_xy(qs[0], t, d);
+        // ctx.moveTo(x, y);
+        // for (; 0. <= x; t-=dx) {
+        //     [x, y] = compute_xy(qs[0], t, d);
+        //     ctx.lineTo(x, y);
+        // }
         ctx.stroke();
     }
     ctx.restore();
@@ -2008,8 +2084,18 @@ function set_background_1(canvas, tsfm, label) {
     }
 
     if (label == "\u03C1") label += " [kg/m3]";
+    else if (label == "R1") label += " [m/s]";
+    else if (label == "R3") label += " [m/s]";
+    else if (label == "s") label += " [J/kg.K]";
     else if (label == "u") label += " [m/s]";
-    else if (label == "p") label += " [N/m2]";
+    else if (label == "\u03C1u") label += " [kg/m2.s]";
+    else if (label == "a") label += " [m/s]";
+    else if (label == "p") label += " [bar]";
+    else if (label == "E") label += " [kJ]";
+    else if (label == "H") label += " [kJ]";
+    else if (label == "T") label += " [K]";
+    else if (label == "e") label += " [kJ/kg]";
+    else if (label == "h") label += " [kJ/kg]";
 
     draw_ext_axes(canvas, ctx, tsfm, "x", ["bottom", true, "x [m]"], kwargs);
     draw_ext_axes(canvas, ctx, tsfm, "x", ["top", false, ""], kwargs);
@@ -2041,10 +2127,10 @@ function set_background_2(canvas) {
         "unit": "",
         "axis": true,
     }
-    draw_ext_axes(canvas, ctx, tsfm2, "x", ["bottom", true, "u"], kwargs);
+    draw_ext_axes(canvas, ctx, tsfm2, "x", ["bottom", true, "u [m/s]"], kwargs);
     draw_ext_axes(canvas, ctx, tsfm2, "x", ["top", false, ""], kwargs);
-    draw_ext_axes(canvas, ctx, tsfm2, "y", ["left", true, "p"], kwargs);
-    draw_ext_axes(canvas, ctx, tsfm2, "y", ["right", false, ""], kwargs);
+    draw_ext_axes(canvas, ctx, tsfm2, "y", ["left", true, "p [bar]"], kwargs, 1e5);
+    draw_ext_axes(canvas, ctx, tsfm2, "y", ["right", false, ""], kwargs, 1e5);
 
 }
 
@@ -2054,10 +2140,10 @@ function set_background_3(canvas) {
     const w = canvas.width;
     const s = origin_shift;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    draw_axes(canvas, ctx, [w / 2., h * (1 - s)], tsfm3[0], -tsfm3[3], ["x", "t"], COLORS[5]);
+    draw_axes(canvas, ctx, [w / 2., h * (1 - s)], tsfm3[0], -tsfm3[3], ["x [m]", "t [ms]"], COLORS[5], 1.e-3);
 }
 
-function draw_axes(canvas, ctx, origin, dx, dy, labels, color=COLORS[0]) {
+function draw_axes(canvas, ctx, origin, dx, dy, labels, color=COLORS[0], unit_mult=1.) {
     // dx = length in px of a unit
 
     var ctx = canvas.getContext("2d");
@@ -2129,7 +2215,7 @@ function draw_axes(canvas, ctx, origin, dx, dy, labels, color=COLORS[0]) {
                     ctx.font = FS_ticks + 'px Arial';
                     ctx.textAlign = 'right';
                     ctx.textBaseline = 'middle';
-                    label = Math.round(sign*i*delta*1e6)/1e6 + y_axis_starting_point.suffix
+                    label = Math.round(sign*i*delta/unit_mult*1e6)/1e6 + y_axis_starting_point.suffix
                     ctx.fillText(label, origin[0] - w * 0.01, y_pm[j]);
                     tick_size = 8;
                 } else {
@@ -2149,6 +2235,7 @@ function draw_axes(canvas, ctx, origin, dx, dy, labels, color=COLORS[0]) {
     ctx.font = FS + 'px Arial';
     ctx.textBaseline = 'bottom';
     ctx.textAlign = 'right';
+    ctx.fillStyle = "rgba(255, 255, 255, " + 0.5 + ")";
     ctx.fillText(labels[0], w - 2*FS, origin[1] - 1.*FS);  // x-label
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
@@ -2157,7 +2244,7 @@ function draw_axes(canvas, ctx, origin, dx, dy, labels, color=COLORS[0]) {
     ctx.restore();
 }
 
-function draw_ext_axes(canvas, ctx, tsfm, which, args, kwargs) {
+function draw_ext_axes(canvas, ctx, tsfm, which, args, kwargs, unit_mult=1.) {
     // dx = length in px of a unit
 
     var ctx = canvas.getContext("2d");
@@ -2201,7 +2288,7 @@ function draw_ext_axes(canvas, ctx, tsfm, which, args, kwargs) {
         if ((i % n_ticks_per_label == 0) && (0.02 * canvas_L < coord) && (coord < canvas_L * 0.98)) {
             ctx.textAlign = txt_h;
             ctx.textBaseline = txt_v;
-            label = Math.round(i * delta * 1e6) / 1e6 + kwargs["unit"];
+            label = Math.round(i * delta / unit_mult * 1e6) / 1e6 + kwargs["unit"];
             tick_size = 7;
             coords = (which == "x") ? [coord, where + dir*tick_size] : [where + 1.25*dir*tick_size, coord];
             if (ticklabels) ctx.fillText(label, coords[0], coords[1]);

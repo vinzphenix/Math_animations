@@ -13,11 +13,11 @@
     <body>
         <div class="inputs">
             <div class="form" style="margin-bottom: 1vh;">
-                <p style="width: 65%;">Duration </p>
+                <p style="width: 65%;">Duration [ms] </p>
                 <input type="number" style="left: 70%; width: 25%;" id="input_T">
             </div>
             <div class="form" style="margin-top: 1vh;">
-                <p style="width: 65%;">Maximum x</p>
+                <p style="width: 65%;">Max. x [m]</p>
                 <input type="number" style="left: 70%; width: 25%;" id="input_x">
             </div>
             <div class="slider" style="margin-bottom: 0vh" id="slider_t" value=0.0>
@@ -54,48 +54,57 @@
                     <p style="width: 30%;">uR </p>
                     <input type="number" id="qR1" style="left: 40%;">
                 </div>
-                <div class="form" style="margin-top: 0.75vh;">
+                <div class="form" style="margin-top: 0.75vh; margin-bottom: 0.75vh">
                     <p style="width: 30%;">pL </p>
                     <input type="number" id="qL2" style="left: 40%;">
                 </div>
-                <div class="form" style="margin-top: 0.75vh;">
+                <div class="form" style="margin-top: 0.75vh; margin-bottom: 0.75vh">
                     <p style="width: 30%;">pR </p>
                     <input type="number" id="qR2" style="left: 40%;">
                 </div>
-            </div>
-            <div class="slider" style="margin-top: 0vh; margin-bottom: 0vh" id="slider_g" value="1.4">
-                <p id="text_g">&gamma; = 1.40</p>
-                <input type="range" min="1.100" max="1.67" step="0.01" value="1.4" id="range_g"/>
+                <div class="form" style="margin-top: 0.75vh;">
+                    <p style="width: 30%;">TL </p>
+                    <input type="number" id="qL3" style="left: 40%;">
+                </div>
+                <div class="form" style="margin-top: 0.75vh;">
+                    <p style="width: 30%;">TR </p>
+                    <input type="number" id="qR3" style="left: 40%;">
+                </div>
             </div>
             <div class="fieldModes">
                 <div class="dropdown">
                     <button class="dropbtn" style="background-color: var(--nord3)">1st <br> field</button>
                     <div class="dropdown-content">
-                        <a onclick="set_mode(1, 'r')">&rho;</a>
+                        <a onclick="set_mode(1, 'r')">&rho; [kg/m3]</a>
                         <a onclick="set_mode(1, 'R1')">u+2a/(g-1)</a>
-                        <a onclick="set_mode(1, 's')">s</a>
+                        <a onclick="set_mode(1, 's')">s [J/kg.K]</a>
                     </div>
                 </div>
                 <div class="dropdown">
                     <button class="dropbtn" style="background-color: var(--nord3)">2nd <br> field</button>
                     <div class="dropdown-content">
-                        <a onclick="set_mode(2, 'u')">u</a>
-                        <a onclick="set_mode(2, 'ru')">&rho; u</a>
-                        <a onclick="set_mode(2, 'c')">a</a>
+                        <a onclick="set_mode(2, 'u')">u [m/s]</a>
+                        <a onclick="set_mode(2, 'ru')">&rho; u [kg/m2.s]</a>
+                        <a onclick="set_mode(2, 'a')">a [m/s]</a>
                         <a onclick="set_mode(2, 'M')">u/a</a>
                     </div>
                 </div> 
                 <div class="dropdown">
                     <button class="dropbtn" style="background-color: var(--nord3)">3rd <br> field</button>
                     <div class="dropdown-content">
-                        <a onclick="set_mode(3, 'p')">p</a>
-                        <a onclick="set_mode(3, 'E')">E</a>
-                        <a onclick="set_mode(3, 'e')">e</a>
-                        <a onclick="set_mode(3, 'H')">H</a>
-                        <a onclick="set_mode(3, 'h')">h</a>
+                        <a onclick="set_mode(3, 'p')">p [bar]</a>
+                        <a onclick="set_mode(3, 'E')">E [kJ]</a>
+                        <a onclick="set_mode(3, 'e')">e [kJ/kg]</a>
+                        <a onclick="set_mode(3, 'H')">H [kJ]</a>
+                        <a onclick="set_mode(3, 'h')">h [kJ/kg]</a>
+                        <a onclick="set_mode(3, 'T')">T [K]</a>
                         <a onclick="set_mode(3, 'R3')">u-2a/(g-1)</a>
                     </div>
                 </div>
+            </div>
+            <div class="slider" style="margin-top: 0vh; margin-bottom: 0vh" id="slider_g" value="1.4">
+                <p id="text_g">&gamma; = 1.40</p>
+                <input type="range" min="1.100" max="1.67" step="0.01" value="1.4" id="range_g"/>
             </div>
             <div class="characteristics">
                 <div class="checkbox">
