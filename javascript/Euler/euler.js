@@ -49,6 +49,7 @@ let hoover_position_q = [-1., 0.];
 let hoover_position_xt = [undefined, undefined];
 let active_char = [false, true, false];
 let set_density = [true, true];
+let display_help = false;
 
 // Animation parameters
 let anim_state = "init";  // init, play, pause, end
@@ -128,6 +129,7 @@ function handle_inputs(canvas_axes_list, canvas_list, canvasParticles) {
     state_numeric_inputs(canvas_list, canvas_axes_list, qR, qL, "qR", 1);
     gamma_input(canvas_list);
     // screenshot_input(canvasParticles);
+    help_input();
 }
 
 function init_non_vacuum(q) {
@@ -320,17 +322,6 @@ function state_space_inputs(canvas_axes_list, canvas_list) {
     });
     canvas.addEventListener('mouseenter', (e) => {
         if (e.buttons != 1) stop_pan(canvas);
-    });
-
-    canvas.addEventListener('keydown', (e) => {
-        if (e.shiftKey) {
-            canvas.style.cursor = "row-resize";
-        }
-    });
-    canvas.addEventListener('keyup', (e) => {
-        if (e.key == "Shift") {
-            canvas.style.cursor = "default";
-        }
     });
 
     // Apply or not entropy condition
@@ -574,6 +565,43 @@ function gamma_input(canvas_list) {
             }
         }
     );
+}
+
+function help_input() {
+    window.addEventListener('keydown', (e) => {
+        if (e.key != "h") return;
+        display_help = !display_help;
+        let canvas = document.getElementById("canvasHelp");
+        let ctx, h, w, interline, h_base;
+        if (display_help) {
+            [w, h] = [canvas.width, canvas.height];
+            ctx = canvas.getContext("2d");
+            ctx.font = 2.5*FS + "px Arial";
+            ctx.fillStyle = COLORS[4];
+            ctx.textAlign = "center";
+            ctx.fillText("Help menu - Euler equations - Riemann problem", canvas.width/2, 3*FS);
+            ctx.font = 1.5*FS + "px Mono";
+            interline = 2.0*FS;
+            h_base = 0.15*h;
+            ctx.textAlign = "left";
+            ctx.fillText("- 1st column : simulation parameters", 0.05*w, h_base + interline);
+            ctx.fillText("- 2nd column : gas particles position and temperature color code", 0.05*w, h_base + 2*interline);
+            ctx.fillText("               user-selected fields along the x-axis", 0.05*w, h_base + 3*interline);
+            ctx.fillText("- 3rd column : u-p state space (drag and drop states, pan, zoom)", 0.05*w, h_base + 4*interline);
+            ctx.fillText("               characteristics in the x-t plane", 0.05*w, h_base + 5*interline);
+            h_base = 0.45*h;
+            ctx.fillText("- [h]       : toggle help menu", 0.05*w, h_base);
+            ctx.fillText("- [space]   : play/pause anim", 0.05*w, h_base + interline);
+            ctx.fillText("- [r]       : reset anim", 0.05*w, h_base + 2*interline);
+            ctx.fillText("- [z]       : rescale fields y-limits", 0.05*w, h_base + 3*interline);
+            ctx.fillText("- [o]       : reset u-p plane limits", 0.05*w, h_base + 4*interline);
+            ctx.fillText("- [1, 2, 3] : toggle 1st, 2nd, 3rd characteristics", 0.05*w, h_base + 5*interline);
+            canvas.hidden = false;
+        }
+        else {
+            canvas.hidden = true;
+        }
+    });
 }
 
 function mouse_select_state(event, tsfm) {
