@@ -1054,7 +1054,7 @@ function draw_particles(canvas, t) {
         ctx.fillStyle = colormap(reds, e);  // should be based on temperature
 
         for (sign = -1; sign <= 1; sign += 2) {
-            y = canvas.height / 2. + sign*delta/2.
+            y = canvas.height / 2. + sign*delta/2.*tsfm1A[0];
             for (; (0 < y) && (y < canvas.height); y+=sign*delta*tsfm1A[0]) {
                 ctx.beginPath();
                 ctx.arc(x, y, radius, 0, 2. * Math.PI, true);
