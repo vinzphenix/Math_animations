@@ -165,6 +165,7 @@ function handle_inputs(canvas1, canvas2, canvas3, canvas4, canvas3A) {
             if ((EPS < Number(this.value)) && (anim_state == "init")) {
                 tsfm3[3] *= duration / value;
                 duration = value;
+                document.getElementById("range_t").max = duration;
                 set_background_3(canvas3A);
                 draw_characteristics(canvas3, tsfm3, 0.);
             } else {
