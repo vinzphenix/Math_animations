@@ -259,7 +259,7 @@ function state_numeric_inputs(canvas_list, canvas_axes, this_q, other_q, this_id
                 temperature = document.getElementById(this_id + 3).value;
                 this_q[0] = get_density(this_q, temperature);
             }
-            document.getElementById(this_id + 0).value = this_q[0];
+            document.getElementById(this_id + 0).value = Math.round(this_q[0]*100)/100;
             document.getElementById(this_id + 1).value = this_q[1];
             document.getElementById(this_id + 3).value = Math.round(temperature);
             update_all_plots(canvas_list);
