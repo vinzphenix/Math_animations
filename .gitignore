@@ -3,3 +3,23 @@
 **/__pycache__
 start.py
 *.txt
+
+# Latex
+*.aux
+*.auxlock
+*.bbl
+*.bcf
+*.blg
+*.gz
+*.log
+*.out
+*.xml
+*.pre
+*.toc
+*.asy
+*.fls
+*.snm
+*.nav
+*.fdb_latexmk
+svg-inkscape/
+**/tikzext/
