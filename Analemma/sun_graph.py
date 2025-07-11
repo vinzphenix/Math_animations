@@ -297,10 +297,11 @@ def plot_analemma():
 
     # Plot the analemma
     n = 2000
-    e = [15, 23.44, 50, 85, 120]
+    e = [15, 23.44, 35, 50, 85, 120]
     t = np.linspace(0, 2 * np.pi, n)
     t += 12.0 / 365.0
-    t_labels = np.array([1, 1, 1, 1, 1, 1, 1, 1]) * 989
+    t_labels = np.array([1, 1, 1, 1, 1, 1]) * 989
+    t_labels[-1] = 550
 
     n_colors = 12
     bins = np.linspace(t.min(), t.max(), n_colors + 1)
@@ -311,12 +312,31 @@ def plot_analemma():
 
     for i, (eps, tl) in enumerate(zip(e, t_labels)):
         eps = np.deg2rad(eps)
+        z = (1 + np.cos(eps)) / 2 - (1 - np.cos(eps)) / 2 * np.cos(2 * t)
         x = -1 / 2 * (1 - np.cos(eps)) * np.sin(2 * t)
         y = -np.sin(eps) * np.cos(t)
-        print(np.argmax(y))
-        c = t
-        color_indices = np.digitize(t[:-1], bins)
-        c = [colors[i - 1] for i in color_indices]
+        ax.text(
+            x[tl],
+            y[tl] + 0.06 * (i < 5),
+            r"$\epsilon={:.0f}^\circ$".format(eps * 180 / np.pi),
+            fontsize=12,
+            ha="center"*(i < 5) + "left"*(i >= 5),
+            va="top",
+        )
+        x[z <= 0] = np.nan
+        y[z <= 0] = np.nan
+        if eps > np.pi / 2:
+            arg = (1.0 + np.cos(eps)) / (1.0 - np.cos(eps))
+            t1 = np.arccos(arg) / 2.0
+            t2 = np.pi - t1
+            t3 = np.pi + t1
+            t4 = 2 * np.pi - t1
+            ts = np.array([t1, t2, t3, t4])
+            ax.plot(
+                -1 / 2 * (1 - np.cos(eps)) * np.sin(2 * ts),
+                -np.sin(eps) * np.cos(ts),
+                "o", alpha=0
+            )
         points = np.array([x, y]).T.reshape(-1, 1, 2)
         segments = np.concatenate([points[:-1], points[1:]], axis=1)
         # norm = Normalize(vmin=c.min(), vmax=c.max())
@@ -325,15 +345,6 @@ def plot_analemma():
         # lc.set_array(c)
         lc.set_linewidth(2)
         ax.add_collection(lc)
-        print(x[tl], y[tl])
-        ax.text(
-            x[tl],
-            y[tl] + 0.06,
-            r"$\epsilon={:.0f}^\circ$".format(eps * 180 / np.pi),
-            fontsize=12,
-            ha="center",
-            va="top",
-        )
 
     Months = [
         "Jan",
@@ -362,14 +373,15 @@ def plot_analemma():
     )
 
     ax.set_aspect("equal")
-    ax.text(0, +1.20, "Nord", ha="center", va="top", fontsize=12)
-    ax.text(0, -1.20, "Sud", ha="center", va="bottom", fontsize=12)
-    ax.text(+1.20, 0, "Ouest", ha="right", va="center", fontsize=12)
+    ax.text(0, +1.20, "North", ha="center", va="top", fontsize=12)
+    ax.text(0, -1.20, "South", ha="center", va="bottom", fontsize=12)
+    ax.text(+1.20, 0, "West", ha="right", va="center", fontsize=12)
     ax.text(-1.20, 0, "Est", ha="left", va="center", fontsize=12)
-    ax.plot([-1.0, -1.0], [+1.0, -1.0], color="k", lw=0.5, ls="-")
-    ax.plot([-1.0, +1.0], [+1.0, +1.0], color="k", lw=0.5, ls="-")
-    ax.plot([-1.0, +1.0], [-1.0, -1.0], color="k", lw=0.5, ls="-")
-    ax.plot([+1.0, +1.0], [-1.0, +1.0], color="k", lw=0.5, ls="-")
+    ax.plot(np.cos(t), np.sin(t), color="k", lw=0.5, ls="-", alpha=0.5)
+    # ax.plot([-1.0, -1.0], [+1.0, -1.0], color="k", lw=0.5, ls="-")
+    # ax.plot([-1.0, +1.0], [+1.0, +1.0], color="k", lw=0.5, ls="-")
+    # ax.plot([-1.0, +1.0], [-1.0, -1.0], color="k", lw=0.5, ls="-")
+    # ax.plot([+1.0, +1.0], [-1.0, +1.0], color="k", lw=0.5, ls="-")
     ax.axis("off")
 
     fig.tight_layout()

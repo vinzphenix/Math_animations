@@ -28,8 +28,11 @@
   shapes, shapes.multipart,backgrounds,arrows.meta,overlay-beamer-styles,
   external
 }
-
 \usepackage{epigraph}
+
+\newcommand{\Sin}{%
+  \mathop{\sbox0{$\cos$}\makebox[\wd0][r]{$\sin$}}%
+}
 
 \setcounter{tocdepth}{2}
 % \setlength{\droptitle}{-3em}
@@ -115,12 +118,13 @@ For simplicity, let's furthermore suppose that the year is exactly $N=365$ solar
 days of $T_d = 86400=24\times 60\times 60$ seconds. This is obviously inacurate, 
 but sufficent to reveal the beauty of the phenomenon at play.
 
+\clearpage
 \section{The simplest case}
 \begin{figure}
     \centering
     \begin{tikzpicture}
-        \pgfmathsetmacro{\rr}{3.5}
-        \pgfmathsetmacro{\re}{0.95}
+        \pgfmathsetmacro{\rr}{3.25}
+        \pgfmathsetmacro{\re}{0.85}
         \pgfmathsetmacro{\ph}{70}
         \pgfmathsetmacro{\th}{40}
         \pgfmathsetmacro{\vv}{0.85}
@@ -198,21 +202,21 @@ frame:
         &= -R \mathrm{y}_1 - a \Big[\cos(\phi-\theta) \mathrm{y}_1 + \sin(\phi-\theta) \mathrm{y}_2\Big].
     \end{aligned}
 \end{equation}
-Since $R/a \approx 4\times 10^{-5}$, we can neglect the term $R y_1$. 
+Since $R/a \approx 4\times 10^{-5}$, we will neglect the term $R y_1$.
 From here on, we will use the direction vector 
 $s\approx \overrightarrow{OS}/\|\overrightarrow{OS}\|$ that neglects
-the $R$ term. Rewriting $\phi-\theta$, we then get:
+the $R$ term. Rewriting $\phi-\theta$, and expressing 12:00 on day $k$ 
+as $t_{k}=T_d/2 + kT_d$, we get:
 \begin{align}
     s(t) &= -\Big[\cos(2\pi t/T_d) \mathrm{y}_1 + \sin(2\pi t/T_d) \mathrm{y}_2\Big],\\
-    s(t_{12}) &= \mathrm{y}_1.
+    s(t_{k}) &= \mathrm{y}_1.
 \end{align}
-where $t_{12}=T_d/2 + kT_d$ is the time of 12:00 on day $k$.
 
-\section{The effect of the Earth's axial tilt}
+\section{Effect of the Earth's axial tilt}
 \begin{figure}
     \centering
     \begin{tikzpicture}
-        \pgfmathsetmacro{\rr}{3.5}
+        \pgfmathsetmacro{\rr}{3.25}
         \pgfmathsetmacro{\re}{0.95}
         \pgfmathsetmacro{\ree}{1.5*\re}
         \pgfmathsetmacro{\ph}{70}
@@ -284,18 +288,19 @@ The sun's position in the Earth's frame $[\mathrm{y}]$ is now given by:
         \phantom{+}\cos(\phi)\cos(\epsilon)\sin(\theta)-\sin(\phi) \cos(\theta)\\
         -\cos(\phi)\sin(\epsilon)\phantom{\sin(\theta)+\sin(\phi) \cos(\theta)}
     \end{bmatrix}.
+    \label{eq:position}
 \end{equation}
 
 \textbf{Where is the sun at 12:00?}
 
-Once again, we insert $t_{12}=kT_d+T_d/2$ for $k=0,1,2,\ldots N-1$ in $s$ to 
+Once again, we insert $t_{k}=kT_d+T_d/2$ for $k=0,1,2,\ldots N-1$ in $s$ to 
 derive the sun's position at noon. First let's express the angles $\phi$ and 
 $\theta$ in terms of $k$:
 \begin{equation}
     \left\{
     \begin{aligned}
-        \phi &= \Omega t_{12} = 2\pi \frac{1}{N} (k+\tfrac{1}{2})\\
-        \theta &= \omega t_{12} = 2\pi \frac{N+1}{N} (k+\tfrac{1}{2})
+        \phi &= \Omega t_{k} = 2\pi \frac{1}{N} (k+\tfrac{1}{2})\\
+        \theta &= \omega t_{k} = 2\pi \frac{N+1}{N} (k+\tfrac{1}{2})
     \end{aligned}
     \right\} \implies
     \left\{
@@ -316,28 +321,42 @@ Using trigonometric identities, we find
     \end{aligned}
 \end{equation}
 
-With these, we can express the analemma as a parametric curve with parameter 
+With these, we can express the analemma as a 
+parametric curve with parameter 
 $\beta \in [0,2\pi]$:
 \begin{equation}
     s\vert_{12:00}(\beta) =
+    \frac{1}{2}
     \begin{bmatrix}
-        \cos(\epsilon)\cos^2(\beta) + \sin^2(\beta)\\
-        \tfrac{1}{2}(1-\cos(\epsilon)) \sin(2\beta)\\
-        -\sin(\epsilon) \cos(\beta)
+        1+\cos\epsilon\\
+        0\\
+        0
+    \end{bmatrix}+
+    \frac{1}{2}
+    \begin{bmatrix}
+        - (1-\cos\epsilon) \cos(2\beta)\\
+        \phantom{+} (1-\cos\epsilon) \sin(2\beta)\\
+        \quad\;-2\sin(\epsilon) \cos(\phantom{2}\beta)
     \end{bmatrix}.
+    % \begin{bmatrix}
+    %     \cos(\epsilon)\cos^2(\beta) + \sin^2(\beta)\\
+    %     \tfrac{1}{2}(1-\cos(\epsilon)) \sin(2\beta)\\
+    %     -\sin(\epsilon) \cos(\beta)
+    % \end{bmatrix}.
 \end{equation}
 
 This curve is shown in figure \ref{fig:analemma_easy} for various 
 tilt angles $\epsilon$, in the observer's frame, that is, without the 
-$\mathrm{y}_1$ component.
-
+$\mathrm{y}_1$ component. We can note that beyond $\epsilon=90^\circ$, we
+enter in a strange territory where the sun is below the horizon at 12:00, with
+the day/night cycle reversed.
 \begin{figure}[ht]
     \centering
     \includegraphics[width=\textwidth]{./analemma_plot.pdf}
     \caption{
-        The analemma at noon from 00°N. The border of the figure is the
-        horizon of the observer. Each month has been associated to a specific 
-        color.
+        The analemma of 12:00, viewed from the ground at 00°N. 
+        The border of the figure is the horizon of the observer. 
+        Each month has been assigned a specific color.
     }
     \label{fig:analemma_easy}
 \end{figure}
@@ -345,9 +364,8 @@ $\mathrm{y}_1$ component.
 
 \textbf{When is the sun at its highest point?}
 
-First, we'll determine the time $t$ when the sun is at its highest point in the
-sky, which is when the vector $\mathrm{x}_1$ has no $\mathrm{y}_2$ component 
-(midnight is also a solution):
+At "solar" noon and midnight, the vector $\mathrm{x}_1$ has no $\mathrm{y}_2$ component:
+:
 \begin{equation}
     \begin{aligned}
         \cos(\Omega t)\sin\big((N+1)\Omega t\big) \cos(\epsilon) &= \sin(\Omega t) \cos\big((N+1)\Omega t\big)\\
@@ -371,16 +389,17 @@ but we can approximate it around 12:00 with $t^*=kT_d+T_d/2+\delta$, $k=0,1,2\ld
     \label{eq:noon_shift}
 \end{equation}
 Noon is off by $\delta$ seconds from the mean solar time, and this shift
-oscillates twice a year as demonstrated by the factor at the numerator of 
-\eqref{eq:noon_shift} and shown in figure \ref{fig:noon_shift}. 
+oscillates twice a year as we can see with the factor at the numerator of 
+\eqref{eq:noon_shift} and in figure \ref{fig:noon_shift}. 
 The approximation can be simplified with $\tan(x) \approx x$ 
-("approx. 2") and even further by removing the denominator ("approx. 3").
+("approx. 2") and even further by removing the denominator ("approx. 3"),
+providing acceptable results until quite large tilt angles $\epsilon$.
 
 \begin{figure}[ht]
     \centering
     \includegraphics[width=\textwidth]{./noon_computed.pdf}
     \caption{
-        Noon time throughout the year for two different axial tilt angles $\epsilon$.
+        Apparent noon time throughout the year for two different axial tilt angles $\epsilon$.
     }
     \label{fig:noon_shift}
 \end{figure}
@@ -393,15 +412,308 @@ the sun is revolving around the earth, but also moving up
 
 This vertical motion has a period of one year: the sun reaches its highest point
 at the summer solstice, and its lowest point at the winter solstice, for people 
-in the northern hemisphere. Since the sun's total motion is constant, its
-horizontal motion must slow down when the vertical motion is at its highest 
-\textit{in absolute value}. 
+in the northern hemisphere. Since the sun's total motion is constant in this 
+cicular orbit model, its horizontal motion must slow down when the vertical 
+motion is at its highest \textit{in absolute value}. 
 
 The sun's eastward velocity is thus at its highest
 at both solstices, and at its lowest at both equinoxes, producing a
 motion of period half a year. The sun's horizontal position is simply the
 integral of this velocity as we can see in figure 
 \ref{fig:noon_shift}.
+
+\clearpage
+\section{Effect of Earth's orbit eccentricity}
+
+\begin{figure}
+    \centering
+    \begin{tikzpicture}
+        \pgfmathsetmacro{\ra}{3.75}
+        \pgfmathsetmacro{\rb}{2.5}
+        \pgfmathsetmacro{\re}{0.85}
+        \pgfmathsetmacro{\nnu}{55}
+        \pgfmathsetmacro{\gam}{20}
+        \pgfmathsetmacro{\vv}{0.85}
+        \pgfmathsetmacro{\ss}{0.15}
+        \pgfmathsetmacro{\bx}{-\ra-2*\vv}
+        \pgfmathsetmacro{\by}{\ra-\vv}
+        \pgfmathsetmacro{\c}{sqrt(\ra*\ra-\rb*\rb)}
+        \pgfmathsetmacro{\e}{\c/\ra}
+        \pgfmathsetmacro{\dd}{0.07}
+        \pgfmathsetmacro{\cosn}{(cos(\nnu)-\e)/(1-\e*cos(\nnu))}
+        \pgfmathsetmacro{\sinn}{(sqrt(1-\e*\e)*sin(\nnu))/(1-\e*cos(\nnu))}
+        \pgfmathsetmacro{\mm}{\nnu-\e*sin(\nnu)*180/pi}
+        \coordinate (C) at (0,0);
+        \coordinate (S) at (\c,0);
+        \path (C) -- (1, 0) coordinate (e1);
+        \path (C) -- (0, 1) coordinate (e2);
+        \path (C) -- ({cos(\gam)},{-sin(\gam)}) coordinate (i1);
+        \path (C) -- ({sin(\gam)},{cos(\gam)}) coordinate (i2);
+        \path (C) -- ({\cosn},{\sinn}) coordinate (u1);
+        \path (C) -- ({-\sinn},{\cosn}) coordinate (u2);
+        \coordinate (A) at (\ra,0);
+        \coordinate (E) at ({\ra*cos(\nnu)},{\rb*sin(\nnu)});
+        \coordinate (EH) at ({\ra*cos(\nnu)},{0});
+        \coordinate (EC) at ({\ra*cos(\nnu)},{\ra*sin(\nnu)});
+        \coordinate (EM) at ({\ra*cos(\mm)},{\ra*sin(\mm)});
+        \coordinate (A0) at ($ (E)!19/20!(S) + \ss*(u2) $);
+        \coordinate (A1) at ($ (A0) + \vv*(u1) $);
+        \coordinate (A2) at ($ (A0) + \vv*(u2) $);
+        \coordinate (B0) at ({\bx}, {\by});
+        \coordinate (B1) at ($ (B0) + \vv*(i1) $);
+        \coordinate (B2) at ($ (B0) + \vv*(i2) $);
+        \coordinate (BH) at ($ (B0) + 2*\vv*(e1) $);
+        \fill[blue, opacity=0.1] (S) -- (A) arc(0:\nnu:\ra);
+        \fill[orange, opacity=0.1] (O) -- (A) arc(0:\mm:\ra);
+        \node at (A) [anchor=west] {A};
+        \node at (C) [anchor=north] {O};
+        \node at (S) [anchor=north] {S};
+        \draw[thick] (C) ellipse ({\ra} and {\rb});
+        \draw[thick, lightgray, dotted] (C) circle ({\ra});
+        \draw[thick, lightgray, dotted] (EH) -- (EC);
+        \node at (E) [above right] {P};
+        \node at (EM) [anchor=west] {P''};
+        \node at (EC) [above right] {P'};
+        \node at (EH) [anchor=north] {D};
+        \draw[thick, dotted, lightgray] (S) -- (C) -- (EC);
+        \draw[thick, -, lightgray] (A) -- (S) -- (E) node[pos=0.6, right] {$r$};
+        \pic [draw, -, "$\nu$", angle eccentricity=1.5, lightgray] {angle = A--S--E};
+        \pic [draw, -, "$E$", angle eccentricity=1.4, lightgray] {angle = A--O--EC};
+        \pic [draw, -, "$M$", angle radius=30, angle eccentricity=1.2, lightgray] {angle = A--O--EM};
+        \pic [draw, -, "$\gamma$", angle radius=40, angle eccentricity=1.2, lightgray] {angle = B1--B0--BH};
+        \fill (A) circle (\dd);
+        \fill (C) circle (\dd);
+        \fill (S) circle (\dd);
+        \fill (E) circle (\dd);
+        \fill (EH) circle (\dd);
+        \fill (EM) circle (\dd);
+        \fill (EC) circle (\dd);
+        \draw[thick, dashed, lightgray] (B0) -- (BH);
+        \draw[thick,-Latex, lightgray] (B0) -- (B1) node[below] {$\mathrm{I}_1$};
+        \draw[thick,-Latex, lightgray] (B0) -- (B2) node[right] {$\mathrm{I}_2$};
+        \draw[thick,-Latex, lightgray] (A0) -- (A1) node[left=-3pt] {$\mathrm{x}_1$};
+        \draw[thick,-Latex, lightgray] (A0) -- (A2) node[below] {$\mathrm{x}_2$};
+    \end{tikzpicture}
+\end{figure}
+
+The Earth's orbit is not a perfect circle, but an ellipse with semi-major axis
+$a$ and semi-minor axis $b$. For the earth, the orbit eccentricity 
+$e=\sqrt{1-b^2/a^2}\approx 0.017$ is relatively small, but enough to have a
+noticeable effect on the analemma. The eccentricity $e\approx 0.75$ in the 
+figure above is exaggerated for clarity.
+
+In the early 17th century, Johannes Kepler stated his famous \textit{laws of
+planetary motion}:
+\begin{enumerate}
+    \item The orbit of a planet is an ellipse with the sun at one focus.
+    \item A line segment joining a planet and the sun sweeps out equal areas during
+        equal intervals of time.
+    \item The square of the orbital period of a planet is proportional to the cube
+        of the semi-major axis of its orbit.
+\end{enumerate}
+
+\textbf{Anomalies}
+
+To describe efficiently a planet's position along its elliptical orbit at a 
+given time, astronomers use three angular parameters called \textit{anomalies} to 
+stress the difference with a circular orbit. 
+
+\begin{enumerate}
+    \item \textit{True anomaly} $\nu$, the angle between the direction of 
+    perihelion and the Earth.
+    \item \textit{Eccentric anomaly} $E$, an  auxiliary  angle  used to simplify
+    calculations.
+    \item \textit{Mean anomaly} $M=\Omega t$, increasing linearly with time.
+\end{enumerate}
+
+While $M(t)$ increases linearly, Kepler's second law implies that $\nu(t)$ does not.
+Because the Earth moves faster near perihelion and slower near aphelion, 
+the apparent motion of the Sun in the sky varies over the year.
+
+Kepler's second law states that the blue and orange areas in the figure above 
+are equal:
+\begin{align}
+    |AOP''| &= |ASP'| = |AOP'| - |OSP'|\\
+    \frac{a^2 M}{2} &= \frac{a^2 E}{2} - \frac{(ae) (a\sin e)}{2}\\
+    M &= E - e \sin E \label{eq:keplereq}.
+\end{align}
+The resulting equation is known as \textit{Kepler's equation} and has no closed 
+form solution for $E$ in terms of $M$. Once the eccentric anomaly $E$ has been 
+derived from the mean anomaly $M$, it remains to find the true anomaly $\nu$:
+\begin{align}
+    r &= a(1-e \cos E) \label{eq:r}\\[6pt]
+    \cos \nu &= \frac{\cos E - e}{1 - e \cos E}, \label{eq:cosnu}\\[0pt]
+    \sin \nu &= \frac{\sqrt{1-e^2} \sin E}{1-e\cos E}, \label{eq:sinnu}\\
+    r &= a\: \frac{1-e^2}{1+e \cos \nu}
+\end{align}
+
+The relationships \eqref{eq:r}, \eqref{eq:cosnu} and \eqref{eq:sinnu} 
+were respectively derived by:
+\begin{gather}
+    \begin{aligned}
+        r^2 &= \|SD\|^2+ \|DP\|^2 = b^2 \sin^2 E + (ae - a \cos E)^2\\
+        &= a^2 \left[(1-e^2) (1-\cos^2 E) + (e^2 - 2e \cos E + \cos^2 E)\right]\\
+        &= a^2 \left[ 1 - 2e \cos E + e^2 \cos^2 E\right] = a^2 (1-e \cos E)^2
+    \end{aligned}\\[12pt]
+    \begin{aligned}
+        \|OD\| + \|DS\| &= \|OS\|\\
+        a \cos E - r \cos \nu &= ae\\
+        a \cos E - a (1-e \cos E) \cos \nu &= ae
+        % \implies \cos \nu &= \frac{\cos E - e}{1-e \cos E}
+    \end{aligned}\\[12pt]
+    \begin{aligned}
+        \|DP\| = r \sin \nu &= b \sin E\\
+        a(1-e\cos E) \sin \nu &= a\sqrt{1-e^2} \sin E
+    \end{aligned}
+\end{gather}
+
+The true anomaly can be approximated from the mean anomaly
+via a Fourier expansion:
+\begin{equation}
+    \nu = M + (2e - \tfrac{1}{4}e^3)\sin(M) + \tfrac{5}{4}e^2 \sin(2M) + 
+    \tfrac{13}{12}e^3 \sin(3M) + \mathcal{O}(e^4).
+\end{equation}
+
+Perihelion ($\nu=0$) and winter solstice ($\phi=0$) do not have to coincide,
+even though they are quite close currently for Earth which gets closest to the 
+sun in early january. Introducing the angle $\gamma=\Omega\sigma$ between the 
+winter solstice and perihelion, we can relate the orbital position $\phi$ and 
+its first order approximation directly to time:
+\begin{equation}
+    \begin{aligned}
+        \mu &= M + \gamma = \Omega t\\
+        \phi &= \nu + \gamma = \mu + \underbrace{2e \sin(\mu-\gamma)}_{\phi_1} + \mathcal{O}(e^2)
+    \end{aligned}
+\end{equation}
+
+\textbf{Where is the sun at 12:00?}
+
+We want an approximation of the sun's position, given by equation 
+\eqref{eq:position}, at noon, by taking into account the
+Earth's orbit eccentricity with our new estimate $\phi(t)$.
+
+Using the first order approximation only as it is
+sufficiently painful already, we expand $\cos\phi$, 
+$\sin\phi$ and $r$ in terms of $\mu$ and $\gamma$:
+\begin{equation}
+    \begin{aligned}
+        \cos \phi &= \cos \mu \cos\phi_1 - \Sin \mu \sin\phi_1 = 
+            \cos\mu -e\cos\gamma(1-\cos2\mu) + e\Sin\gamma\Sin2\mu + \mathcal{O}(e^2)\\
+        \sin \phi &= \Sin \mu \cos\phi_1 + \cos \mu \sin\phi_1 = 
+            \Sin\mu -e\Sin\gamma(1+\cos2\mu) + e\cos\gamma\Sin2\mu + \mathcal{O}(e^2)\\
+        r/a &= \tfrac{1-e^2}{1+e\cos(\phi-\gamma)} 
+            = 1 - e\cos(\mu-\gamma) + \mathcal{O}(e^2) 
+            % = 1 - e (\cos\gamma \cos\mu - \Sin\gamma \sin\mu) + \mathcal{O}(e^2) 
+    \end{aligned}
+\end{equation}
+
+Let's first recall the expressions for noon, the Earth's angular position 
+$\theta$, and let's derive a useful relation for integer multiples of the 
+angular position $\mu$:
+\begin{align}
+    t_k &= k T_d + \tfrac{T_d}{2}\\
+    \mu_k &= \Omega t_k = 2\pi \tfrac{k+1/2}{N}\\
+    \theta &= (N+1)\Omega t = (N+1)\mu\\
+    (N+\ell)\Omega t_{k} &= 2\pi k + \pi + \ell \mu_k
+\end{align}
+
+Playing around with the trigonometric product-to-sum identities, we find:
+\begin{align}
+    \cos (\phi_k) \cos (\theta_k) &\approx \tfrac{-1}{2} (1+\cos2\mu) 
+        + \tfrac{e}{2} \cos\gamma( \cos\mu - \cos3\mu) 
+        - \tfrac{e}{2} \Sin\gamma( \Sin\mu + \Sin3\mu),
+        \label{eq:coscos}\\[3pt]
+    \Sin (\phi_k) \Sin (\theta_k) &\approx \tfrac{-1}{2} (1-\cos2\mu) 
+        - \tfrac{e}{2} \cos\gamma (\cos\mu - \cos3\mu)
+        + \tfrac{e}{2} \Sin\gamma (\Sin\mu + \Sin3\mu),
+        \label{eq:sinsin}\\[3pt]
+    \cos (\phi_k) \Sin (\theta_k) &\approx -\tfrac{1}{2} \sin(2\mu) 
+        + \tfrac{e}{2} \cos\gamma (3\Sin\mu - \Sin3\mu)
+        - \tfrac{e}{2} \Sin\gamma (\phantom{3}\cos\mu - \cos3\mu),
+        \label{eq:cossin}\\[3pt]
+    \Sin (\phi_k) \cos (\theta_k) &\approx -\tfrac{1}{2} \sin(2\mu) 
+        - \tfrac{e}{2} \cos\gamma (\phantom{3}\Sin\mu + \Sin3\mu)
+        + \tfrac{e}{2} \Sin\gamma (3\cos\mu + \cos3\mu).
+        \label{eq:sincos}
+\end{align}
+
+With the elliptical orbit, the position of the sun in the Earth's frame, 
+obtained previously in equation \eqref{eq:position} must now be scaled by 
+the varying distance $r$:
+\begin{equation}
+    s = -\frac{r}{a} \mathrm{x}_1 =
+    -\frac{r}{a}\begin{bmatrix}
+        -\cos(\phi)\cos(\epsilon)\cos(\theta) - \sin(\phi)\sin(\theta)\\
+        \phantom{+}\cos(\phi)\cos(\epsilon)\sin(\theta)-\sin(\phi) \cos(\theta)\\
+        -\cos(\phi)\sin(\epsilon)\phantom{\sin(\theta)+\sin(\phi) \cos(\theta)}
+    \end{bmatrix}+\mathcal{O}(e^2).
+    \label{eq:positionEllipse}
+\end{equation}
+
+Inserting the approximations \eqref{eq:coscos}--\eqref{eq:sincos} into
+equation \eqref{eq:positionEllipse} allows us to approximate the analemma 
+up to first order in $e$ with a curve parametrized by $\mu \in [0,2\pi]$:
+\begin{align}
+    s\vert_{12:00}(\mu) &=
+    \begin{bmatrix}
+        \frac{1+\cos\epsilon}{2}-\frac{1-\cos\epsilon}{2} \cos2\mu
+            -\phantom{2}e(\cos\epsilon\cos\gamma\cos\mu + \Sin\gamma\Sin\mu) 
+            + \delta_1\\[6pt]
+        \phantom{\frac{1+\cos\epsilon}{2}-{}}\frac{1-\cos\epsilon}{2} \Sin2\mu
+            + 2e (\cos\epsilon\cos\gamma \Sin\mu - \Sin\gamma \cos\mu) 
+            + \delta_2\\[6pt]
+        -\Sin\epsilon \cos\mu + e\:\tfrac{\sin\epsilon}{2}(
+            3\cos\gamma-\cos\gamma\cos2\mu-\Sin\gamma\Sin2\mu
+        )
+        % \phantom{{}+ \tfrac{5}{2}e\cos\epsilon\Sin\beta} \\[3pt]
+        % \phantom{(1+\cos\epsilon)+{}}(1-\cos\epsilon) \big(\Sin2\beta + e\Sin\beta + e\Sin3\beta \big) + \textcolor{Red}{\tfrac{5}{2}e\cos\epsilon\Sin\beta}\\[3pt]
+        % \quad\;-2\Sin\epsilon \cos\beta
+    \end{bmatrix}
+    +\mathcal{O}(e^2)\\[9pt]
+    \begin{bmatrix}
+        \delta_1\\
+        \delta_2
+    \end{bmatrix} &=
+    e\:\tfrac{1-\cos\epsilon}{4}
+    \begin{bmatrix}
+        \cos\gamma & -\Sin\gamma\\
+        \Sin\gamma & \phantom{-}\cos\gamma
+    \end{bmatrix}
+    \begin{bmatrix}
+        \cos\mu - \cos3\mu\\
+        \Sin\mu + \Sin3\mu
+    \end{bmatrix}%\\
+    % \delta_1 &= e\:\tfrac{1-\cos\epsilon}{4}\big(
+    %     \cos\gamma(\cos\mu-\cos3\mu)-\Sin\gamma(\Sin\mu+\Sin3\mu)
+    % \big) \\[3pt]
+    % \delta_2 &= e\:\tfrac{1-\cos\epsilon}{4}\big(
+    %     \cos\gamma(\Sin\mu+\Sin3\mu)+\Sin\gamma(\cos\mu-\cos3\mu)
+    % \big)
+\end{align}
+
+Quite an expression! The extra terms $\delta_1$ and $\delta_2$ were put aside
+because they only slightly contribute to the overall shape of the analemma.
+Let's now consider the case $\gamma=0$ to measure the effect of the
+Earth's orbit eccentricity without the complication of the perihelion shift.
+
+In that case, the main effect of the Earth's orbit eccentricity is to break 
+the vertical symmetry of the analemma. 
+In the second component of $s$, the term $2e\cos\epsilon\Sin\mu$
+tends to push the analemma towards the left during the first half of the year
+and towards the right during the second half. As a consequence, the analemma's
+lower loop of winter solstice gets widened, while the upper loop of summer 
+solstice gets narrowed.
+
+The effect would be exactly the opposite if we had $\gamma=\pi$,
+that is, if the perihelion was at the summer solstice. 
+On the other hand, small angles $\gamma$ tend to rotate the analemma, 
+breaking the vertical symmetry. The situation with arbitrary angles $\gamma$
+is however quite intricate, and should just be enjoyed visually.
+
+% The main effect of the Earth's orbit eccentricity is to break the vertical
+% symmetry of the analemma. The term highlighted in red tends to widen the analemma
+% around the winter solstice ($\beta\in[-\pi/2,\pi/2]$), and narrow it around the summer solstice.
+
 
 
 \end{document}
