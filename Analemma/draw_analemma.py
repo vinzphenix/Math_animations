@@ -6,15 +6,20 @@ from matplotlib.patches import Patch
 from numpy import pi, sin, cos
 
 # fmt: off
-Months, offset = [
-        "Jan", "Feb", "Mar", "Apr", "May", "Jun", 
-        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
-    ], 11.0 / 365.0
-# Months, offset = [
-#     "Sa-Dh", "Ca-Ma", "Aq-Kh", 
-#     "Pi-Mi", "Ar-Me", "Ta-Ri", "Ge-Mi", "Ca-Ka", "Le-Si",
-#     "Vi-Ka", "Li-Tu", "Sc-Vr", 
-# ], 0.2305  # Mars Winter solstice to year start (spring equinox)
+Months = [f"Mo {i + 1:02d}" for i in range(12)]
+offset = 0.0  # year start to perihelion in [0, 1)
+
+# Months = [
+#     "Jan", "Feb", "Mar", "Apr", "May", "Jun", 
+#     "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+# ]
+# offset = 3.0 / 365.0  # year start to perihelion in [0, 1)
+
+# Months = [
+#     "Sa-Dh", "Ca-Ma", "Aq-Kh", "Pi-Mi", "Ar-Me", "Ta-Ri", 
+#     "Ge-Mi", "Ca-Ka", "Le-Si", "Vi-Ka", "Li-Tu", "Sc-Vr",
+# ]
+# offset = 0.7259  # Mars spring equinox (year start) to perihelion
 # fmt: on
 
 
@@ -30,30 +35,30 @@ def project_analemma(x1, x2, x3):
     return
 
 
-def approx_analemma(eps, e, g, t):
+def approx_analemma(eps, e, g, M_astro):
     assert 0.0 <= e < 1.0
-    assert -np.pi <= eps <= np.pi
+    assert 0. <= eps <= np.pi / 2.0
     assert 0 <= g <= 2 * np.pi
     
-    tt = t + offset * 2 * np.pi
+    M = M_astro - offset * 2 * np.pi  # M astro -> M civil
+    mu = M + g
 
     ce, se = np.cos(eps), np.sin(eps)
-    cg, sg = np.cos(g), np.sin(g)
 
-    x1 = (1 + ce) / 2 - (1 - ce) / 2 * np.cos(2 * tt)
-    x2 = (1 - ce) / 2 * np.sin(2 * tt)
-    x3 = -se * np.cos(tt)
+    x1 = (1 + ce) / 2 - (1 - ce) / 2 * np.cos(2 * mu)
+    x2 = (1 - ce) / 2 * np.sin(2 * mu)
+    x3 = -se * np.cos(mu)
 
-    x1 -= e * (1 + ce) * np.cos(tt - g) / 2
-    x2 += e * (1 + ce) * np.sin(tt - g)
-    x1 += e * (1 - ce) * (3 * np.cos(tt + g) - np.cos(3 * tt - g)) / 4
-    x2 -= e * (1 - ce) * (3 * np.sin(tt + g) - np.sin(3 * tt - g)) / 4
-    x3 += e * se * (3 * cg - np.cos(2 * tt - g)) / 2
+    x1 -= e * (1 + ce) * np.cos(mu - g) / 2
+    x2 += e * (1 + ce) * np.sin(mu - g)
+    x1 += e * (1 - ce) * (3 * np.cos(mu + g) - np.cos(3 * mu - g)) / 4
+    x2 -= e * (1 - ce) * (3 * np.sin(mu + g) - np.sin(3 * mu - g)) / 4
+    x3 += e * se * (3 * np.cos(g) - np.cos(2 * mu - g)) / 2
 
     return x1, x2, x3
 
 
-def solve_analemma(tilt, ecc, g, M):
+def solve_analemma(tilt, ecc, g, M_astro):
     """ Solve the analemma for given parameters.
     Args:
         tilt (float): planet obliquity
@@ -65,6 +70,7 @@ def solve_analemma(tilt, ecc, g, M):
     Returns:
         x1, x2, x3 (np.ndarray): Planet-Sun vector in planet-centric coords.
     """
+    M = M_astro - offset * 2 * np.pi  # M astro -> M civil
     E = np.copy(M) + ecc * np.sin(M)
     for it in range(10):
         f = E - ecc * np.sin(E) - M
@@ -73,24 +79,13 @@ def solve_analemma(tilt, ecc, g, M):
     r = 1 - ecc * np.cos(E)
     cos_nu = (np.cos(E) - ecc) / r
     sin_nu = np.sqrt(1 - ecc * ecc) * np.sin(E) / r
-    
-    # Search for t at winter solstice
-    target = (2 * np.pi - g + np.pi) % (2 * np.pi) - np.pi
-    idx = np.argmin(np.abs(np.arctan2(sin_nu, cos_nu) - target))
-    cos_nu = np.roll(cos_nu, -idx)
-    sin_nu = np.roll(sin_nu, -idx)
-    M_shift = np.roll(M, -idx)
-    idx = int(np.round(offset * M.size))
-    cos_nu = np.roll(cos_nu, -idx)
-    sin_nu = np.roll(sin_nu, -idx)
-    M_shift = np.roll(M_shift, -idx)
-    
+        
     cos_gm, sin_gm = np.cos(g), np.sin(g)
     cos_ep, sin_ep = np.cos(tilt), np.sin(tilt)
     cos_nu_g = cos_nu * cos_gm - sin_nu * sin_gm
     sin_nu_g = sin_nu * cos_gm + cos_nu * sin_gm
-    cos_th = -np.cos(M_shift + g)
-    sin_th = -np.sin(M_shift + g)
+    cos_th = -np.cos(M + g)
+    sin_th = -np.sin(M + g)
     
     x1 = r * (-cos_ep * cos_nu_g * cos_th - sin_nu_g * sin_th)
     x2 = r * (+cos_ep * cos_nu_g * sin_th - sin_nu_g * cos_th)
@@ -247,15 +242,19 @@ def compare(tilt, ecc, shift, savefig=""):
         project_analemma(x1, x2, x3)
         x = cx + radius * (-x2)
         y = cy + radius * (+x3)
+        dx2 = np.gradient(x2, 2 * np.pi / (m * n))
+        dx3 = np.gradient(x3, 2 * np.pi / (m * n))
+        ref_speed = 0.5
+        speed = np.sqrt(dx2 * dx2 + dx3 * dx3) / ref_speed
         points = np.array([x, y]).T.reshape(-1, 1, 2)
         segments = np.concatenate([points[:-1], points[1:]], axis=1)
         lc = LineCollection(segments, colors=line_colors)
-        lc.set_linewidth(2.0)
+        lc.set_linewidth(2.0 / speed ** 0.75)
+        # lc.set_linewidth(2.5 / speed ** 0.60)
         ax.add_collection(lc)
         
         # Plot cardinal directions
         d = 0.15 * radius
-        dd = np.array([-d, d])
         ax.plot([cx - d, cx + d], [cy, cy], "k", lw=0.5, alpha=0.5)
         ax.plot([cx, cx], [cy - 3 * d, cy + 3 * d], "k", lw=0.5, alpha=0.5)
         ax.text(cx - 1.05 * d, -0.10 * d, "E", ha="right", fontsize=12)
@@ -341,8 +340,7 @@ def mosaic(tilt, ecc_list, shift_list, savefig=""):
             points = np.array([x, y]).T.reshape(-1, 1, 2)
             segments = np.concatenate([points[:-1], points[1:]], axis=1)
             lc = LineCollection(segments, colors=line_colors)
-            lc.set_linewidth(1.0)
-            # lc.set_alpha(0.5)
+            lc.set_linewidth(1.25)
             ax.add_collection(lc)
 
             # Plot the horizon of the observer
@@ -374,8 +372,8 @@ if __name__ == "__main__":
     plt.rcParams.update({"text.usetex": True})
 
     # plot_analemma(
-    #     # tilt_list=[15, 23.44, 35, 50, 85, 120],
-    #     tilt_list=[40],
+    #     tilt_list=[15, 23.44, 35, 50, 85],
+    #     # tilt_list=[23.44],
     #     ecc=0.0,
     #     shift=0.0,
     #     # savefig="./Analemma/analemma_plot.pdf",

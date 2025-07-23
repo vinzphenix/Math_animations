@@ -1,6 +1,7 @@
 \documentclass[12pt]{article}
 \usepackage{amsmath}
 \usepackage{amssymb}
+\usepackage{dsfont}
 \usepackage[margin=2.5cm]{geometry}
 \usepackage{physics}
 \usepackage[hidelinks]{hyperref}
@@ -102,6 +103,9 @@ at play, and discover the beautiful figure drawn by the sun: the analemma.
 Someone actually did this experiment and recorded the sun's position
 throughout the year 
 [\href{https://www.youtube.com/watch?v=Deli5COMJhs}{timelapse link}].
+On my side, I created interactive 3D plots of the analemma on Desmos, available
+[\href{https://www.desmos.com/3d/1zuaedwwnz}{here}] and 
+[\href{https://www.desmos.com/3d/dktrfjpwnh}{here}].
 
 
 \newpage
@@ -127,7 +131,7 @@ but sufficent to reveal the beauty of the phenomenon at play.
 \begin{figure}
     \centering
     \begin{tikzpicture}
-        \pgfmathsetmacro{\rr}{3.25}
+        \pgfmathsetmacro{\rr}{3.15}
         \pgfmathsetmacro{\re}{0.85}
         \pgfmathsetmacro{\ph}{70}
         \pgfmathsetmacro{\th}{40}
@@ -191,18 +195,22 @@ Sun to return to the same position in the sky.
 
 This period is called the \textit{sidereal day}, noted here $T_s$. 
 We experience $N$ solar days in a year, but the Earth actually completes $N+1$ 
-sidereal days in the same time.
+sidereal days in the same time because of its prograde rotation:
 \begin{align}
-    \dot\phi = \Omega = \frac{2\pi}{N T_d} \qquad\qquad
-    \dot\theta = \frac{2\pi}{T_s} = (N+1) \Omega
+    \dot\phi = \Omega = \frac{2\pi}{N T_d}, \qquad\qquad
+    \dot\theta = \frac{2\pi}{T_s} = (N + 1) \Omega
+    % \begin{aligned}
+    %     \dot\theta &= \frac{2\pi}{T_s} = (N + 1) \Omega \qquad \text{prograde},\\
+    %     \dot\theta &= \frac{2\pi}{T_s} = (N - 1) \Omega \qquad \text{retrograde}.
+    % \end{aligned}
 \end{align}
 
 We want to find the position of the sun at a given time $t$ in the Earth's 
 frame:
 \begin{equation}
     \begin{aligned}
-        \overrightarrow{OS} &= \overrightarrow{OE} + \overrightarrow{ES}\\
-        &= -R \mathrm{y}_1 - a \mathrm{x}_1\\
+        \overrightarrow{OS} &= \overrightarrow{OE} + \overrightarrow{ES},\\
+        &= -R \mathrm{y}_1 - a \mathrm{x}_1,\\
         &= -R \mathrm{y}_1 - a \Big[\cos(\phi-\theta) \mathrm{y}_1 + \sin(\phi-\theta) \mathrm{y}_2\Big].
     \end{aligned}
 \end{equation}
@@ -211,16 +219,16 @@ From here on, we will use the direction vector
 $s\approx \overrightarrow{OS}/\|\overrightarrow{OS}\|$ that neglects
 the $R$ term. Rewriting $\phi-\theta$, and expressing 12:00 on day $k$ 
 as $t_{k}=T_d/2 + kT_d$, we get:
-\begin{align}
-    s(t) &= -\Big[\cos(2\pi t/T_d) \mathrm{y}_1 + \sin(2\pi t/T_d) \mathrm{y}_2\Big],\\
-    s(t_{k}) &= \mathrm{y}_1.
-\end{align}
+\begin{equation}
+    s(t) = -\Big[\cos(2\pi t/T_d) \mathrm{y}_1 + \sin(2\pi t/T_d) \mathrm{y}_2\Big]
+    \quad \implies \quad s(t_{k}) = \mathrm{y}_1.
+\end{equation}
 
 \section{Effect of Earth's axial tilt}
 \begin{figure}
     \centering
     \begin{tikzpicture}
-        \pgfmathsetmacro{\rr}{3.25}
+        \pgfmathsetmacro{\rr}{3.75}
         \pgfmathsetmacro{\re}{0.95}
         \pgfmathsetmacro{\ree}{1.5*\re}
         \pgfmathsetmacro{\ph}{70}
@@ -228,7 +236,7 @@ as $t_{k}=T_d/2 + kT_d$, we get:
         \pgfmathsetmacro{\vv}{0.85}
         \pgfmathsetmacro{\ss}{0.15}
         \pgfmathsetmacro{\bx}{-\rr-\vv}
-        \pgfmathsetmacro{\by}{\rr-\vv}
+        \pgfmathsetmacro{\by}{\rr-2*\vv}
         \coordinate (O) at (0,0);
         \path (O) -- (1,0) coordinate (ex);
         \path (O) -- (0,1) coordinate (ey);
@@ -275,7 +283,7 @@ as $t_{k}=T_d/2 + kT_d$, we get:
 
 The Earth's axis is tilted by an angle $\epsilon=23.44^\circ$ with respect to
 the ecliptic plane. The basis $[\mathrm{y}]$ attached to the Earth's frame is 
-now obtained after two rotations: first by $\epsilon$ around the $\mathrm{I}_2$ 
+now obtained after two rotations: first by $\epsilon \in [0,\tfrac{\pi}{2}]$ around the $\mathrm{I}_2$ 
 axis, then by $\theta$ around the third axis:
 \begin{equation}
     \begin{aligned}[c]
@@ -297,51 +305,46 @@ The sun's position in the Earth's frame $[\mathrm{y}]$ is now given by:
 
 \textbf{Where is the sun at 12:00?}
 
-Once again, we insert $t_{k}=kT_d+T_d/2$ for $k=0,1,2,\ldots N-1$ in $s$ to 
-derive the sun's position at noon. First let's express the angles $\phi$ and 
-$\theta$ in terms of $k$:
-\begin{equation}
-    \left\{
-    \begin{aligned}
-        \phi &= \Omega t_{k} = 2\pi \frac{1}{N} (k+\tfrac{1}{2})\\
-        \theta &= \dot\theta t_{k} = 2\pi \frac{N+1}{N} (k+\tfrac{1}{2})
-    \end{aligned}
-    \right\} \implies
-    \left\{
-    \begin{aligned}
-        \phi-\theta &= -N\phi = -2\pi (k+\tfrac{1}{2})\\
-        \phi+\theta &= (N+2)\phi = 2\pi k + \pi + 2\cdot 2\pi \frac{k+\tfrac{1}{2}}{N}
-    \end{aligned}
-    \right\}.
-\end{equation}
-
-Using trigonometric identities, we find
-\begin{equation}
-    \begin{aligned}
-        \cos(\phi)\cos(\theta)\vert_{12:00} &= -\cos^2\left(2\pi \frac{k+1/2}{N}\right)\\
-        \sin(\phi)\sin(\theta)\vert_{12:00} &= -\sin^2\left(2\pi \frac{k+1/2}{N}\right)\\
-        \cos(\phi)\sin(\theta)\vert_{12:00} &= -\frac{1}{2} \sin(2\cdot 2\pi \frac{k+1/2}{N})
-        = \sin(\phi)\cos(\theta)\vert_{12:00}.
-    \end{aligned}
-\end{equation}
+Once again, we insert $t_{k}=kT_d + T_d/2$ with $k=0,1,2,\ldots N-1$ 
+in $s$ to derive the sun's position at noon. 
+First let's express the angles $\phi$ and $\theta$ in terms of $k$,
+for both prograde and retrograde rotation:
+% \begin{equation}
+    % \left\{
+    \begin{align}
+        \phi\vert_{12:00} &= \Omega t_{k} = \tfrac{2\pi}{N} (k+ \tfrac{1}{2}),\\
+        \theta\vert_{12:00} &= \dot\theta t_{k} = \tfrac{2\pi}{N} (1 \pm N) (k+\tfrac{1}{2})
+        = \pm2\pi k \pm \pi + \phi\vert_{12:00},\\[6pt]
+        \implies \cos(\theta)\vert_{12:00} &= -\cos\left(\phi\right),\\
+        \implies \sin(\theta)\vert_{12:00} &= -\sin\left(\phi\right).
+    \end{align}
+    % \right\} \implies
+    % \left\{
+    % \begin{aligned}
+    %     \phi-\theta &= -N\phi = -2\pi (k+\tfrac{1}{2})\\
+    %     \phi+\theta &= (N+2)\phi = 2\pi k + \pi + 2\cdot 2\pi \frac{k+\tfrac{1}{2}}{N}
+    % \end{aligned}
+    % \right\}.
+% \end{equation}
 
 With these, we can express the analemma as a 
 parametric curve with parameter 
-$\mu \in [0,2\pi]$:
+$\mu \in [0,2\pi)$:
 \begin{equation}
     s\vert_{12:00}(\mu) =
     \frac{1}{2}
     \begin{bmatrix}
-        1+\cos\epsilon\\
-        0\\
+        1+\cos\epsilon\\[3pt]
+        0\\[3pt]
         0
     \end{bmatrix}+
     \frac{1}{2}
     \begin{bmatrix}
-        - (1-\cos\epsilon) \cos(2\mu)\\
-        \phantom{+} (1-\cos\epsilon) \sin(2\mu)\\
-        \quad\;-2\sin(\epsilon) \cos(\phantom{2}\mu)
+        - (1-\cos\epsilon) \cos(2\mu)\\[3pt]
+        \phantom{-}(1-\cos\epsilon) \Sin(2\mu)\\[3pt]
+        \quad\;\,-2\sin(\epsilon) \cos(\phantom{2}\mu)
     \end{bmatrix}.
+    \label{eq:analemma_medium}
     % \begin{bmatrix}
     %     \cos(\epsilon)\cos^2(\mu) + \sin^2(\mu)\\
     %     \tfrac{1}{2}(1-\cos(\epsilon)) \sin(2\mu)\\
@@ -349,14 +352,15 @@ $\mu \in [0,2\pi]$:
     % \end{bmatrix}.
 \end{equation}
 
+Based on equation \eqref{eq:analemma_medium}, we can note that the analemma is 
+the same for prograde and retrograde rotations. 
 This curve is shown in figure \ref{fig:analemma_easy} for various 
 tilt angles $\epsilon$, in the observer's frame, that is, without the 
-$\mathrm{y}_1$ component. We can note that beyond $\epsilon=90^\circ$, we
-enter in a strange territory where the sun is below the horizon at 12:00, with
-the day/night cycle reversed.
+$\mathrm{y}_1$ component. 
+
 \begin{figure}[ht]
     \centering
-    \includegraphics[width=\textwidth]{./analemma_plot.pdf}
+    \includegraphics[width=0.97\textwidth]{./analemma_plot.pdf}
     \caption{
         The analemma of 12:00, viewed from the ground at 00°N. 
         The border of the figure is the horizon of the observer. 
@@ -368,28 +372,30 @@ the day/night cycle reversed.
 
 \textbf{When is the sun at its highest point?}
 
-At "solar" noon and midnight, the vector $\mathrm{x}_1$ has no $\mathrm{y}_2$ component:
+At solar noon and midnight, the vector $\mathrm{x}_1$ has no $\mathrm{y}_2$ component:
 :
 \begin{equation}
     \begin{aligned}
-        \cos(\Omega t)\sin\big((N+1)\Omega t\big) \cos(\epsilon) &= \sin(\Omega t) \cos\big((N+1)\Omega t\big)\\
-        \iff \quad \sin(N\Omega t)(1-c \cos^2(\Omega t)) &= \frac{c}{2} \cos(N\Omega t) \sin(2\Omega t)
+        \cos(\epsilon) \cos(\Omega t)\sin\big((1 \pm N)\Omega t\big)
+            &= \sin(\Omega t) \cos\big((1\pm N)\Omega t\big)\\
+        \iff \quad \pm \sin(N\Omega t)(1 - c \cos^2(\Omega t)) 
+            &= \frac{c}{2} \cos(N\Omega t) \sin(2\Omega t)
     \end{aligned}
 \end{equation}
 where $c=1-\cos(\epsilon)$. This equation has no closed form solution for $t^*$,
-but we can approximate it around 12:00 with $t^*=kT_d+T_d/2+\delta$, $k=0,1,2\ldots N-1$
-:
+but we can approximate it around 12:00 with $t^*=kT_d+T_d/2+\delta_k=t_k+\delta_k$, 
+$k=0,1,2\ldots N-1$:
 \begin{equation}
     \left\{
         \begin{aligned}
-            \sin(N\Omega t^*) &= -\sin(2\pi\delta / T_d)\\
-            \cos(N\Omega t^*) &= -\cos(2\pi\delta / T_d)\\
-            \sin(2\Omega t^*) &\approx \sin\big(\tfrac{2\pi}{N} (1+2k)\big)\\
-            \cos(\Omega t^*) &\approx \cos\big(\tfrac{\:\pi\:}{N} (1+2k)\big)\\
+            \sin(N\Omega t^*) &= - \sin(2\pi\delta_k / T_d)\\
+            \cos(N\Omega t^*) &= - \cos(2\pi\delta_k / T_d)\\
+            \sin(2\Omega t^*) &\approx \sin(2\Omega t_k)\\
+            \cos(\Omega t^*) &\approx \cos(\Omega t_k)\\
         \end{aligned}
     \right\} \; \implies \;
-    \frac{2\pi \delta}{T_d} \approx \tan(\frac{2\pi \delta}{T_d}) = 
-    \frac{c}{2} \frac{\sin(2\cdot 2\pi \tfrac{k+0.5}{N})}{1-c \cos^2(2\pi \tfrac{k+0.5}{N})}.
+    \frac{2\pi \delta_k}{T_d} \approx \tan(\frac{2\pi \delta_k}{T_d}) = 
+    \pm \frac{\tfrac{c}{2} \sin(2\cdot 2\pi \tfrac{k+0.5}{N})}{1-c \cos^2(2\pi \tfrac{k+0.5}{N})}.
     \label{eq:noon_shift}
 \end{equation}
 Noon is off by $\delta$ seconds from the mean solar time, and this shift
@@ -401,7 +407,7 @@ providing acceptable results until quite large tilt angles $\epsilon$.
 
 \begin{figure}[ht]
     \centering
-    \includegraphics[width=\textwidth]{./noon_computed.pdf}
+    \includegraphics[width=\textwidth]{./noon_computed_easy.pdf}
     \caption{
         Apparent noon time throughout the year for two different axial tilt angles $\epsilon$.
     }
@@ -680,7 +686,7 @@ can be obtained through the following rotations:
 where only $\lambda_p$ is unknown. 
 The dot product $n\cdot a$ provides the planet's obliquity $\epsilon$.
 The spring equinox is reached when 
-the planet's rotation axis is orthogonal to its position vector $p$
+the planet's rotation axis is orthogonal to its position vector, i.e.
 $p\cdot a=0$, and oriented such that $q \cdot a<0$. This allows us to find 
 the planetocentric longitude of perihelion $\lambda_p$:
 \begin{gather}
@@ -730,10 +736,10 @@ while the $[\mathrm{x}]$ basis remains unchanged.
 
 To account for the rotation $\gamma$, we set an initial angle $\theta_0$.
 Even though it does not align $y_1$ with $x_1$ at $t=0$, 
-$\theta_0=\gamma$ is our prefered choice as it centers the analemma 
+$\theta_0=\pm\gamma$ is our prefered choice as it centers the analemma 
 in the East-West direction over the year:
 \begin{equation}
-    \theta(t)=\theta_0+(N+1)\Omega t= \gamma + (N+1)\Omega t.
+    \theta(t)=\theta_0+(1 \pm N)\Omega t= \gamma + (1 \pm N)\Omega t.
 \end{equation}
 
 Taking into account the varying distance $r$ of the Earth to the sun from 
@@ -766,8 +772,8 @@ $\theta$, and let's derive a useful relation for integer multiples of the
 angular position $\mu$:
 \begin{align}
     t_k &= k T_d + \tfrac{T_d}{2},\\
-    M_k &= \Omega t_k = 2\pi \tfrac{k+1/2}{N},\\
-    \theta_k &= (N+1)M_k = \gamma + 2\pi k + \pi + M_k \label{eq:theta_ellipse}.
+    M_k &= \Omega t_k = 2\pi \tfrac{k}{N} + \tfrac{\pi}{N},\\
+    \theta_k &= \gamma + (1\pm N)M_k = \pm 2\pi k \pm \pi + M_k + \gamma\label{eq:theta_ellipse}.
     % (N+\ell)\Omega t_{k} &= 2\pi k + \pi + \ell \mu_k.
 \end{align}
 
@@ -851,7 +857,7 @@ position vector $s$.
 Let's first consider the case $\gamma=0$ to measure the effect of the 
 Earth's orbit eccentricity without the complication of the perihelion shift.
 In that case, the vertical symmetry of the analemma is broken. The term 
-$e\Sin\mu$ of $\delta_2$, highlighted in red, tends to push the 
+$e\Sin(\mu-0)$ of $\delta_2$, highlighted in red, tends to push the 
 analemma towards the East during the first half of the year and towards the 
 West during the second half. 
 As a consequence, the analemma's southern loop of winter solstice gets widened, 
@@ -859,7 +865,7 @@ while the northern loop of summer solstice gets narrowed.
 This effect is illustrated in figures 
 \ref{fig:comparisonEarth} and \ref{fig:comparisonMars}.
 The effect would be exactly the opposite if we had $\gamma=\pi$,
-that is, if the perihelion was at the summer solstice.
+that is, if perihelion happened on summer solstice.
 
 Let's then consider the case $\gamma=\pi/2$. Now, the term $e\sin(\mu-\gamma)$
 becomes $-e\cos(\mu)$: it pushes the analemma towards the East during spring 
@@ -895,7 +901,7 @@ while later in the day, it would be rotated lower and westward.
     \includegraphics[width=0.92\textwidth]{./comparisonMars.pdf}
     \caption{
         12:00 Mars analemma, viewed from the ground at 00°N. The martian 
-        calendar is made of 24 months, grouped here in 6 pairs.
+        calendar is made of 24 months, grouped here in 12 pairs.
     }
     \label{fig:comparisonMars}
 \end{figure}
@@ -915,11 +921,12 @@ while later in the day, it would be rotated lower and westward.
 \pagebreak
 \textbf{When is the sun at its highest point?}
 
-Again, at "solar" noon and midnight, the position vector $\mathrm{x}_1$ has no 
+Again, at solar noon and midnight, the position vector $\mathrm{x}_1$ has no 
 component $\mathrm{y}_2$ in the East-West direction. 
 Equation \eqref{eq:positionEllipse} gives us the condition
 \begin{equation}
     \cos\epsilon \cos(\nu+\gamma) \sin\theta - \sin(\nu+\gamma) \cos\theta = 0,
+    \label{eq:noon_time_ellipse}
 \end{equation}
 where $\nu$ and $\theta$ are functions of time $t$. As said previously, the
 true anomaly $\nu$ has no closed form solution, while the rotation angle
@@ -934,12 +941,12 @@ Let's use our approximation of $\nu$ in equation \eqref{eq:nu_first_order}
         \cos \epsilon &\big(
             \cos (M+\gamma) - 2e \Sin(M+\gamma) \Sin M
         \big) \Sin\big(
-            \gamma + (N+1)M
+            \gamma + (1 \pm N)M
         \big)\\
         -&\big(
             \Sin (M+\gamma) + 2e\cos(M+\gamma)\Sin M
         \big) \cos\big(
-            \gamma + (N+1)M
+            \gamma + (1 \pm N)M
         \big) = \mathcal{O}(e^2),
     \end{aligned}
 \end{equation}
@@ -947,24 +954,24 @@ and expand the high frequency sine/cosine terms to reach, with $\mu=M+\gamma$,
 \begin{equation}
     \begin{aligned}
         &\sin(N\Omega t_k) \Big[
-            \underbrace{\cos\epsilon \cos^2\mu + \sin^2\mu}_{C} 
-            + e \underbrace{
-                (1-\cos\epsilon) \sin (\mu-\gamma)\sin 2\mu
-            }_D
+            \underbrace{\pm(\cos\epsilon \cos^2\mu + \sin^2\mu)}_{C} 
+            \underbrace{
+                \pm(1 - \cos\epsilon) \sin (\mu-\gamma)\sin 2\mu
+            }_D e
         \Big] \\
         = &\cos(N\Omega t_k) \Big[
-            \underbrace{\tfrac{1-\cos\epsilon}{2} \sin(2\mu)}_A 
-            + e \underbrace{
-                2\sin(\mu-\gamma) (\cos \epsilon \sin^2 \mu + \cos^2 \mu)
-            }_B\Big]
+            \underbrace{\tfrac{1}{2}(1 - \cos\epsilon) \sin(2\mu)}_A 
+            + \underbrace{
+                2\sin(\mu-\gamma) (\cos^2 \mu + \cos \epsilon \sin^2 \mu)
+            }_B e \Big]
         +\mathcal{O}(e^2).
     \end{aligned}
-    \label{eq:noon_time_ellipse}
+    \label{eq:noon_time_first_order}
 \end{equation}
 
 We will use the same assumption as in equation \eqref{eq:noon_shift} that the 
-time $t^*$ satisfying equation \eqref{eq:noon_time_ellipse} is close to 
-noon every day: $t_k=kT_d+T_d/2+\delta_k=M_k+\delta_k$, with 
+time $t^*$ satisfying equation \eqref{eq:noon_time_first_order} is close to 
+noon every day: $t_k=kT_d + T_d/2 + \delta_k = M_k + \delta_k$, with 
 $k=0,1,2\ldots N-1$ and $\delta_k \ll NT_d$. 
 This lets us decouple the periodic terms of low and high frequencies:
 \begin{equation}
@@ -983,7 +990,7 @@ This lets us decouple the periodic terms of low and high frequencies:
 \end{equation}
 
 Introducing the approximations \eqref{eq:noon_time_approx} in equation 
-\eqref{eq:noon_time_ellipse}, we can now isolate the time shift $\delta_k$:
+\eqref{eq:noon_time_first_order}, we can now isolate the time shift $\delta_k$:
 \begin{equation}
     \tan(\frac{2\pi \delta_k}{T_d}) 
      = \frac{A+eB}{C+eD} + \mathcal{O}(e^2)
@@ -991,19 +998,124 @@ Introducing the approximations \eqref{eq:noon_time_approx} in equation
 \end{equation}
 After going through some algebra, we finally find an approximation for 
 the noon shift $\delta_k$ for a planet with axial tilt $\epsilon$, 
-orbit eccentricity $e$ and solstice-perihelion shift $\gamma$ 
-on day k with $\mu=\gamma + 2\pi k/N$:
+orbit eccentricity $e$ and solstice-perihelion shift $\gamma$, 
+on day k from winter solstice through 
+$\mu=\gamma + 2\pi/N \cdot (k+\tfrac{1}{2})$:
 {\small
 \begin{equation}
     \tan(\frac{2\pi \delta_k}{T_d})
-    = \frac{\tfrac{1}{2}(1-\cos\epsilon)\sin(2\mu)}{1-(1-\cos\epsilon)\cos^2\mu}
-        + e \frac{2\cos\epsilon \sin(\mu-\gamma)}{\big[1-(1-\cos\epsilon)\cos^2\mu\big]^2}
+    = \pm \frac{\tfrac{1}{2}(1-\cos\epsilon)\sin(2\mu)}{1-(1-\cos\epsilon)\cos^2\mu}
+        \pm e \frac{2\cos\epsilon \sin(\mu-\gamma)}{\big[1-(1-\cos\epsilon)\cos^2\mu\big]^2}
     % + e \cos(\epsilon) \frac{2\cos\gamma \sin\mu-\sin\gamma(\cos\mu-\cos3\mu)}{\Big[1-(1-\cos\epsilon)\cos^2\mu\Big]^2}
     +\mathcal{O}(e^2).
 \end{equation}
 }
 
-This estimate of the noon shift shows us that the shift follows 
+Assuming that the tilt angle is moderate so that the denominator remains 
+close to $1$ and that $\delta_k\ll T_d$, we can derive an 
+over-simplified approximation for the noon shift:
+\begin{equation}
+    \delta_k \approx \pm\frac{T_d}{2\pi} \left[
+        \frac{1-\cos\epsilon}{2} \sin(2\mu) + 2e \cos\epsilon \sin(\mu-\gamma)
+    \right],
+\end{equation}
+which is made of two harmonic terms representing the influence of:
+\begin{enumerate}
+    \item the planet's axial tilt $\epsilon$, with a 6 month-period starting 
+    at winter solstice and an amplitude $24\cdot 60 (1-\cos \epsilon) / 4\pi
+    \approx$ $09$m$30$s for Earth;
+    \item the planet's orbit eccentricity $e$, with a 12 month-period starting
+    at perihelion and an amplitude $24\cdot 60 \cdot e \cos \epsilon / \pi
+    \approx$ $08$m$10$s for Earth.
+\end{enumerate}
 
+In order to compute a numerical solution of equation 
+\eqref{eq:noon_time_ellipse} with Newton-Raphson, we first need to relate 
+the mean anomaly $M$ to the eccentric anomaly $\nu$ by solving the Kepler 
+equation \eqref{eq:keplereq}, and then to the true anomaly $\nu$ with the 
+relations \eqref{eq:cosnu} and \eqref{eq:sinnu}.
+We also need $\dd \cos \nu / \dd M$ and $\dd \sin\nu / \dd M$:
+\begin{alignat}{2}
+    \dv{E}{M} &= \frac{1}{1-e\cos E} = \frac{1}{r} &&\\
+    \dv{\cos \nu}{M} &= \dv{\cos \nu}{E} \dv{E}{M} = \;\;\;\frac{-(1-e^2)\sin E}{(1-e\cos E)^3} &&= -\frac{(1+e\cos \nu)^2}{(1-e^2)^{3/2}} \sin \nu = -\zeta \sin \nu,\\
+    \dv{\Sin \nu}{M} &= \dv{\Sin \nu}{E} \dv{E}{M} = \frac{\sqrt{1-e^2}(\cos E - e)}{(1-e\cos E)^3} &&= +\frac{(1+e\cos \nu)^2}{(1-e^2)^{3/2}} \cos \nu = +\zeta \cos \nu.
+\end{alignat}
+
+From here we can derive the function $f(M)$ whose root $M$ gives the solar noon 
+time, along with its derivative $f'(M)$:
+\begin{align}
+    f(M) &= 
+    \begin{aligned}[t]
+        \cos\epsilon &\big[
+            \cos\nu \cos\gamma - \Sin\nu \Sin\gamma
+        \big] \Sin\big(\gamma + (1\pm N)M\big)\\
+        - &\big[
+            \Sin\nu \cos\gamma + \cos\nu \Sin\gamma
+        \big] \cos\big(\gamma + (1\pm N)M\big),
+    \end{aligned}\\
+    f'(M) &= 
+    \begin{aligned}[t]
+        &\big[(1 \pm N) - \zeta \cos \epsilon\big] 
+        \big[\Sin \nu \cos \gamma + \cos \nu \Sin \gamma\big]
+        \Sin\big(\gamma + (1\pm N)M\big)\\
+        +&\big[(1 \pm N)\cos \epsilon - \zeta\big] 
+        \big[\cos \nu \cos \gamma - \Sin \nu \Sin \gamma\big]
+        \cos\big(\gamma + (1\pm N)M\big).
+    \end{aligned}
+\end{align}
+
+In figure \ref{fig:noon_computed_Earth}, we compare the numerical solution, 
+the full approximation ("approx. 1"), the simplified approximation 
+("approx. 2") and the data presented earlier in figure \ref{fig:sunrise_sunset}. 
+We use the Earth's parameters $\epsilon=23.44^\circ$, $e=0.0167$ and
+$\gamma=12.93^\circ$.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.98\textwidth]{./noon_computed_Earth.pdf}
+    \caption{
+        Due to the low eccentricity, the full approximation is almost 
+        indistinguishable from the numerical solution, both matching very 
+        well the data.
+    }
+    \label{fig:noon_computed_Earth}
+\end{figure}
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=0.98\textwidth]{./noon_computed_Mars.pdf}
+    \caption{
+        On mars, $\epsilon=25.19^\circ$, $e=0.0934$, $\gamma=341^\circ$, 
+        due to the higher eccentricity, solar noon is shifted significantly 
+        more than on Earth.
+    }
+    \label{fig:noon_computed_Mars}
+\end{figure}
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=0.98\textwidth]{./noon_computed_extreme.pdf}
+    \caption{
+        For a planet with a reasonable axial tilt $\epsilon=10^\circ$,
+        but a high eccentricity $e=0.5$ and with $\gamma=60^\circ$, 
+        the noon shift gets quite large at its peak. The approximations
+        are no longer very accurate.
+    }
+    \label{fig:noon_computed_extreme}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=\textwidth]{./noon_low_e.pdf}
+    \caption{Equations of time for various angles $\gamma$, with 
+        $e=0.05$ and $\epsilon=35^\circ$.
+    }
+    \label{fig:noon_low_e}
+\end{figure}
+
+\clearpage
+\nocite{*}
+\bibliographystyle{plain}
+\bibliography{references.bib}
 
 \end{document}

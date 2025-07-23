@@ -163,9 +163,14 @@ def plot_sun_graph(df, df2):
     spline = UnivariateSpline(np.arange(365), noon, s=15.0)
     noon_smooth = spline(np.arange(365))
     length = np.diff(noon_smooth) + 24 * 60
+    mean_noon = np.mean(noon_smooth)
+    np.savetxt(
+        "./Analemma/noon_Perdido.txt", np.c_[
+            np.arange(365), noon_smooth - mean_noon
+        ][::7]
+    )
 
     ax = axs[1]
-    mean_noon = np.mean(noon_smooth)
     ax.axhline(mean_noon, color="C1", lw=0.5)
     ax.plot(df2["date"], noon_smooth, color="C1", lw=1.5, label="Noon (CET)")
     ax.set_ylim(noon.min() - 10, noon.max() + 10)
