@@ -40,5 +40,7 @@ Analysis of the Sun's analemma. This wonderful shape depends on
  
 Exact (blue) and approximated (orange) solutions are animated below for fixed obliquity and eccentricity but varying phase delay.
 
-<img src="Analemma/anim1.gif" alt="Analemma1" width="360" height="384"/>
-<img src="Analemma/anim2.gif" alt="Analemma2" width="360" height="384"/>
+<div style="display: flex; gap: 10px;">
+  <img src="Analemma/anim1.gif" alt="Analemma1" width="360" height="384"/>
+  <img src="Analemma/anim2.gif" alt="Analemma2" width="360" height="384"/>
+</div>
