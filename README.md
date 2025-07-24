@@ -39,5 +39,6 @@ Analysis of the Sun's analemma. This wonderful shape depends on
 - the phase delay between both cycles, for example between winter soltice and perihelion.
  
 Exact (blue) and approximated (orange) solutions are animated below for fixed obliquity and eccentricity but varying phase delay.
-![Analemma1](Analemma/anim1.gif)
-![Analemma2](Analemma/anim2.gif)
+
+<img src="Analemma/anim1.gif" alt="Analemma1" width="360" height="384"/>
+<img src="Analemma/anim2.gif" alt="Analemma2" width="360" height="384"/>
