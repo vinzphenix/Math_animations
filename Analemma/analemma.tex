@@ -31,6 +31,9 @@
 }
 \usepackage{epigraph}
 
+\usepackage[backend=biber]{biblatex}
+\addbibresource{references.bib}
+
 \newcommand{\Sin}{%
   \mathop{\sbox0{$\cos$}\makebox[\wd0][r]{$\sin$}}%
 }
@@ -88,7 +91,7 @@ give or take a few cosmic crumbs that are not our business today.
 
 \begin{figure}[ht]
     \centering
-    \includegraphics[width=\textwidth]{./sun_graph.pdf}
+    \includegraphics[width=\textwidth]{./figures/sun_graph.pdf}
     \caption{
         Sunrise and sunset times at \textit{Monte Perdido} in local 
         time [data from \texttt{TimeAndDate}].
@@ -360,7 +363,7 @@ $\mathrm{y}_1$ component.
 
 \begin{figure}[ht]
     \centering
-    \includegraphics[width=0.97\textwidth]{./analemma_plot.pdf}
+    \includegraphics[width=0.97\textwidth]{./figures/analemma_plot.pdf}
     \caption{
         The analemma of 12:00, viewed from the ground at 00°N. 
         The border of the figure is the horizon of the observer. 
@@ -407,7 +410,7 @@ providing acceptable results until quite large tilt angles $\epsilon$.
 
 \begin{figure}[ht]
     \centering
-    \includegraphics[width=\textwidth]{./noon_computed_easy.pdf}
+    \includegraphics[width=\textwidth]{./figures/noon_computed_easy.pdf}
     \caption{
         Apparent noon time throughout the year for two different axial tilt angles $\epsilon$.
     }
@@ -887,7 +890,7 @@ while later in the day, it would be rotated lower and westward.
 
 \begin{figure}
     \centering
-    \includegraphics[width=0.92\textwidth]{./comparisonEarth.pdf}
+    \includegraphics[width=0.92\textwidth]{./figures/comparisonEarth.pdf}
     \caption{
         12:00 Earth analemma, viewed from the ground at 00°N. Introducing the 
         eccentricity breaks vertical symmetry, while perihelion shift 
@@ -898,7 +901,7 @@ while later in the day, it would be rotated lower and westward.
 
 \begin{figure}
     \centering
-    \includegraphics[width=0.92\textwidth]{./comparisonMars.pdf}
+    \includegraphics[width=0.92\textwidth]{./figures/comparisonMars.pdf}
     \caption{
         12:00 Mars analemma, viewed from the ground at 00°N. The martian 
         calendar is made of 24 months, grouped here in 12 pairs.
@@ -908,7 +911,7 @@ while later in the day, it would be rotated lower and westward.
 
 \begin{figure}
     \centering
-    \includegraphics[width=0.98\textwidth]{./mosaic.pdf}
+    \includegraphics[width=0.98\textwidth]{./figures/mosaic.pdf}
     \caption{
         Noon analemma, viewed from the ground at 00°N, for a tilt angle $\epsilon=35^\circ$, 
         eccentricities $e=0.01, 0.05, 0.15, 0.3, 0.6, 0.9$ and perihelion shifts 
@@ -1072,7 +1075,7 @@ $\gamma=12.93^\circ$.
 
 \begin{figure}[h]
     \centering
-    \includegraphics[width=0.98\textwidth]{./noon_computed_Earth.pdf}
+    \includegraphics[width=0.98\textwidth]{./figures/noon_computed_Earth.pdf}
     \caption{
         Due to the low eccentricity, the full approximation is almost 
         indistinguishable from the numerical solution, both matching very 
@@ -1083,7 +1086,7 @@ $\gamma=12.93^\circ$.
 
 \begin{figure}[ht]
     \centering
-    \includegraphics[width=0.98\textwidth]{./noon_computed_Mars.pdf}
+    \includegraphics[width=0.98\textwidth]{./figures/noon_computed_Mars.pdf}
     \caption{
         On mars, $\epsilon=25.19^\circ$, $e=0.0934$, $\gamma=341^\circ$, 
         due to the higher eccentricity, solar noon is shifted significantly 
@@ -1094,7 +1097,7 @@ $\gamma=12.93^\circ$.
 
 \begin{figure}[ht]
     \centering
-    \includegraphics[width=0.98\textwidth]{./noon_computed_extreme.pdf}
+    \includegraphics[width=0.98\textwidth]{./figures/noon_computed_extreme.pdf}
     \caption{
         For a planet with a reasonable axial tilt $\epsilon=10^\circ$,
         but a high eccentricity $e=0.5$ and with $\gamma=60^\circ$, 
@@ -1106,7 +1109,7 @@ $\gamma=12.93^\circ$.
 
 \begin{figure}
     \centering
-    \includegraphics[width=\textwidth]{./noon_low_e.pdf}
+    \includegraphics[width=\textwidth]{./figures/noon_low_e.pdf}
     \caption{Equations of time for various angles $\gamma$, with 
         $e=0.05$ and $\epsilon=35^\circ$.
     }
@@ -1115,7 +1118,8 @@ $\gamma=12.93^\circ$.
 
 \clearpage
 \nocite{*}
-\bibliographystyle{plain}
-\bibliography{references.bib}
+\printbibliography
+% \bibliographystyle{plain}
+% \bibliography{references.bib}
 
 \end{document}
