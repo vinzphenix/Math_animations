@@ -23,15 +23,16 @@ offset = 0.0  # year start to perihelion in [0, 1)
 # fmt: on
 
 
-def project_analemma(x1, x2, x3):
+def project_analemma(x1, x2, x3, mask=True):
     norm = np.sqrt(x1 * x1 + x2 * x2 + x3 * x3)
     x1[:] /= norm
     x2[:] /= norm
     x3[:] /= norm
-    mask = x1 <= 0.0
-    x1[mask] = np.nan
-    x2[mask] = np.nan
-    x3[mask] = np.nan
+    if mask:
+        mask = x1 <= 0.0
+        x1[mask] = np.nan
+        x2[mask] = np.nan
+        x3[mask] = np.nan
     return
 
 
@@ -58,7 +59,7 @@ def approx_analemma(eps, e, g, M_astro):
     return x1, x2, x3
 
 
-def solve_analemma(tilt, ecc, g, M_astro):
+def solve_analemma(tilt, ecc, g, M_astro, tol=1e-9, max_iter=20):
     """ Solve the analemma for given parameters.
     Args:
         tilt (float): planet obliquity
@@ -72,10 +73,17 @@ def solve_analemma(tilt, ecc, g, M_astro):
     """
     M = M_astro - offset * 2 * np.pi  # M astro -> M civil
     E = np.copy(M) + ecc * np.sin(M)
-    for it in range(10):
+    
+    it, delta = 0, 1.0
+    while it < max_iter and tol < np.amax(np.abs(delta)):
         f = E - ecc * np.sin(E) - M
         df = 1 - ecc * np.cos(E)
-        E -= f / df
+        delta = -f / df
+        E += delta
+        it += 1
+    if it == max_iter:
+        print("Warning: did not converge in solve_analemma")
+        
     r = 1 - ecc * np.cos(E)
     cos_nu = (np.cos(E) - ecc) / r
     sin_nu = np.sqrt(1 - ecc * ecc) * np.sin(E) / r
@@ -93,21 +101,78 @@ def solve_analemma(tilt, ecc, g, M_astro):
     return x1, x2, x3
 
 
+def export_analemmas(eps, ecc, shifts, path, n=400, tol=1e-9, max_iter=20):
+    eps_rad = np.deg2rad(eps)
+    gam_rad = np.deg2rad(shifts)
+    M, dM = np.linspace(0, 2 * np.pi, n, endpoint=False, retstep=True)
+
+    E = np.copy(M) + ecc * np.sin(M)
+    it, delta = 0, 1.0
+    while it < max_iter and tol < np.amax(np.abs(delta)):
+        f = E - ecc * np.sin(E) - M
+        df = 1 - ecc * np.cos(E)
+        delta = -f / df
+        E += delta
+        it += 1
+    if it == max_iter:
+        print("Warning: did not converge in export_analemmas")
+        
+    r = 1 - ecc * np.cos(E)
+    cos_nu = (np.cos(E) - ecc) / r
+    sin_nu = np.sqrt(1 - ecc * ecc) * np.sin(E) / r
+        
+    cos_gm, sin_gm = np.cos(gam_rad), np.sin(gam_rad)
+    cos_ep, sin_ep = np.cos(eps_rad), np.sin(eps_rad)
+    cos_nu_g = np.outer(cos_gm, cos_nu) - np.outer(sin_gm, sin_nu)
+    sin_nu_g = np.outer(cos_gm, sin_nu) + np.outer(sin_gm, cos_nu)
+    cos_th = -np.cos(M[None, :] + gam_rad[:, None])
+    sin_th = -np.sin(M[None, :] + gam_rad[:, None])
+    
+    # Exact solution
+    x1 = r * (-cos_ep * cos_nu_g * cos_th - sin_nu_g * sin_th)
+    x2 = r * (+cos_ep * cos_nu_g * sin_th - sin_nu_g * cos_th)
+    x3 = r * (-sin_ep * cos_nu_g)
+    dx1 = (np.roll(x1, 1, axis=1) - np.roll(x1, -1, axis=1)) / (2 * dM)
+    dx2 = (np.roll(x2, 1, axis=1) - np.roll(x2, -1, axis=1)) / (2 * dM)
+    dx3 = (np.roll(x3, 1, axis=1) - np.roll(x3, -1, axis=1)) / (2 * dM)
+    ds = np.sqrt(dx1 * dx1 + dx2 * dx2 + dx3 * dx3)
+
+    # Analytic solution
+    mu = M[None, :] + gam_rad[:, None]
+    _1mu_m_g = 1 * mu - gam_rad[:, None]
+    _1mu_p_g = 1 * mu + gam_rad[:, None]
+    _2mu_m_g = 2 * mu - gam_rad[:, None]
+    _3mu_m_g = 3 * mu - gam_rad[:, None]
+    x1_ = (1 + cos_ep) / 2 - (1 - cos_ep) / 2 * np.cos(2 * mu)
+    x2_ = (1 - cos_ep) / 2 * np.sin(2 * mu)
+    x3_ = -sin_ep * np.cos(mu)
+    x1_ -= ecc * (1 + cos_ep) * np.cos(_1mu_m_g) / 2
+    x2_ += ecc * (1 + cos_ep) * np.sin(_1mu_m_g)
+    x1_ += ecc * (1 - cos_ep) * (3 * np.cos(_1mu_p_g) - np.cos(_3mu_m_g)) / 4
+    x2_ -= ecc * (1 - cos_ep) * (3 * np.sin(_1mu_p_g) - np.sin(_3mu_m_g)) / 4
+    x3_ += ecc * sin_ep * (3 * np.cos(gam_rad[:, None]) - np.cos(_2mu_m_g)) / 2
+    dx1_ = (np.roll(x1_, 1, axis=1) - np.roll(x1_, -1, axis=1)) / (2 * dM)
+    dx2_ = (np.roll(x2_, 1, axis=1) - np.roll(x2_, -1, axis=1)) / (2 * dM)
+    dx3_ = (np.roll(x3_, 1, axis=1) - np.roll(x3_, -1, axis=1)) / (2 * dM)
+    ds_ = np.sqrt(dx1_ * dx1_ + dx2_ * dx2_ + dx3_ * dx3_)
+    
+    path = f"{path}eps_{eps:02.0f}_ecc_{100*ecc:02.0f}"
+    np.savetxt(f"{path}_x_exact.txt", x1, fmt="%.6e")
+    np.savetxt(f"{path}_y_exact.txt", x2, fmt="%.6e")
+    np.savetxt(f"{path}_z_exact.txt", x3, fmt="%.6e")
+    np.savetxt(f"{path}_s_exact.txt", ds, fmt="%.6e")
+    np.savetxt(f"{path}_x_approx.txt", x1_, fmt="%.6e")
+    np.savetxt(f"{path}_y_approx.txt", x2_, fmt="%.6e")
+    np.savetxt(f"{path}_z_approx.txt", x3_, fmt="%.6e")
+    np.savetxt(f"{path}_s_approx.txt", ds_, fmt="%.6e")
+    print(f"Exported analemma to {path}_{{x,y,z,s}}.txt")
+    return
+
+
 def find_solstice_angle(e, nu):
     coef =  1.0 + e * np.cos(nu)
     cos_E = (e + np.cos(nu)) / coef
     sin_E = np.sqrt(1 - e * e) * np.sin(nu) / coef
-    # E = shift + ecc * np.sin(shift)
-    # delta, tol = 1., 1e-9
-    # it, max_iter = 0, 10
-    # while it < max_iter and tol < np.abs(delta):
-    #     f = E - ecc * np.sin(E) - shift
-    #     df = 1 - ecc * np.cos(E)
-    #     delta = f / df
-    #     E -= delta
-    #     it += 1
-    # if it == max_iter:
-    #     print("Warning: did not converge in find_solstice_angle")
     return cos_E, sin_E
 
 
@@ -154,7 +219,7 @@ def add_directions(ax):
     return
 
 
-def plot_analemma(tilt_list, ecc, shift, savefig=""):
+def plot_analemma(parameters, display_label=True, savefig=""):
     fig, ax = plt.subplots(figsize=(8, 6))
     ax.set_aspect("equal")
     ax.set_xlim(-1.2, 1.2)
@@ -169,10 +234,15 @@ def plot_analemma(tilt_list, ecc, shift, savefig=""):
 
     colors = plt.get_cmap("turbo")(np.linspace(0.0, 1.0, n_colors))
     line_colors = np.repeat(colors, n, axis=0)
-    tilts = np.deg2rad(np.array(tilt_list))
 
-    for i, eps in enumerate(tilts):
-        x1, x2, x3 = approx_analemma(eps, ecc, shift, t)
+    for i, (eps, ecc, shift) in enumerate(parameters):
+        assert 0.0 <= eps <= 90
+        assert 0.0 <= ecc < 1.0
+        assert 0.0 <= shift <= 360
+        eps = np.deg2rad(eps)
+        shift = np.deg2rad(shift)
+        # x1, x2, x3 = approx_analemma(eps, ecc, shift, t)
+        x1, x2, x3 = solve_analemma(eps, ecc, shift, t)
         project_analemma(x1, x2, x3)
         x, y, z = -x2, x3, x1
         label = r"$\epsilon={:.0f}^\circ$".format(np.rad2deg(eps))
@@ -182,7 +252,8 @@ def plot_analemma(tilt_list, ecc, shift, savefig=""):
         va = "bottom" if sign > 0 else "top"
         xl, yl = x[t_label], y[t_label]
         xl += 0.0 if i < 5 else 0.10
-        ax.text(xl, yl, label, fontsize=12, ha=ha, va=va)
+        if display_label:
+            ax.text(xl, yl, label, fontsize=12, ha=ha, va=va)
         # find_cutoff(eps, ax)
         x[z <= 0] = np.nan
         y[z <= 0] = np.nan
@@ -372,11 +443,28 @@ if __name__ == "__main__":
     plt.rcParams.update({"text.usetex": True})
 
     # plot_analemma(
-    #     tilt_list=[15, 23.44, 35, 50, 85],
-    #     # tilt_list=[23.44],
-    #     ecc=0.0,
-    #     shift=0.0,
+    #     parameters=[
+    #         (15, 0.0, 0.0),
+    #         (23.44, 0.0, 0.0),
+    #         (35, 0.0, 0.0),
+    #         (50, 0.0, 0.0),
+    #         (85, 0.0, 0.0),
+    #     ]
     #     # savefig="./Analemma/analemma_plot.pdf",
+    # )
+    # plt.show()
+    
+    # plot_analemma(
+    #     parameters=[
+    #         (35, 0.10, 0),
+    #         (35, 0.10, 15),
+    #         (35, 0.10, 30),
+    #         (35, 0.10, 45),
+    #         (35, 0.10, 60),
+    #         (35, 0.10, 75),
+    #         (35, 0.10, 90),
+    #     ],
+    #     display_label=False
     # )
     # plt.show()
     
@@ -391,10 +479,17 @@ if __name__ == "__main__":
     # )
     # plt.show()
 
-    mosaic(
-        tilt=35,
-        ecc_list=[0.01, 0.05, 0.15, 0.3, 0.6, 0.9],
-        shift_list=np.linspace(0, 0.5, 7, endpoint=True),
-        savefig="./Analemma/mosaic.pdf",
-    )
-    plt.show()
+    # mosaic(
+    #     tilt=35,
+    #     ecc_list=[0.01, 0.05, 0.15, 0.3, 0.6, 0.9],
+    #     shift_list=np.linspace(0, 0.5, 7, endpoint=True),
+    #     savefig="./Analemma/mosaic.pdf",
+    # )
+    # plt.show()
+    
+    # export_analemmas(
+    #     eps=45,
+    #     ecc=0.75,
+    #     shifts=np.linspace(0, 360, 180, endpoint=False),
+    #     path="./Analemma/data/"
+    # )

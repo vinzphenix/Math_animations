@@ -21,7 +21,7 @@ Interactive widget available <a href="https://htmlpreview.github.io/?https://git
 - The space-time diagram with the characteristics
 - The mapping from the state space to the flux space
 
-![Example 3 gif](javascript/Shallow_water/example.gif)
+![Example 3 gif](Shallow_water/example.gif)
 
 ### 1D Euler equations of gas dynamics
 Interactive widget available <a href="https://htmlpreview.github.io/?https://github.com/vinzphenix/Math_animations/blob/main/javascript/Euler/euler.html" target="_blank">here</a>. It displays:
@@ -30,4 +30,14 @@ Interactive widget available <a href="https://htmlpreview.github.io/?https://git
 - A projection of the state space: velocity and pressure
 - The space-time diagram with the characteristics, shocks and rarefaction waves
 
-![Example 3 gif](javascript/Euler/example_particles.gif)
+![Example 3 gif](Euler/example_particles.gif)
+
+## Analemma study
+Analysis of the Sun's analemma. This wonderful shape depends on
+- the Earth axis obliquity,
+- the Earth orbit eccentricity,
+- the phase delay between both cycles, for example between winter soltice and perihelion.
+ 
+Exact (blue) and approximated (orange) solutions are animated below for fixed obliquity and eccentricity but varying phase delay.
+![Analemma1](Analemma/anim1.gif)
+![Analemma2](Analemma/anim2.gif)
