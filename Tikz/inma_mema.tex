@@ -9,7 +9,7 @@
 \usepackage[dvipsnames]{xcolor}
 \usepackage{calc}  % Required for calculations
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % \newcommand{\colorone}{blue}
 % \newcommand{\colortwo}{red}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -68,24 +68,29 @@
     \pgfmathsetmacro{\H}{8.0}
     \pgfmathsetmacro{\a}{20}
     \pgfmathsetmacro{\dM}{0.12}
-    \pgfmathsetmacro{\dB}{0.08}
+    \pgfmathsetmacro{\dbI}{0.04}
+    \pgfmathsetmacro{\dbA}{0.10}
     \pgfmathsetmacro{\dI}{0.12}
     \pgfmathsetmacro{\dN}{0.12}
     \pgfmathsetmacro{\dE}{0.08}
+    \pgfmathsetmacro{\dA}{0.12}
     \pgfmathsetmacro{\eta}{0.2}
     \pgfmathsetmacro{\dzeta}{0.2}
     \pgfmathsetmacro{\kk}{0.6}
     \pgfmathsetmacro{\ll}{0.45}
     \pgfmathsetmacro{\lambda}{1.0}
-    \pgfmathsetmacro{\mu}{0.55}
-    \pgfmathsetmacro{\nu}{0.90}
     \pgfmathsetmacro{\x}{tan(\a)}
     \pgfmathsetmacro{\epsM}{\dM/\x}
     \pgfmathsetmacro{\epsI}{\dI/\x}
-    \pgfmathsetmacro{\epsB}{\dB/\x}
     \pgfmathsetmacro{\epsN}{\dN/(\kk*\x)}
     \pgfmathsetmacro{\epsE}{\dE/(\ll*\x)}
+    \pgfmathsetmacro{\epsA}{\dA/\x}
+    \pgfmathsetmacro{\epsbI}{\dbI/\x}
+    \pgfmathsetmacro{\epsbA}{\dbA/\x}
     \pgfmathsetmacro{\sigma}{\kk*\x-\dN-\dM/2.0}
+    \pgfmathsetmacro{\tau}{cos(\a)*\dbA}
+    \pgfmathsetmacro{\nu}{0.04}
+    \pgfmathsetmacro{\mu}{0.55}
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     \coordinate (p) at (\x, 1);
     \coordinate (q) at (-\x, 1);
@@ -107,13 +112,13 @@
     \coordinate (I1) at ($(J1) + \scaleD*(p)$);
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%   Letter I   %%%%%%%%%%%%
-    \pgfmathsetmacro{\scaleA}{\H*(1-\nu)*(1-\epsM-\epsB-\epsI/2.0)}
-    \pgfmathsetmacro{\scaleB}{\H*(1-\epsM-\epsB-\epsI/2.0)}
-    \coordinate (A5) at ($(C1) - (0, \epsB*\H)$);
+    \pgfmathsetmacro{\scaleA}{\H*\nu}%(1-\nu)*(1-\epsM-\epsbI-\epsI/2.0)
+    \pgfmathsetmacro{\scaleB}{\H*(1-\epsM-\epsbI-\epsI/2.0)}
+    \coordinate (A5) at ($(C1) - (0, \epsbI*\H)$);
     \coordinate (B5) at ($(A5) - \epsI*\H/2.0*(p)$);
     \coordinate (C5) at ($(A5) - \epsI*\H/2.0*(q)$);
-    \coordinate (D5) at ($(B5) - \scaleA*(p)$);
-    \coordinate (E5) at ($(C5) - \scaleA*(p)$);
+    \coordinate (D5) at ($(B5) - \H*\nu*(p)$);
+    \coordinate (E5) at ($(C5) - \H*\nu*(p)$);
     \coordinate (F5) at ($(B5) - \scaleB*(p)$);
     \coordinate (G5) at ($(C5) - \scaleB*(p)$);
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -168,9 +173,14 @@
     \coordinate (K4) at ($(L4) + \scaleB*(p)$);
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%   Letter A   %%%%%%%%%%%%
-    \coordinate (A6) at ($(C2) - (0, \epsB*\H)$);
-    \coordinate (B6) at ($(A6) - \epsI*\H/2.0*(p)$);
-    \coordinate (C6) at ($(A6) - \epsI*\H/2.0*(q)$);
+    \pgfmathsetmacro{\scaleA}{\H*(1-\epsM-\epsbA)}
+    \coordinate (A6) at ($(C2) - (0, \epsbA*\H)$);
+    \coordinate (B6) at ($(A6) - \epsA*\H/2.0*(p)$);
+    \coordinate (C6) at ($(A6) - \epsA*\H/2.0*(q)$);
+    \coordinate (D6) at ($(B6) - \H*\tau*(p)$);
+    \coordinate (E6) at ($(C6) - \H*\tau*(q)$);
+    \coordinate (F6) at ($(A6) - \scaleA*(p)$);
+    \coordinate (G6) at ($(A6) - \scaleA*(q)$);
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     \draw[very thick, draw=\borderM, fill=\fillM] 
       (A1) -- (B1) -- (C1) -- (E1) -- (F1) -- (G1) -- 
@@ -190,6 +200,8 @@
       (F2) -- (E2) -- (C2) -- (B2) -- cycle;
     \draw[very thick, draw=\borderMM, fill=\fillMM]
       (A6) -- (B6) -- (C6) -- cycle;
+    \draw[very thick, draw=\borderMM, fill=\fillMM]
+      (D6) -- (F6) -- (G6) -- (E6) -- cycle;
 \end{tikzpicture}
 
 \end{document}

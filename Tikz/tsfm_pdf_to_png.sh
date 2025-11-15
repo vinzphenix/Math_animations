@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Dossier contenant les fichiers PDF
-input_directory="./pdfs"
+input_directory="./pdfs_2"
 
 # Dossier de sortie pour les fichiers PNG
 output_directory="./pngs"
