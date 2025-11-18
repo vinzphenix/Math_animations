@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # Dossier contenant les fichiers PDF
-input_directory="./pdfs_2"
+input_directory="./vincent/pdfs"
 
 # Dossier de sortie pour les fichiers PNG
-output_directory="./pngs"
+output_directory="./vincent/pngs"
 
 # Créer le dossier de sortie s'il n'existe pas
 mkdir -p "$output_directory"

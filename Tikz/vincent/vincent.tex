@@ -1,0 +1,135 @@
+\documentclass[border=10pt]{standalone}
+\usepackage{tikz}
+\usetikzlibrary{
+  calc, patterns, positioning, angles, quotes,
+  decorations.pathmorphing, decorations.markings, decorations.text,
+  shapes, shapes.multipart,backgrounds,arrows.meta,overlay-beamer-styles,
+  external
+}
+\usepackage[dvipsnames]{xcolor}
+\usepackage{calc}  % Required for calculations
+
+\newcommand{\colorX}{red!80}
+% \newcommand{\colorX}{BurntOrange!75}
+% \newcommand{\colorX}{Green!40!Gray}
+% \newcommand{\colorX}{RoyalBlue!75}
+
+\newcommand{\colorY}{\colorX}
+\newcommand{\colorZ}{black!85}
+% \newcommand{\colorZ}{white}
+
+\newcommand{\bordercolor}{none}
+
+\begin{document}
+% \pagecolor{black}
+\centering
+\begin{tikzpicture}
+    \pgfmathsetmacro{\H}{8.0}
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    \pgfmathsetmacro{\a}{20}       % angle of inclination
+    \pgfmathsetmacro{\nu}{0.5}     % V-I space factor
+    \pgfmathsetmacro{\delta}{0.15} % thickness of letters
+    \pgfmathsetmacro{\beta}{1.0}   % N slant factor
+    \pgfmathsetmacro{\gamma}{0.8}  % C width factor
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    \pgfmathsetmacro{\x}{tan(\a)}
+    \pgfmathsetmacro{\cx}{cos(\a)}
+    \pgfmathsetmacro{\sx}{sin(\a)}
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    \coordinate (x) at (1, 0);
+    \coordinate (p) at (\x, 1);
+    \coordinate (q) at (-\x, 1);
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%% Letters VI %%%%%%%%%%%%%
+    \pgfmathsetmacro{\scaleA}{\H*(1 - 0.5*\delta/\sx)}
+    \coordinate (A1) at (0, \H);
+    \coordinate (B1) at ($(A1) - \H*(q)$);
+    \coordinate (C1) at ($(B1) + (\delta*\H/\cx, 0) $);
+    \coordinate (F1) at ($(C1) + \H*(p)$);
+    \coordinate (E1) at ($(F1) - \delta*\H*(p)$);
+    \coordinate (D1) at ($(E1) - \delta*\H*\nu*(p)$);
+    \coordinate (G1) at ($(F1) - \delta*\H/\cx*(x)$);
+    \coordinate (H1) at ($(G1) - \delta*\H*(p)$);
+    \coordinate (I1) at ($(H1) - \delta*\H*\nu*(p)$);
+    \coordinate (J1) at ($(G1) - \scaleA*(p)$);
+    \coordinate (K1) at ($(J1) + \scaleA*(q)$);
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%% Letter N %%%%%%%%%%%%%%
+    \pgfmathsetmacro{\scaleA}{0.5*(2 - \beta)*\delta/\sx}
+    \coordinate (A2) at ($(C1) + \H*\delta/\cx*(x)$);
+    \coordinate (C2) at ($(A2) + \H*(p) - \H*\scaleA*(p)$);
+    \coordinate (B2) at ($(C2) - \H*(q) + \H*\scaleA*(q)$);
+    \coordinate (D2) at ($(C2) + \H*(0.5*\beta*\delta/\cx, \scaleA)$);
+    \coordinate (E2) at ($(D2) - \H*(q) + \H*\scaleA*(q)$);
+    \coordinate (F2) at ($(E2) + \H*(p) - \H*\scaleA*(p)$);
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%% Letter C %%%%%%%%%%%%%%
+    \coordinate (A3) at ($(F2) + \delta*\H/\cx*(x)$);
+    \coordinate (B3) at ($(A3) - \H*(p)$);
+    \coordinate (C3) at ($(B3) + \H*\gamma*(x)$);
+    \coordinate (D3) at ($(C3) + \H*\delta*(p)$);
+    \coordinate (E3) at ($(D3) - \H*\gamma*(x) + \H*\delta/\cx*(x)$);
+    \coordinate (F3) at ($(E3) + \H*(p) - 2*\delta*\H*(p)$);
+    \coordinate (G3) at ($(F3) + \H*\gamma*(x) - \H*\delta/\cx*(x)$);
+    \coordinate (H3) at ($(G3) + \H*\delta*(p)$);
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%% Letter E %%%%%%%%%%%%%%
+    \pgfmathsetmacro{\scaleA}{\H*(1 - 5*\delta)/2.0}
+    \coordinate (A4) at ($(D3) + \H*\delta*(p)$);
+    \coordinate (B4) at ($(A4) + \scaleA*(p)$);
+    \coordinate (C4) at ($(B4) - \H*\gamma*(x) + 2*\H*\delta/\cx*(x)$);
+    \coordinate (D4) at ($(C4) - \scaleA*(p)$);
+    \coordinate (E4) at ($(G3) - \H*\delta*(p)$);
+    \coordinate (F4) at ($(E4) - \H*\gamma*(x) + 2*\H*\delta/\cx*(x)$);
+    \coordinate (G4) at ($(F4) - \scaleA*(p)$);
+    \coordinate (H4) at ($(G4) + \H*\gamma*(x) - 2*\H*\delta/\cx*(x)$);
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%% Letter N %%%%%%%%%%%%%%
+    \pgfmathsetmacro{\scaleA}{0.5*(2 - \beta)*\delta/\sx}
+    \coordinate (A5) at ($(C3) + \H*\delta/\cx*(x)$);
+    \coordinate (C5) at ($(A5) + \H*(p) - \H*\scaleA*(p)$);
+    \coordinate (B5) at ($(C5) - \H*(q) + \H*\scaleA*(q)$);
+    \coordinate (D5) at ($(C5) + \H*(0.5*\beta*\delta/\cx, \scaleA)$);
+    \coordinate (E5) at ($(D5) - \H*(q) + \H*\scaleA*(q)$);
+    \coordinate (F5) at ($(E5) + \H*(p) - \H*\scaleA*(p)$);
+    \coordinate (G5) at ($(D5) - \H*\delta*(q)$);
+    \coordinate (H5) at ($(F5) - \H*\delta*(p)$);
+    \coordinate (I5) at ($(G5) - 0*\H*\delta*(q)$);
+    \coordinate (J5) at ($(H5) - 0*\H*\delta*(p)$);
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%% Letter T %%%%%%%%%%%%%%
+    \pgfmathsetmacro{\scaleB}{2*(1 - \scaleA)*\x}
+    \coordinate (A6) at ($(F5) + \delta*\H/\cx*(x)$);
+    \coordinate (B6) at ($(A6) - \H*(p)$);
+    \coordinate (C6) at ($(B6) + \H*\delta/\cx*(x)$);
+    \coordinate (D6) at ($(C6) + \H*(p) - \H*\delta*(p)$);
+    \coordinate (F6) at ($(A6) + \H*\scaleB*(x) + \H*\delta/\cx*(x)$);
+    \coordinate (E6) at ($(F6) - \H*\delta*(p)$);
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    \draw[very thick, draw=\bordercolor, fill=\colorZ] 
+      (A1) -- (B1) -- (C1) -- (D1) -- (I1) -- (J1) -- (K1) -- cycle;
+    \draw[very thick, draw=\bordercolor, fill=\colorZ] 
+      (E1) -- (F1) -- (G1) -- (H1) -- cycle;
+    \draw[very thick, draw=\bordercolor, fill=\colorX]
+      (A2) -- (B2) -- (C2) -- cycle;
+    \draw[very thick, draw=\bordercolor, fill=\colorX]
+      (D2) -- (E2) -- (F2) -- cycle;
+    \draw[very thick, draw=\bordercolor, fill=\colorZ]
+      (A3) -- (B3) -- (C3) -- (D3) -- (E3) -- (F3) -- (G3) -- (H3) -- cycle;
+    \draw[very thick, draw=\bordercolor, fill=\colorZ]
+      (A4) -- (B4) -- (C4) -- (D4) -- cycle;
+    \draw[very thick, draw=\bordercolor, fill=\colorZ]
+      (E4) -- (F4) -- (G4) -- (H4) -- cycle;
+    \draw[very thick, draw=\bordercolor, fill=\colorY]
+      (A5) -- (B5) -- (C5) -- cycle;
+    % \draw[very thick, draw=\bordercolor, fill=\colorY]
+    %   (D5) -- (E5) -- (F5) -- cycle;
+    \draw[very thick, draw=\bordercolor, fill=\colorY]
+      (I5) -- (E5) -- (J5) -- cycle;
+    \draw[very thick, draw=\bordercolor, fill=\colorZ]
+      (D5) -- (G5) -- (H5) -- (F5) -- cycle;
+    \draw[very thick, draw=\bordercolor, fill=\colorZ]
+      (A6) -- (B6) -- (C6) -- (D6) -- (E6) -- (F6) -- cycle;
+\end{tikzpicture}
+
+\end{document}

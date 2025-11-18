@@ -3,6 +3,7 @@
 **/__pycache__
 start.py
 Analemma/data/
+Tikz/extra/**
 
 # Latex
 *.aux
