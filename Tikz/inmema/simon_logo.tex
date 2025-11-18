@@ -1,0 +1,63 @@
+\documentclass{standalone}
+\usepackage{tikz}
+\usepackage[dvipsnames]{xcolor}
+\newcommand{\colorone}{NavyBlue!60}  
+\newcommand{\colortwo}{YellowOrange!65}
+\def \x{0.5}
+\def \startI{\x+0.25}
+\def \alpha{60}
+\def \calpha{0.5}
+\def \salpha{0.866025}
+\def \startpIx{\startI + \rdemi * \calpha}
+\def \startpIy{\rdemi * \salpha}
+\def \beta{-60}
+\def \gamma{180-\alpha}
+\def \delta{\alpha - 180}
+\def \r1{2}
+\def \rdemi{\r1/2}
+\def \rdouble{\r1 * 2}
+\def \rquart{\r1/4}
+\def \re{\r1/8}
+\def \rchuit{\r1 * 5 / 8}
+\def \rthuit{\r1 * 3 / 8}
+\def \rnhuit{\r1 * 9 / 8}
+\def \rep{\r1 * 7 / 8}
+\def \rtquart{\r1 * 3/4}
+\def \rcquart{\r1 * 5/4}
+\def \rdouze{\r1 / 12}
+\def \rtd{\r1 * 13 / 12}
+\def \rqd{\r1 * 14 / 12}
+
+\begin{document}
+\begin{tikzpicture}[scale=4]
+
+%M
+\filldraw[\colorone] (0,0) -- ++(\x, 0) -- ++(\alpha:\r1) -- ++(\beta:\rdemi) -- ++(\alpha:\rquart) -- ++(\beta:\rtquart) -- ++(\x,0) -- ++(\gamma:\rcquart) -- ++(\delta:\rquart) --++(\gamma:\rdemi) --++(\delta:\r1* 3/2);
+
+%I
+
+\filldraw[\colortwo] (\startI, 0) -- ++(\x, 0) --++ (\alpha:0.8 * \rdemi) -- ++(180:\x) -- ++(\delta:0.8 *\rdemi);
+\filldraw[\colortwo] (\startpIx,\startpIy) -- ++(\x, 0) --++ (\gamma:\rquart) -- ++(\delta:\rquart);
+
+%N
+%\filldraw[\colortwo] (\x+1.25,0) -- ++(\x, 0) -- ++(\alpha:\rtquart) -- ++(\beta:\rtquart) -- ++(\x, 0) -- ++(\alpha:\rtquart) -- ++(\gamma:\rquart) --++(\delta:\rtquart) --++(\gamma:\r1) -- ++ (\delta:\rcquart);
+
+\filldraw[\colortwo] (\x+1.25,0) -- ++(\x, 0) -- ++(\alpha:\rtquart) -- ++(\beta:\rtquart) -- ++(\rdouze, 0) --++(\gamma:\rtd)-- ++ (\delta:\rtd);
+\filldraw[\colortwo] (3.75 + 2 * \rdouze, 0)-- ++(\rdouze, 0) -- ++(\alpha:\rep) -- ++(\gamma:\rquart) --++(\delta:\rep) --++(\gamma:\r1) -- ++ (\delta:\rdouze)--++(\beta:\rqd);
+
+
+%E
+\filldraw[\colorone] (4,0.8) -- ++(\alpha:\rtquart) --++(\gamma:\rquart) --++(\delta:\rdemi)--++(\gamma:\re) --++(\alpha:\rquart) --++ (\gamma:\re) --++(\delta:\rquart) -- ++(\gamma:\re) -- ++(\alpha:\rdemi) -- ++(\gamma:\rquart) -- ++(\delta:\rtquart)-- ++(\beta:\rep);
+
+\draw[white, ultra thick] (4,0.8)--++(0, \salpha * \rdemi) -- ++(0.75,0.44);
+\draw[white, ultra thick] (4,0.8)--++(0, \salpha * \rdemi) -- ++(190:0.46) -- ++(42:0.46) --++(\gamma:\re) -- ++(30:0.42) -- ++(210:0.42)--++(\gamma:\re)--++(-98:0.75) -- ++(82:0.75)--++(180:0.5)--++(41:1.32);
+
+%M
+\filldraw[black] (8,0) -- ++(-\x, 0) -- ++(\gamma:\r1) -- ++(\delta:\rdemi) -- ++(\gamma:\rquart) -- ++(\delta:\rtquart) -- ++(-\x,0) -- ++(\alpha:\rcquart) -- ++(\beta:\rquart) --++(\alpha:\rdemi) --++(\beta:\r1* 3/2);
+
+%A
+\filldraw[black] (6.5-\startpIx,\startpIy) -- ++(-\x, 0) --++ (\alpha:\rquart) -- ++(\beta:\rquart);
+\filldraw[black] (7.25,0) -- ++(-0.5 * \x, 0) --++(\gamma:\rquart)-- ++(-\x, 0) --++(\delta:\rquart)--++(-0.5 *\x, 0) -- ++(\alpha:\rthuit) --++(1.5 * \x, 0) --++(\beta:\rthuit);
+
+\end{tikzpicture}
+\end{document}
