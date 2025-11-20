@@ -9,14 +9,15 @@
 \usepackage[dvipsnames]{xcolor}
 \usepackage{calc}  % Required for calculations
 
-\newcommand{\colorX}{red!80}
-% \newcommand{\colorX}{BurntOrange!100}
-% \newcommand{\colorX}{Green!40!Gray}
-% \newcommand{\colorX}{RoyalBlue!75}
+% \colorlet{colorX}{BurntOrange!100}
+% \colorlet{colorX}{Green!40!Gray}
+% \colorlet{colorX}{RoyalBlue!75}
+\colorlet{colorX}{red!90}
 
-\newcommand{\colorY}{\colorX}
-\newcommand{\colorZ}{black!85}
-% \newcommand{\colorZ}{white}
+\colorlet{colorY}{white}
+\colorlet{colorZ}{black}
+% \colorlet{colorY}{black}
+% \colorlet{colorZ}{white}
 
 \newcommand{\bordercolor}{none}
 
@@ -24,112 +25,198 @@
 % \pagecolor{black}
 \centering
 \begin{tikzpicture}
-    \pgfmathsetmacro{\H}{8.0}
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    \pgfmathsetmacro{\a}{20}       % angle of inclination
-    \pgfmathsetmacro{\nu}{0.5}     % V-I space factor
-    \pgfmathsetmacro{\delta}{0.15} % thickness of letters
-    \pgfmathsetmacro{\beta}{1.0}   % N slant factor
-    \pgfmathsetmacro{\gamma}{0.8}  % C width factor
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    \pgfmathsetmacro{\x}{tan(\a)}
-    \pgfmathsetmacro{\cx}{cos(\a)}
-    \pgfmathsetmacro{\sx}{sin(\a)}
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    \coordinate (x) at (1, 0);
-    \coordinate (p) at (\x, 1);
-    \coordinate (q) at (-\x, 1);
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %%%%%%%%%%%%% Letters VI %%%%%%%%%%%%%
-    \pgfmathsetmacro{\scaleA}{\H*(1 - 0.5*\delta/\sx)}
-    \coordinate (A1) at (0, \H);
-    \coordinate (B1) at ($(A1) - \H*(q)$);
-    \coordinate (C1) at ($(B1) + (\delta*\H/\cx, 0) $);
-    \coordinate (F1) at ($(C1) + \H*(p)$);
-    \coordinate (E1) at ($(F1) - \delta*\H*(p)$);
-    \coordinate (D1) at ($(E1) - \delta*\H*\nu*(p)$);
-    \coordinate (G1) at ($(F1) - \delta*\H/\cx*(x)$);
-    \coordinate (H1) at ($(G1) - \delta*\H*(p)$);
-    \coordinate (I1) at ($(H1) - \delta*\H*\nu*(p)$);
-    \coordinate (J1) at ($(G1) - \scaleA*(p)$);
-    \coordinate (K1) at ($(J1) + \scaleA*(q)$);
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %%%%%%%%%%%%%% Letter N %%%%%%%%%%%%%%
-    \pgfmathsetmacro{\scaleA}{0.5*(2 - \beta)*\delta/\sx}
-    \coordinate (A2) at ($(C1) + \H*\delta/\cx*(x)$);
-    \coordinate (C2) at ($(A2) + \H*(p) - \H*\scaleA*(p)$);
-    \coordinate (B2) at ($(C2) - \H*(q) + \H*\scaleA*(q)$);
-    \coordinate (D2) at ($(C2) + \H*(0.5*\beta*\delta/\cx, \scaleA)$);
-    \coordinate (E2) at ($(D2) - \H*(q) + \H*\scaleA*(q)$);
-    \coordinate (F2) at ($(E2) + \H*(p) - \H*\scaleA*(p)$);
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %%%%%%%%%%%%%% Letter C %%%%%%%%%%%%%%
-    \coordinate (A3) at ($(F2) + \delta*\H/\cx*(x)$);
-    \coordinate (B3) at ($(A3) - \H*(p)$);
-    \coordinate (C3) at ($(B3) + \H*\gamma*(x)$);
-    \coordinate (D3) at ($(C3) + \H*\delta*(p)$);
-    \coordinate (E3) at ($(D3) - \H*\gamma*(x) + \H*\delta/\cx*(x)$);
-    \coordinate (F3) at ($(E3) + \H*(p) - 2*\delta*\H*(p)$);
-    \coordinate (G3) at ($(F3) + \H*\gamma*(x) - \H*\delta/\cx*(x)$);
-    \coordinate (H3) at ($(G3) + \H*\delta*(p)$);
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %%%%%%%%%%%%%% Letter E %%%%%%%%%%%%%%
-    \pgfmathsetmacro{\scaleA}{\H*(1 - 5*\delta)/2.0}
-    \coordinate (A4) at ($(D3) + \H*\delta*(p)$);
-    \coordinate (B4) at ($(A4) + \scaleA*(p)$);
-    \coordinate (C4) at ($(B4) - \H*\gamma*(x) + 2*\H*\delta/\cx*(x)$);
-    \coordinate (D4) at ($(C4) - \scaleA*(p)$);
-    \coordinate (E4) at ($(G3) - \H*\delta*(p)$);
-    \coordinate (F4) at ($(E4) - \H*\gamma*(x) + 2*\H*\delta/\cx*(x)$);
-    \coordinate (G4) at ($(F4) - \scaleA*(p)$);
-    \coordinate (H4) at ($(G4) + \H*\gamma*(x) - 2*\H*\delta/\cx*(x)$);
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %%%%%%%%%%%%%% Letter N %%%%%%%%%%%%%%
-    \pgfmathsetmacro{\scaleA}{0.5*(2 - \beta)*\delta/\sx}
-    \coordinate (A5) at ($(C3) + \H*\delta/\cx*(x)$);
-    \coordinate (C5) at ($(A5) + \H*(p) - \H*\scaleA*(p)$);
-    \coordinate (B5) at ($(C5) - \H*(q) + \H*\scaleA*(q)$);
-    \coordinate (D5) at ($(C5) + \H*(0.5*\beta*\delta/\cx, \scaleA)$);
-    \coordinate (E5) at ($(D5) - \H*(q) + \H*\scaleA*(q)$);
-    \coordinate (F5) at ($(E5) + \H*(p) - \H*\scaleA*(p)$);
-    \coordinate (G5) at ($(D5) - \H*\delta*(q)$);
-    \coordinate (H5) at ($(F5) - \H*\delta*(p)$);
-    \coordinate (I5) at ($(G5) - 0*\H*\delta*(q)$);
-    \coordinate (J5) at ($(H5) - 0*\H*\delta*(p)$);
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %%%%%%%%%%%%%% Letter T %%%%%%%%%%%%%%
-    \pgfmathsetmacro{\scaleB}{2*(1 - \scaleA)*\x}
-    \coordinate (A6) at ($(F5) + \delta*\H/\cx*(x)$);
-    \coordinate (B6) at ($(A6) - \H*(p)$);
-    \coordinate (C6) at ($(B6) + \H*\delta/\cx*(x)$);
-    \coordinate (D6) at ($(C6) + \H*(p) - \H*\delta*(p)$);
-    \coordinate (F6) at ($(A6) + \H*\scaleB*(x) + \H*\delta/\cx*(x)$);
-    \coordinate (E6) at ($(F6) - \H*\delta*(p)$);
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    \draw[very thick, draw=\bordercolor, fill=\colorZ] 
-      (A1) -- (B1) -- (C1) -- (D1) -- (I1) -- (J1) -- (K1) -- cycle;
-    \draw[very thick, draw=\bordercolor, fill=\colorZ] 
-      (E1) -- (F1) -- (G1) -- (H1) -- cycle;
-    \draw[very thick, draw=\bordercolor, fill=\colorX]
-      (A2) -- (B2) -- (C2) -- cycle;
-    \draw[very thick, draw=\bordercolor, fill=\colorX]
-      (D2) -- (E2) -- (F2) -- cycle;
-    \draw[very thick, draw=\bordercolor, fill=\colorZ]
-      (A3) -- (B3) -- (C3) -- (D3) -- (E3) -- (F3) -- (G3) -- (H3) -- cycle;
-    \draw[very thick, draw=\bordercolor, fill=\colorZ]
-      (A4) -- (B4) -- (C4) -- (D4) -- cycle;
-    \draw[very thick, draw=\bordercolor, fill=\colorZ]
-      (E4) -- (F4) -- (G4) -- (H4) -- cycle;
-    \draw[very thick, draw=\bordercolor, fill=\colorY]
-      (A5) -- (B5) -- (C5) -- cycle;
-    \draw[very thick, draw=\bordercolor, fill=\colorY]
-      (D5) -- (E5) -- (F5) -- cycle;
-    % \draw[very thick, draw=\bordercolor, fill=\colorY]
-    %   (I5) -- (E5) -- (J5) -- cycle;
-    % \draw[very thick, draw=\bordercolor, fill=\colorZ]
-    %   (D5) -- (G5) -- (H5) -- (F5) -- cycle;
-    \draw[very thick, draw=\bordercolor, fill=\colorZ]
-      (A6) -- (B6) -- (C6) -- (D6) -- (E6) -- (F6) -- cycle;
+  \pgfmathsetmacro{\H}{8.0}
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  \pgfmathsetmacro{\a}{20}       % angle of inclination
+  \pgfmathsetmacro{\nu}{0.5}     % V-I space factor
+  \pgfmathsetmacro{\beta}{1.0}   % N slant factor
+  \pgfmathsetmacro{\gamma}{0.8}  % C width factor
+  \pgfmathsetmacro{\h}{0.75}     % date height factor
+  \pgfmathsetmacro{\dl}{0.15} % thickness of letters
+  \pgfmathsetmacro{\ddl}{0.11}
+  \pgfmathsetmacro{\dddl}{0.075}
+  \pgfmathsetmacro{\mu}{0.6}     % 2 width factor
+  \pgfmathsetmacro{\lambda}{0.8} % 0 width factor
+  
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  \pgfmathsetmacro{\x}{tan(\a)}
+  \pgfmathsetmacro{\cx}{cos(\a)}
+  \pgfmathsetmacro{\sx}{sin(\a)}
+  \pgfmathsetmacro{\mu}{2*\x - (2 - \beta)*\dl/\cx}
+  \pgfmathsetmacro{\mmu}{\mu-2*\dddl/\cx}
+  
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  \coordinate (x) at (\H, 0);
+  \coordinate (y) at (0, \H);
+  \coordinate (p) at (\H*\x, \H*1);
+  \coordinate (q) at (-\H*\x, \H);
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  %%%%%%%%%%%%% Letters VI %%%%%%%%%%%%%
+  \pgfmathsetmacro{\scaleA}{(1 - 0.5*\dl/\sx)}
+  \coordinate (A1) at ($(0,0)+(y)$);
+  \coordinate (B1) at ($(A1) - (q)$);
+  \coordinate (C1) at ($(B1) + \dl/\cx*(x)$);
+  \coordinate (F1) at ($(C1) + (p)$);
+  \coordinate (E1) at ($(F1) - \dl*(p)$);
+  \coordinate (D1) at ($(E1) - \dl*\nu*(p)$);
+  \coordinate (G1) at ($(F1) - \dl/\cx*(x)$);
+  \coordinate (H1) at ($(G1) - \dl*(p)$);
+  \coordinate (I1) at ($(H1) - \dl*\nu*(p)$);
+  \coordinate (J1) at ($(G1) - \scaleA*(p)$);
+  \coordinate (K1) at ($(J1) + \scaleA*(q)$);
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  %%%%%%%%%%%%%% Letter N %%%%%%%%%%%%%%
+  \pgfmathsetmacro{\scaleA}{0.5*(2 - \beta)*\dl/\sx}
+  \coordinate (A2) at ($(C1) + \dl/\cx*(x)$);
+  \coordinate (C2) at ($(A2) + (p) - \scaleA*(p)$);
+  \coordinate (B2) at ($(C2) - (q) + \scaleA*(q)$);
+  % \coordinate (D2) at ($(C2) + \H*(0.5*\beta*\dl/\cx, \scaleA)$);
+  \coordinate (D2) at ($(C2) + \dl/\sx*(y) - 0.5*\beta*\dl/\sx*(q)$);
+  \coordinate (E2) at ($(D2) - (q) + \scaleA*(q)$);
+  \coordinate (F2) at ($(E2) + (p) - \scaleA*(p)$);
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  %%%%%%%%%%%%%% Letter C %%%%%%%%%%%%%%
+  \coordinate (A3) at ($(F2) + \dl/\cx*(x)$);
+  \coordinate (B3) at ($(A3) - (p)$);
+  \coordinate (C3) at ($(B3) + \gamma*(x)$);
+  \coordinate (D3) at ($(C3) + \dl*(p)$);
+  \coordinate (E3) at ($(D3) - \gamma*(x) + \dl/\cx*(x)$);
+  \coordinate (F3) at ($(E3) + (p) - 2*\dl*(p)$);
+  \coordinate (G3) at ($(F3) + \gamma*(x) - \dl/\cx*(x)$);
+  \coordinate (H3) at ($(G3) + \dl*(p)$);
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  %%%%%%%%%%%%%% Letter E %%%%%%%%%%%%%%
+  \pgfmathsetmacro{\scaleA}{(1 - 5*\dl)/2.0}
+  \coordinate (A4) at ($(D3) + \dl*(p)$);
+  \coordinate (B4) at ($(A4) + \scaleA*(p)$);
+  \coordinate (C4) at ($(B4) - \gamma*(x) + 2*\dl/\cx*(x)$);
+  \coordinate (D4) at ($(C4) - \scaleA*(p)$);
+  \coordinate (E4) at ($(G3) - \dl*(p)$);
+  \coordinate (F4) at ($(E4) - \gamma*(x) + 2*\dl/\cx*(x)$);
+  \coordinate (G4) at ($(F4) - \scaleA*(p)$);
+  \coordinate (H4) at ($(G4) + \gamma*(x) - 2*\dl/\cx*(x)$);
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  %%%%%%%%%%%%%% Letter N %%%%%%%%%%%%%%
+  \pgfmathsetmacro{\scaleA}{0.5*(2 - \beta)*\dl/\sx}
+  \coordinate (A5) at ($(C3) + \dl/\cx*(x)$);
+  \coordinate (C5) at ($(A5) + (p) - \scaleA*(p)$);
+  \coordinate (B5) at ($(C5) - (q) + \scaleA*(q)$);
+  % \coordinate (D5) at ($(C5) + \H*(0.5*\beta*\dl/\cx, \scaleA)$);
+  \coordinate (D5) at ($(C5) + \dl/\sx*(y) - 0.5*\beta*\dl/\sx*(q)$);
+  \coordinate (E5) at ($(D5) - (q) + \scaleA*(q)$);
+  \coordinate (F5) at ($(E5) + (p) - \scaleA*(p)$);
+  \coordinate (G5) at ($(D5) - \dl*(q)$);
+  \coordinate (H5) at ($(F5) - \dl*(p)$);
+  \coordinate (I5) at ($(G5) - 0*\dl*(q)$);
+  \coordinate (J5) at ($(H5) - 0*\dl*(p)$);
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  %%%%%%%%%%%%%% Letter T %%%%%%%%%%%%%%
+  \pgfmathsetmacro{\scaleB}{2*(1 - \scaleA)*\x+\dl/\cx}
+  \coordinate (A6) at ($(F5) + \dl/\cx*(x)$);
+  \coordinate (B6) at ($(A6) - (p)$);
+  \coordinate (C6) at ($(B6) + \dl/\cx*(x)$);
+  \coordinate (D6) at ($(C6) + (p) - \dl*(p)$);
+  \coordinate (F6) at ($(A6) + 0.66*\scaleB*(x)$);
+  \coordinate (E6) at ($(F6) - \dl*(p)$);
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  %%%%%%%%%%%%%%%% 2000 %%%%%%%%%%%%%%%%
+  % \coordinate (A7) at ($(A3) + \dl*(p) - \mu*(x) - \dl/\cx*(x) + \h*(p)$);
+  \coordinate (A7) at ($(B3) - \dl*(p) - \mu*(x) - \dl/\cx*(x) + 0*\h*(p)$);
+  \coordinate (B7) at ($(A7) - \ddl*(p)$);
+  \coordinate (C7) at ($(B7) + \mu*(x) - \ddl/\cx*(x)$);
+  \coordinate (D7) at ($(C7) - 0.5*\h*(p) + 1.5*\ddl*(p)$);
+  \coordinate (E7) at ($(D7) - \mu*(x) + \ddl/\cx*(x)$);
+  \coordinate (F7) at ($(E7) - 0.5*\h*(p) - 0.5*\ddl*(p)$);
+  \coordinate (G7) at ($(F7) + \mu*(x)$);
+  \coordinate (H7) at ($(G7) + \ddl*(p)$);
+  \coordinate (I7) at ($(H7) - \mu*(x) + \ddl/\cx*(x)$);
+  \coordinate (J7) at ($(I7) + 0.5*\h*(p) - 1.5*\ddl*(p)$);
+  \coordinate (K7) at ($(J7) + \mu*(x) - \ddl/\cx*(x)$);
+  \coordinate (L7) at ($(K7) + 0.5*\h*(p) + 0.5*\ddl*(p)$);
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  \coordinate (A80) at ($(G7) + \dl/\cx*(x)$);
+  \coordinate (B80) at ($(A80) + \lambda*(x)$);
+  \coordinate (C80) at ($(B80) + \h*(p)$);
+  \coordinate (D80) at ($(C80) - \lambda*(x)$);
+  \coordinate (A81) at ($(A80) + 1*\ddl*(p) + 1*\ddl*(x)$);
+  \coordinate (B81) at ($(B80) + 1*\ddl*(p) - 1*\ddl*(x)$);
+  \coordinate (C81) at ($(C80) - 1*\ddl*(p) - 1*\ddl*(x)$);
+  \coordinate (D81) at ($(D80) - 1*\ddl*(p) + 1*\ddl*(x)$);
+  \coordinate (A82) at ($(A80) + 2*\ddl*(p) + 2*\ddl*(x)$);
+  \coordinate (B82) at ($(B80) + 2*\ddl*(p) - 2*\ddl*(x)$);
+  \coordinate (C82) at ($(C80) - 2*\ddl*(p) - 2*\ddl*(x)$);
+  \coordinate (D82) at ($(D80) - 2*\ddl*(p) + 2*\ddl*(x)$);
+  \coordinate (A83) at ($(A80) + 3*\ddl*(p) + 3*\ddl*(x)$);
+  \coordinate (B83) at ($(B80) + 3*\ddl*(p) - 3*\ddl*(x)$);
+  \coordinate (C83) at ($(C80) - 3*\ddl*(p) - 3*\ddl*(x)$);
+  \coordinate (D83) at ($(D80) - 3*\ddl*(p) + 3*\ddl*(x)$);
+  \coordinate (A84) at ($(A80) + 4*\ddl*(p) + 4*\ddl*(x)$);
+  \coordinate (B84) at ($(B80) + 4*\ddl*(p) - 4*\ddl*(x)$);
+  \coordinate (C84) at ($(C80) - 4*\ddl*(p) - 4*\ddl*(x)$);
+  \coordinate (D84) at ($(D80) - 4*\ddl*(p) + 4*\ddl*(x)$);
+  \coordinate (A85) at ($(A80) + 5*\ddl*(p) + 5*\ddl*(x)$); 
+  \coordinate (B85) at ($(B80) + 5*\ddl*(p) - 5*\ddl*(x)$);
+  \coordinate (C85) at ($(C80) - 5*\ddl*(p) - 5*\ddl*(x)$);
+  \coordinate (D85) at ($(D80) - 5*\ddl*(p) + 5*\ddl*(x)$);
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  %%%%%%%%%%%%%%% 12 / 10 %%%%%%%%%%%%%%
+  \pgfmathsetmacro{\scaleA}{(\h-\dddl)/2.0}
+  \coordinate (A9) at ($(B80) + \dl/\cx*(x)$);
+  \coordinate (B9) at ($(A9)  + \dddl/\cx*(x)$);
+  \coordinate (C9) at ($(B9) + \scaleA*(p)$);
+  \coordinate (D9) at ($(C9) - \dddl/\cx*(x)$);
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  \coordinate (E9) at ($(C80) + \dl/\cx*(x)$);
+  \coordinate (F9) at ($(E9) + \dddl/\cx*(x)$);
+  \coordinate (G9) at ($(F9) - \scaleA*(p)$);
+  \coordinate (H9) at ($(G9) - \dddl/\cx*(x)$);
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  \coordinate (A10) at ($(F9) + \dddl/\cx*(x)$);
+  \coordinate (B10) at ($(A10) - \dddl*(p)$);
+  \coordinate (C10) at ($(B10) + \mmu*(x) - \dddl/\cx*(x)$);
+  \coordinate (D10) at ($(C10) - 0.5*\scaleA*(p) + 1.5*\dddl*(p)$);
+  \coordinate (E10) at ($(D10) - \mmu*(x) + \dddl/\cx*(x)$);
+  \coordinate (F10) at ($(E10) - 0.5*\scaleA*(p) - 0.5*\dddl*(p)$);
+  \coordinate (G10) at ($(F10) + \mmu*(x)$);
+  \coordinate (H10) at ($(G10) + \dddl*(p)$);
+  \coordinate (I10) at ($(H10) - \mmu*(x) + \dddl/\cx*(x)$);
+  \coordinate (J10) at ($(I10) + 0.5*\scaleA*(p) - 1.5*\dddl*(p)$);
+  \coordinate (K10) at ($(J10) + \mmu*(x) - \dddl/\cx*(x)$);
+  \coordinate (L10) at ($(K10) + 0.5*\scaleA*(p) + 0.5*\dddl*(p)$);
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  \coordinate (A11) at ($(B9) + \dddl/\cx*(x)$);
+  \coordinate (B11) at ($(A11) + \mmu*(x)$);
+  \coordinate (C11) at ($(B11) + \scaleA*(p)$);
+  \coordinate (D11) at ($(C11) - \mmu*(x)$);
+  \coordinate (E11) at ($(A11) + \dddl*(p) + \dddl*(x)$);
+  \coordinate (F11) at ($(B11) + \dddl*(p) - \dddl*(x)$);
+  \coordinate (G11) at ($(C11) - \dddl*(p) - \dddl*(x)$);
+  \coordinate (H11) at ($(D11) - \dddl*(p) + \dddl*(x)$);
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  \fill[colorZ] (A1) -- (B1) -- (C1) -- (D1) -- (I1) -- (J1) -- (K1) -- cycle;
+  \fill[colorZ] (E1) -- (F1) -- (G1) -- (H1) -- cycle;
+  \fill[colorX] (A2) -- (B2) -- (C2) -- cycle;
+  \fill[colorX] (D2) -- (E2) -- (F2) -- cycle;
+  \fill[colorZ] (A3) -- (B3) -- (C3) -- (D3) -- (E3) -- (F3) -- (G3) -- (H3) -- cycle;
+  \fill[colorZ] (A4) -- (B4) -- (C4) -- (D4) -- cycle;
+  \fill[colorZ] (E4) -- (F4) -- (G4) -- (H4) -- cycle;
+  \fill[colorX] (A5) -- (B5) -- (C5) -- cycle;
+  \fill[colorX] (D5) -- (E5) -- (F5) -- cycle;
+  % \fill[colorX] (I5) -- (E5) -- (J5) -- cycle;
+  % \fill[colorZ] (D5) -- (G5) -- (H5) -- (F5) -- cycle;
+  \fill[colorZ] (A6) -- (B6) -- (C6) -- (D6) -- (E6) -- (F6) -- cycle;
+  \fill[colorZ] (A7) -- (B7) -- (C7) -- (D7) -- (E7) -- (F7) -- (G7) -- (H7) -- (I7) -- (J7) -- (K7) -- (L7) -- cycle;
+  \fill[colorX] (A80) -- (B80) -- (C80) -- (D80) -- cycle;
+  \fill[colorY] (A81) -- (B81) -- (C81) -- (D81) -- cycle;
+  \fill[colorX] (A82) -- (B82) -- (C82) -- (D82) -- cycle;
+  \fill[colorY] (A83) -- (B83) -- (C83) -- (D83) -- cycle;
+  % \fill[colorX] (A84) -- (B84) -- (C84) -- (D84) -- cycle;
+  % \fill[colorY] (A85) -- (B85) -- (C85) -- (D85) -- cycle;
+  \fill[colorZ] (A9) -- (B9) -- (C9) -- (D9) -- cycle;
+  \fill[colorZ] (E9) -- (F9) -- (G9) -- (H9) -- cycle;
+  \fill[colorZ] (A10) -- (B10) -- (C10) -- (D10) -- (E10) -- (F10) -- (G10) -- (H10) -- (I10) -- (J10) -- (K10) -- (L10) -- cycle;
+  \fill[colorZ] (A11) -- (B11) -- (C11) -- (D11) -- cycle;
+  \fill[colorY] (E11) -- (F11) -- (G11) -- (H11) -- cycle;
 \end{tikzpicture}
 
 \end{document}
