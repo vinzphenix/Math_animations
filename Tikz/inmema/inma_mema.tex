@@ -14,8 +14,8 @@
 \definecolor{UCLtrans}{RGB}{155, 183, 212}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\colorlet{colorone}{NavyBlue!60}
-\colorlet{colortwo}{YellowOrange!75}
+% \colorlet{colorone}{NavyBlue!60}
+% \colorlet{colortwo}{YellowOrange!75}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % \colorlet{colorone}{YellowOrange!75}
 % \colorlet{colortwo}{NavyBlue!60}
@@ -32,8 +32,8 @@
 % \colorlet{colorone}{red}
 % \colorlet{colortwo}{blue}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% \colorlet{colortwo}{UCLlight}
-% \colorlet{colorone}{UCLdark}
+\colorlet{colortwo}{UCLdark}
+\colorlet{colorone}{UCLlight}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % \colorlet{colorthree}{UCLtrans}
@@ -59,9 +59,9 @@
 % \pagecolor{black}
 \centering
 \begin{tikzpicture}
-    \pgfmathsetmacro{\drawMeshM}{0} % 0, 1
+    \pgfmathsetmacro{\drawMeshM}{1} % 0, 1
     \pgfmathsetmacro{\drawMeshE}{0} % 0, 1
-    \pgfmathsetmacro{\drawMeshCorner}{1} % 0, 1, 2, 3, 4
+    \pgfmathsetmacro{\drawMeshCorner}{0} % 0, 1, 2, 3, 4
     \pgfmathsetmacro{\drawSierpinski}{2} % 0, 1, 2, 3
     \pgfmathsetmacro{\drawINMA}{1} % 0, 1
     \pgfmathsetmacro{\drawMEMA}{1} % 0, 1
@@ -72,6 +72,8 @@
     \pgfmathsetmacro{\dbA}{0.125}  % thickness of A blankspace
     \pgfmathsetmacro{\dbI}{0.05}   % thickness of I blankspace
     \pgfmathsetmacro{\dt}{1.0}    % mesh edges thickness
+    \pgfmathsetmacro{\dtE}{0.05*\dl}
+
     % \pgfmathsetmacro{\eta}{0.245}    % Bottom space btw ground and M valley
     % \pgfmathsetmacro{\dzeta}{0.20}  % Top space of btw M small peak and top
     % \pgfmathsetmacro{\kk}{0.8}     % N height factor
@@ -267,10 +269,11 @@
     
     \ifdim \drawINMA pt = 1pt
       \draw[very thick, draw=\borderI, fill=colortwo] (A5) -- (C5) -- (G5) -- (F5) -- cycle;
-      \draw[very thick, draw=\borderI, fill=colortwo] (H5) -- (I5) -- (J5) -- cycle;
+      % \draw[very thick, draw=\borderI, fill=colortwo] (H5) -- (I5) -- (J5) -- cycle;
     \fi
     \ifdim \drawMEMA pt = 1pt
-      \draw[very thick, draw=\borderE, fill=colorone] (A4) -- (E4) -- (F4) -- (G4) -- (H4) -- (I4) -- (J4) -- (K4) -- (L4) -- (D4) -- (C4) -- (B4) -- cycle;
+      % \draw[very thick, draw=\borderE, fill=colorone] (A4) -- (E4) -- (F4) -- (G4) -- (H4) -- (I4) -- (J4) -- (K4) -- (L4) -- (D4) -- (C4) -- (B4) -- cycle;
+      \draw[very thick, draw=\borderE, fill=colorone] (M4) -- (E4) -- (F4) -- (G4) -- (H4) -- (I4) -- (J4) -- (K4) -- (L4) -- (D4) -- (C4) -- (B4) -- (Y3) -- cycle;
     \fi
     %%%%%%%%%%%%%% Mesh lines E %%%%%%%%%%%%
     \ifdim \drawMeshE pt = 1pt
@@ -296,25 +299,52 @@
       \draw[very thick, draw=\borderE, fill=colorone] (I4) -- (J4) -- (K4) -- (L4) -- cycle;
     \fi
     
+    \pgfmathsetmacro{\lgtC}{0.25*\dl-0.75*\dtE}
+    \coordinate (dp) at ($0.5/\x*(p)$);
+    \coordinate (dq) at ($0.5/\x*(q)$);
+
+    \ifdim \drawMeshCorner pt = 0pt
+      \fill[colorone] (Y1) -- (Y2) -- (Y3) -- cycle;
+    \fi
     \ifdim \drawMeshCorner pt = 1pt
-      \draw[line width=\dt pt, colorfour, line join=bevel] (Y4) -- (Y5) -- (Y6) -- cycle;
-      \draw[line width=\dt pt, colorfour, line join=bevel] (Y11) -- (Y17) -- (Y16) -- cycle;
-      \draw[line width=\dt pt, colorfour, line join=bevel] (Y12) -- (Y13) -- (Y18) -- cycle;
-      \draw[line width=\dt pt, colorfour, line join=bevel] (Y14) -- (Y19) -- (Y15) -- cycle;
-      \draw[line width=\dt pt, colorfour, line join=miter] (Y17) -- (Y18) -- (Y19) -- cycle;
+      \fill[colorone] ($(Y1)+0*\lgtC*(x)+0*\dtE*(x)$) -- ++($\lgtC*(x)$) -- ++($-\lgtC*(dp)$) -- cycle;
+      \fill[colorone] ($(Y1)+1*\lgtC*(x)+1*\dtE*(x)$) -- ++($\lgtC*(x)$) -- ++($-\lgtC*(dp)$) -- cycle;
+      \fill[colorone] ($(Y1)+2*\lgtC*(x)+2*\dtE*(x)$) -- ++($\lgtC*(x)$) -- ++($-\lgtC*(dp)$) -- cycle;
+      \fill[colorone] ($(Y1)+3*\lgtC*(x)+3*\dtE*(x)$) -- ++($\lgtC*(x)$) -- ++($-\lgtC*(dp)$) -- cycle;
+      \fill[colorone] ($(Y1)-1*\lgtC*(dq)-1*\dtE*(dq)$) -- ++($\lgtC*(x)$) -- ++($-\lgtC*(dp)$) -- cycle;
+      \fill[colorone] ($(Y1)-2*\lgtC*(dq)-2*\dtE*(dq)$) -- ++($\lgtC*(x)$) -- ++($-\lgtC*(dp)$) -- cycle;
+      \fill[colorone] ($(Y1)-3*\lgtC*(dq)-3*\dtE*(dq)$) -- ++($\lgtC*(x)$) -- ++($-\lgtC*(dp)$) -- cycle;
+      \fill[colorone] ($(Y1)-3*\lgtC*(dq)-3*\dtE*(dq)+\lgtC*(x)+0*\lgtC*(dp)+1*\dtE*(dp)$) -- ++($\lgtC*(dp)$) -- ++($-\lgtC*(x)$) -- cycle;
+      \fill[colorone] ($(Y1)-3*\lgtC*(dq)-3*\dtE*(dq)+\lgtC*(x)+1*\lgtC*(dp)+2*\dtE*(dp)$) -- ++($\lgtC*(dp)$) -- ++($-\lgtC*(x)$) -- cycle;
+      \fill[colorone] ($(Y1)-2*\lgtC*(dq)-2*\dtE*(dq)+\lgtC*(x)+0*\lgtC*(dp)+1*\dtE*(dp)$) -- ++($\lgtC*(dp)$) -- ++($-\lgtC*(x)$) -- cycle;
+      \fill[colorone] ($(Y1)+1*\lgtC*(x)+0.5*\dtE*(x)-\dtE*\x*(y)$) -- ++($-\lgtC*(dq)$) -- ++($-\lgtC*(x)$) -- cycle;
+      \fill[colorone] ($(Y1)+2*\lgtC*(x)+1.5*\dtE*(x)-\dtE*\x*(y)$) -- ++($-\lgtC*(dq)$) -- ++($-\lgtC*(x)$) -- cycle;
+      \fill[colorone] ($(Y1)+3*\lgtC*(x)+2.5*\dtE*(x)-\dtE*\x*(y)$) -- ++($-\lgtC*(dq)$) -- ++($-\lgtC*(x)$) -- cycle;
+      \fill[colorone] ($(Y1)+1*\lgtC*(x)+0.5*\dtE*(x)-\dtE*\x*(y)-\lgtC*(dq)-\dtE*(dq)$) -- ++($-\lgtC*(dq)$) -- ++($-\lgtC*(x)$) -- cycle;
+      \fill[colorone] ($(Y1)+2*\lgtC*(x)+1.5*\dtE*(x)-\dtE*\x*(y)-\lgtC*(dq)-\dtE*(dq)$) -- ++($-\lgtC*(dq)$) -- ++($-\lgtC*(x)$) -- cycle;
+      \fill[colorone] ($(Y1)+1*\lgtC*(x)+0.5*\dtE*(x)-\dtE*\x*(y)-2*\lgtC*(dq)-2*\dtE*(dq)$) -- ++($-\lgtC*(dq)$) -- ++($-\lgtC*(x)$) -- cycle;
+      % \draw ($(Y16)-(dx)$) -- ($(Y11)+(dq)$);
+      % \draw[line width=\dt pt, colorfour, line join=bevel] (Y4) -- (Y5) -- (Y6) -- cycle;
+      % \draw[line width=\dt pt, colorfour, line join=bevel] (Y11) -- (Y17) -- (Y16) -- cycle;
+      % \draw[line width=\dt pt, colorfour, line join=bevel] (Y12) -- (Y13) -- (Y18) -- cycle;
+      % \draw[line width=\dt pt, colorfour, line join=bevel] (Y14) -- (Y19) -- (Y15) -- cycle;
+      % \draw[line width=\dt pt, colorfour, line join=miter] (Y17) -- (Y18) -- (Y19) -- cycle;
       % \draw[line width=\dt pt, colorfour, shorten <=-2pt, shorten >=-2pt] (Y2) -- (Y3);
     \fi
     \ifdim \drawMeshCorner pt = 2pt
+      \fill[colorone] (Y1) -- (Y2) -- (Y3) -- cycle;
       \draw[line width=\dt pt, colorfour] (Y4) -- (Y10) -- (Y6);
       \draw[line width=\dt pt, colorfour] (Y5) -- (Y10) -- (Y4);
       \draw[line width=\dt pt, colorfour] (Y6) -- (Y10) -- (Y5);
     \fi
     \ifdim \drawMeshCorner pt = 3pt
+      \fill[colorone] (Y1) -- (Y2) -- (Y3) -- cycle;
       \draw[line width=\dt pt, colorfour] (Y1) -- (Y10);
       \draw[line width=\dt pt, colorfour] (Y2) -- (Y10);
       \draw[line width=\dt pt, colorfour] (Y3) -- (Y10);
     \fi
     \ifdim \drawMeshCorner pt = 4pt
+      \fill[colorone] (Y1) -- (Y2) -- (Y3) -- cycle;
       \draw[line width=\dt pt, colorfour] (Y1) -- (Y10);
       \draw[line width=\dt pt, colorfour] (Y2) -- (Y10);
       \draw[line width=\dt pt, colorfour] (Y3) -- (Y10);
@@ -325,28 +355,32 @@
 
     %%%%%%%%%%%%%%% Sierpinski %%%%%%%%%%%%%%%
     \ifdim \drawSierpinski pt = 1pt
-      \fill[colorfour] (K5) -- (L5) -- (M5) -- cycle;
+      \fill[colortwo] (H5) -- (I5) -- (J5) -- cycle (K5) -- (M5) -- (L5) -- cycle;
     \fi
     \ifdim \drawSierpinski pt = 2pt
-      \fill[colorfour] (K5) -- (L5) -- (M5) -- cycle;
-      \fill[colorfour] (N5) -- (O5) -- (P5) -- cycle;
-      \fill[colorfour] (Q5) -- (R5) -- (S5) -- cycle;
-      \fill[colorfour] (T5) -- (U5) -- (V5) -- cycle;
+      \fill[colortwo] 
+        (H5) -- (I5) -- (J5) -- cycle 
+        (K5) -- (M5) -- (L5) -- cycle
+        (N5) -- (P5) -- (O5) -- cycle
+        (Q5) -- (S5) -- (R5) -- cycle
+        (T5) -- (V5) -- (U5) -- cycle;
     \fi
     \ifdim \drawSierpinski pt = 3pt
-      \fill[colorfour] (K5) -- (L5) -- (M5) -- cycle;
-      \fill[colorfour] (N5) -- (O5) -- (P5) -- cycle;
-      \fill[colorfour] (Q5) -- (R5) -- (S5) -- cycle;
-      \fill[colorfour] (T5) -- (U5) -- (V5) -- cycle;
-      \fill[colorfour] ($0.5*(H5)+0.5*(N5)$) -- ($0.5*(N5)+0.5*(P5)$) -- ($0.5*(P5)+0.5*(H5)$) -- cycle;
-      \fill[colorfour] ($0.5*(O5)+0.5*(M5)$) -- ($0.5*(M5)+0.5*(P5)$) -- ($0.5*(P5)+0.5*(O5)$) -- cycle;
-      \fill[colorfour] ($0.5*(N5)+0.5*(K5)$) -- ($0.5*(K5)+0.5*(O5)$) -- ($0.5*(O5)+0.5*(N5)$) -- cycle;
-      \fill[colorfour] ($0.5*(I5)+0.5*(R5)$) -- ($0.5*(R5)+0.5*(Q5)$) -- ($0.5*(Q5)+0.5*(I5)$) -- cycle;
-      \fill[colorfour] ($0.5*(R5)+0.5*(L5)$) -- ($0.5*(L5)+0.5*(S5)$) -- ($0.5*(S5)+0.5*(R5)$) -- cycle;
-      \fill[colorfour] ($0.5*(Q5)+0.5*(S5)$) -- ($0.5*(S5)+0.5*(K5)$) -- ($0.5*(K5)+0.5*(Q5)$) -- cycle;
-      \fill[colorfour] ($0.5*(J5)+0.5*(V5)$) -- ($0.5*(V5)+0.5*(U5)$) -- ($0.5*(U5)+0.5*(J5)$) -- cycle;
-      \fill[colorfour] ($0.5*(V5)+0.5*(M5)$) -- ($0.5*(M5)+0.5*(T5)$) -- ($0.5*(T5)+0.5*(V5)$) -- cycle;
-      \fill[colorfour] ($0.5*(U5)+0.5*(T5)$) -- ($0.5*(T5)+0.5*(L5)$) -- ($0.5*(L5)+0.5*(U5)$) -- cycle;
+      \fill[colortwo] 
+        (H5) -- (I5) -- (J5) -- cycle 
+        (K5) -- (M5) -- (L5) -- cycle
+        (N5) -- (P5) -- (O5) -- cycle
+        (Q5) -- (S5) -- (R5) -- cycle
+        (T5) -- (V5) -- (U5) -- cycle
+        ($0.5*(H5)+0.5*(N5)$) -- ($0.5*(P5)+0.5*(H5)$) -- ($0.5*(N5)+0.5*(P5)$) -- cycle
+        ($0.5*(O5)+0.5*(M5)$) -- ($0.5*(P5)+0.5*(O5)$) -- ($0.5*(M5)+0.5*(P5)$) -- cycle
+        ($0.5*(N5)+0.5*(K5)$) -- ($0.5*(O5)+0.5*(N5)$) -- ($0.5*(K5)+0.5*(O5)$) -- cycle
+        ($0.5*(I5)+0.5*(R5)$) -- ($0.5*(Q5)+0.5*(I5)$) -- ($0.5*(R5)+0.5*(Q5)$) -- cycle
+        ($0.5*(R5)+0.5*(L5)$) -- ($0.5*(S5)+0.5*(R5)$) -- ($0.5*(L5)+0.5*(S5)$) -- cycle
+        ($0.5*(Q5)+0.5*(S5)$) -- ($0.5*(K5)+0.5*(Q5)$) -- ($0.5*(S5)+0.5*(K5)$) -- cycle
+        ($0.5*(J5)+0.5*(V5)$) -- ($0.5*(U5)+0.5*(J5)$) -- ($0.5*(V5)+0.5*(U5)$) -- cycle
+        ($0.5*(V5)+0.5*(M5)$) -- ($0.5*(T5)+0.5*(V5)$) -- ($0.5*(M5)+0.5*(T5)$) -- cycle
+        ($0.5*(U5)+0.5*(T5)$) -- ($0.5*(L5)+0.5*(U5)$) -- ($0.5*(T5)+0.5*(L5)$) -- cycle;
     \fi
 
     \draw[very thick, draw=\borderMM, fill=colorthree] (A2) -- (D2) -- (J2) -- (I2) -- (K2) -- (L2) -- (F2) -- (E2) -- (C2) -- (B2) -- cycle;
