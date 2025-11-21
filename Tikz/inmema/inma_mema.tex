@@ -59,9 +59,9 @@
 % \pagecolor{black}
 \centering
 \begin{tikzpicture}
-    \pgfmathsetmacro{\drawMeshM}{1} % 0, 1
+    \pgfmathsetmacro{\drawMeshM}{0} % 0, 1
     \pgfmathsetmacro{\drawMeshE}{0} % 0, 1
-    \pgfmathsetmacro{\drawMeshCorner}{0} % 0, 1, 2, 3, 4
+    \pgfmathsetmacro{\drawMeshCorner}{1} % 0, 1, 2, 3, 4
     \pgfmathsetmacro{\drawSierpinski}{2} % 0, 1, 2, 3
     \pgfmathsetmacro{\drawINMA}{1} % 0, 1
     \pgfmathsetmacro{\drawMEMA}{1} % 0, 1
@@ -72,7 +72,7 @@
     \pgfmathsetmacro{\dbA}{0.125}  % thickness of A blankspace
     \pgfmathsetmacro{\dbI}{0.05}   % thickness of I blankspace
     \pgfmathsetmacro{\dt}{1.0}    % mesh edges thickness
-    \pgfmathsetmacro{\dtE}{0.05*\dl}
+    \pgfmathsetmacro{\dtE}{0.06*\dl}
 
     % \pgfmathsetmacro{\eta}{0.245}    % Bottom space btw ground and M valley
     % \pgfmathsetmacro{\dzeta}{0.20}  % Top space of btw M small peak and top
@@ -299,7 +299,8 @@
       \draw[very thick, draw=\borderE, fill=colorone] (I4) -- (J4) -- (K4) -- (L4) -- cycle;
     \fi
     
-    \pgfmathsetmacro{\lgtC}{0.25*\dl-0.75*\dtE}
+    \pgfmathsetmacro{\nn}{4} % number of subdivisions
+    \pgfmathsetmacro{\lgtC}{\dl/\nn-(\nn-1)/\nn*\dtE}
     \coordinate (dp) at ($0.5/\x*(p)$);
     \coordinate (dq) at ($0.5/\x*(q)$);
 
@@ -307,22 +308,21 @@
       \fill[colorone] (Y1) -- (Y2) -- (Y3) -- cycle;
     \fi
     \ifdim \drawMeshCorner pt = 1pt
-      \fill[colorone] ($(Y1)+0*\lgtC*(x)+0*\dtE*(x)$) -- ++($\lgtC*(x)$) -- ++($-\lgtC*(dp)$) -- cycle;
-      \fill[colorone] ($(Y1)+1*\lgtC*(x)+1*\dtE*(x)$) -- ++($\lgtC*(x)$) -- ++($-\lgtC*(dp)$) -- cycle;
-      \fill[colorone] ($(Y1)+2*\lgtC*(x)+2*\dtE*(x)$) -- ++($\lgtC*(x)$) -- ++($-\lgtC*(dp)$) -- cycle;
-      \fill[colorone] ($(Y1)+3*\lgtC*(x)+3*\dtE*(x)$) -- ++($\lgtC*(x)$) -- ++($-\lgtC*(dp)$) -- cycle;
-      \fill[colorone] ($(Y1)-1*\lgtC*(dq)-1*\dtE*(dq)$) -- ++($\lgtC*(x)$) -- ++($-\lgtC*(dp)$) -- cycle;
-      \fill[colorone] ($(Y1)-2*\lgtC*(dq)-2*\dtE*(dq)$) -- ++($\lgtC*(x)$) -- ++($-\lgtC*(dp)$) -- cycle;
-      \fill[colorone] ($(Y1)-3*\lgtC*(dq)-3*\dtE*(dq)$) -- ++($\lgtC*(x)$) -- ++($-\lgtC*(dp)$) -- cycle;
-      \fill[colorone] ($(Y1)-3*\lgtC*(dq)-3*\dtE*(dq)+\lgtC*(x)+0*\lgtC*(dp)+1*\dtE*(dp)$) -- ++($\lgtC*(dp)$) -- ++($-\lgtC*(x)$) -- cycle;
-      \fill[colorone] ($(Y1)-3*\lgtC*(dq)-3*\dtE*(dq)+\lgtC*(x)+1*\lgtC*(dp)+2*\dtE*(dp)$) -- ++($\lgtC*(dp)$) -- ++($-\lgtC*(x)$) -- cycle;
-      \fill[colorone] ($(Y1)-2*\lgtC*(dq)-2*\dtE*(dq)+\lgtC*(x)+0*\lgtC*(dp)+1*\dtE*(dp)$) -- ++($\lgtC*(dp)$) -- ++($-\lgtC*(x)$) -- cycle;
-      \fill[colorone] ($(Y1)+1*\lgtC*(x)+0.5*\dtE*(x)-\dtE*\x*(y)$) -- ++($-\lgtC*(dq)$) -- ++($-\lgtC*(x)$) -- cycle;
-      \fill[colorone] ($(Y1)+2*\lgtC*(x)+1.5*\dtE*(x)-\dtE*\x*(y)$) -- ++($-\lgtC*(dq)$) -- ++($-\lgtC*(x)$) -- cycle;
-      \fill[colorone] ($(Y1)+3*\lgtC*(x)+2.5*\dtE*(x)-\dtE*\x*(y)$) -- ++($-\lgtC*(dq)$) -- ++($-\lgtC*(x)$) -- cycle;
-      \fill[colorone] ($(Y1)+1*\lgtC*(x)+0.5*\dtE*(x)-\dtE*\x*(y)-\lgtC*(dq)-\dtE*(dq)$) -- ++($-\lgtC*(dq)$) -- ++($-\lgtC*(x)$) -- cycle;
-      \fill[colorone] ($(Y1)+2*\lgtC*(x)+1.5*\dtE*(x)-\dtE*\x*(y)-\lgtC*(dq)-\dtE*(dq)$) -- ++($-\lgtC*(dq)$) -- ++($-\lgtC*(x)$) -- cycle;
-      \fill[colorone] ($(Y1)+1*\lgtC*(x)+0.5*\dtE*(x)-\dtE*\x*(y)-2*\lgtC*(dq)-2*\dtE*(dq)$) -- ++($-\lgtC*(dq)$) -- ++($-\lgtC*(x)$) -- cycle;
+      \pgfmathsetmacro{\imax}{\nn - 1}
+      \foreach \i in {0,...,\imax} {
+        \pgfmathsetmacro{\jmax}{\imax - \i}
+        \foreach \j in {0,...,\jmax} {
+          \fill[colorone] ($(Y1)+\j*\lgtC*(x)+\j*\dtE*(x)-\i*\lgtC*(dq)-\i*\dtE*(dq)$) -- ++($\lgtC*(x)$) -- ++($-\lgtC*(dp)$) -- cycle;
+        }
+      }
+      \pgfmathsetmacro{\imax}{\nn - 2}
+      \foreach \i in {0,...,\imax} {
+        \pgfmathsetmacro{\jmax}{\nn - 1 - \i}
+        \foreach \j in {1,...,\jmax} {
+          \pgfmathsetmacro{\offset}{\j - 0.5}
+          \fill[colorone] ($(Y1)+\j*\lgtC*(x)+\offset*\dtE*(x)-\dtE*\x*(y)-\i*\lgtC*(dq)-\i*\dtE*(dq)$) -- ++($-\lgtC*(dq)$) -- ++($-\lgtC*(x)$) -- cycle;
+        }
+      }
       % \draw ($(Y16)-(dx)$) -- ($(Y11)+(dq)$);
       % \draw[line width=\dt pt, colorfour, line join=bevel] (Y4) -- (Y5) -- (Y6) -- cycle;
       % \draw[line width=\dt pt, colorfour, line join=bevel] (Y11) -- (Y17) -- (Y16) -- cycle;
