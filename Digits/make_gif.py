@@ -2,9 +2,7 @@ from PIL import Image
 import os
 
 
-def make_gif(
-    png_files, output="output.gif", skip=2, scale=0.5, colors=128, duration=100
-):
+def make_gif(png_files, output, skip=2, scale=0.5, colors=128, duration=100):
     frames = []
 
     for f in png_files[::skip]:
@@ -26,10 +24,22 @@ def make_gif(
 
 if __name__ == "__main__":
 
+    name = "1998"
+    # name = "2026"
+    
+    dir = f"./Digits/frames_{name}"
     png_files = [
-        os.path.join("./frames", f)
-        for f in sorted(os.listdir("frames"))
+        os.path.join(dir, f)
+        for f in sorted(os.listdir(dir))
         if f.endswith(".png")
     ]
 
-    make_gif(png_files, skip=1, scale=0.3, colors=32, duration=25)
+    output = f"./Digits/output_{name}.gif"
+    make_gif(
+        png_files=png_files,
+        output=output,
+        skip=1,
+        scale=0.3,
+        colors=32,
+        duration=25,
+    )

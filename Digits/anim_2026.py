@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon
+from move_digits import set_positions, smooth, interp_angle
 
 
 def initialize_positions(h, w, d, p):
@@ -81,52 +82,6 @@ def initialize_positions(h, w, d, p):
     mat_s[19, 2] = 0.94*np.sqrt(2)
 
     return mat_x, mat_y, mat_a, mat_s
-
-
-def smooth(t):
-    return t * t * (3 - 2 * t)
-
-
-def interp_angle(a1, a2, t):
-    if np.abs(a2 - a1) > np.pi / 2.0:
-        a2 -= np.pi if a1 < a2 else 0.0
-        a1 -= np.pi if a1 > a2 else 0.0
-    return (1.0 - t) * a1 + t * a2
-
-
-def set_positions(i, times, bars, h, w, mat_x, mat_y, mat_a, mat_s):
-    times = smooth(times)
-    y_top = +h / 2.0
-    y_bot = -h / 2.0
-    x_lft = -w / 2.0
-    x_mid = 0.0
-    x_rgt = +w / 2.0
-    for b, (bar, ti) in enumerate(zip(bars, times)):
-        x1, x2 = mat_x[b, i], mat_x[b, i + 1]
-        y1, y2 = mat_y[b, i], mat_y[b, i + 1]
-        a1, a2 = mat_a[b, i], mat_a[b, i + 1]
-        s1, s2 = mat_s[b, i], mat_s[b, i + 1]
-        x = (1.0 - ti) * x1 + ti * x2
-        y = (1.0 - ti) * y1 + ti * y2
-        s = (1.0 - ti) * s1 + ti * s2
-        a = interp_angle(a1, a2, ti)
-        
-        y_topp = +h / 2.0 * s
-        y_bott = -h / 2.0 * s
-        xy_ref = np.array(
-            [
-                [y_bott, x_mid],
-                [y_bott + w / 2.0, x_rgt],
-                [y_topp - w / 2.0, x_rgt],
-                [y_topp, x_mid],
-                [y_topp - w / 2.0, x_lft],
-                [y_bott + w / 2.0, x_lft],
-            ]
-        )
-        R = np.array([[np.cos(a), np.sin(a)], [-np.sin(a), np.cos(a)]])
-        xy = (R @ xy_ref.T).T + np.array([x, y])
-        bar.set_xy(xy)
-    return
 
 
 def main(h, w, d, p, ta: int, tw: int, dt: int):
