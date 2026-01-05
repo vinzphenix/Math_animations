@@ -25,11 +25,11 @@ def make_gif(
 
 
 if __name__ == "__main__":
-    
+
     png_files = [
         os.path.join("./frames", f)
         for f in sorted(os.listdir("frames"))
         if f.endswith(".png")
     ]
-    
+
     make_gif(png_files, skip=1, scale=0.3, colors=32, duration=25)

@@ -4,6 +4,7 @@
 start.py
 Analemma/data/
 Tikz/extra/**
+2026/frames/**
 
 # Latex
 *.aux
