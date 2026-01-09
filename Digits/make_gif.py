@@ -24,7 +24,8 @@ def make_gif(png_files, output, skip=2, scale=0.5, colors=128, duration=100):
 
 if __name__ == "__main__":
 
-    name = "1998"
+    name = "1201"
+    # name = "1998"
     # name = "2026"
     
     dir = f"./Digits/frames_{name}"
@@ -39,7 +40,7 @@ if __name__ == "__main__":
         png_files=png_files,
         output=output,
         skip=1,
-        scale=0.3,
+        scale=1.0,
         colors=32,
         duration=25,
     )

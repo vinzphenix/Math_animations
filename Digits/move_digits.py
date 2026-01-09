@@ -2,9 +2,9 @@ import numpy as np
 
 
 def digit_0(l):
-    mat_x = np.array([-l, 0.0, l, l, 0.0, -l])
-    mat_y = np.array([-l, -2 * l, -l, l, 2 * l, l])
-    mat_a = np.array([0.5, 0.0, 0.5, 0.5, 0.0, 0.5]) * np.pi
+    mat_x = np.array([-1, +0, +1, +1, +0, -1]) * l
+    mat_y = np.array([-1, -2, -1, +1, +2, +1]) * l
+    mat_a = np.array([+1, +0, +1, +1, +0, +1]) * np.pi / 2.0
     mat_s = np.ones_like(mat_x)
     return mat_x, mat_y, mat_a, mat_s
 
@@ -65,6 +65,30 @@ def digit_big_8(l):
     return mat_x, mat_y, mat_a, mat_s
 
 
+def char_E(l):
+    mat_x = np.array([0, -1, +0, -1, +0]) * l
+    mat_y = np.array([2, +1, +0, -1, -2]) * l
+    mat_a = np.array([0, 1, 0, 1, 0]) * np.pi / 2.0
+    mat_s = np.ones_like(mat_x)
+    return mat_x, mat_y, mat_a, mat_s
+
+
+def char_L(l):
+    mat_x = np.array([+0, -1, -1]) * l
+    mat_y = np.array([-2, -1, +1]) * l
+    mat_a = np.array([+0, +1, +1]) * np.pi / 2.0
+    mat_s = np.ones_like(mat_x)
+    return mat_x, mat_y, mat_a, mat_s
+
+
+def char_P(l):
+    mat_x = np.array([+0, +1, +0, -1, -1]) * l
+    mat_y = np.array([+0, +1, +2, +1, -1]) * l
+    mat_a = np.array([+0, +1, +0, +1, +1]) * np.pi / 2.0
+    mat_s = np.ones_like(mat_x)
+    return mat_x, mat_y, mat_a, mat_s
+
+
 def get_character(name, l):
     if name == "0":
         return digit_0(l)
@@ -82,15 +106,21 @@ def get_character(name, l):
         return digit_big_2(l)
     elif name == "big_8":
         return digit_big_8(l)
+    elif name == "E":
+        return char_E(l)
+    elif name == "L":
+        return char_L(l)
+    elif name == "P":
+        return char_P(l)
     else:
         raise ValueError(f"Character {name} not recognized.")
 
 
-def smooth_1(t):
+def smooth(t):
     return t * t * (3 - 2 * t)
 
 
-def smooth(t):
+def smooth_2(t):
     c4 = (2 * np.pi) / 3
     res = np.zeros_like(t)
     res[t == 0.0] = 0.0
