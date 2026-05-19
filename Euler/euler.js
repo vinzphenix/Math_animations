@@ -2194,7 +2194,7 @@ function draw_axes(canvas, ctx, origin, dx, dy, labels, color=COLORS[0], unit_mu
     base_5 = 5 * Math.pow(10, Math.ceil(Math.log10(min_pixel_per_unit / (5*dx))));
     base = Math.min(base_1, base_2, base_5);
     n_ticks_per_label = (base_2 == base) ? 4 : 5;
-    delta = base / n_ticks_per_label;    
+    delta = base / n_ticks_per_label;
     let x_pm = [origin[0] - delta*dx, origin[0] + delta*dx];
     
     for(i=1; (w*0.02 < x_pm[0]) || (x_pm[1] < w*0.98); i++, x_pm[0]-=delta*dx, x_pm[1]+=delta*dx) {
