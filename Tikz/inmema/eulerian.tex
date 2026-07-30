@@ -1,0 +1,25 @@
+\documentclass[border=10pt]{standalone}
+\usepackage[dvipsnames]{xcolor}
+\usepackage{bm}
+\usepackage{tikz}
+
+\usetikzlibrary{
+  calc, patterns, positioning, angles, quotes,
+  decorations.pathmorphing, decorations.markings, decorations.text,
+  shapes, shapes.multipart,backgrounds,arrows.meta,overlay-beamer-styles,
+  external
+}
+\usepackage{calc}  % Required for calculations
+
+
+
+\begin{document}
+
+% {\LARGE$e$}uler
+
+\begin{tikzpicture}[scale=1]
+    \node[anchor=east] at (0.25,0) {\LARGE $e$};
+    \node[anchor=west] at (0.0,0) {ulerian};
+\end{tikzpicture}
+
+\end{document}

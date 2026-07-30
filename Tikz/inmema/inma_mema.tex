@@ -12,6 +12,12 @@
 \definecolor{UCLdark}{RGB}{0, 46, 95}
 \definecolor{UCLlight}{RGB}{93, 179, 229}
 \definecolor{UCLtrans}{RGB}{155, 183, 212}
+\definecolor{marine}{RGB}{0, 30, 70}
+\definecolor{lightYe}{RGB}{212, 175, 55}
+\definecolor{elecBlue}{RGB}{0, 122, 204}
+\definecolor{tealA}{RGB}{0, 160, 170}
+\definecolor{tealB}{RGB}{0, 145, 150}
+\definecolor{burnOrange}{RGB}{230, 120, 40}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % \colorlet{colorone}{NavyBlue!60}
@@ -32,13 +38,84 @@
 % \colorlet{colorone}{red}
 % \colorlet{colortwo}{blue}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\colorlet{colortwo}{UCLdark}
-\colorlet{colorone}{UCLlight}
+% \colorlet{colorone}{UCLlight}
+% \colorlet{colortwo}{UCLdark}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% \colorlet{colorthree}{UCLtrans}
-\colorlet{colorthree}{black}
-\colorlet{colorfour}{white}
+
+% \colorlet{colorone}{UCLlight}
+% \colorlet{colortwo}{Goldenrod}
+% \colorlet{colorthree}{white}
+% \colorlet{colorfour}{marine}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \colorlet{colorone}{UCLlight}
+% \colorlet{colortwo}{BurntOrange!66!White}
+% \colorlet{colorthree}{white}
+% \colorlet{colorfour}{marine}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \colorlet{colorone}{UCLlight}
+% \colorlet{colortwo}{Red!85}
+% \colorlet{colorthree}{white}
+% \colorlet{colorfour}{marine}
+
+\definecolor{SkyBlue}{RGB}{93,179,229}
+\definecolor{SoftGold}{RGB}{212,175,55}
+\definecolor{RoyalBlue}{RGB}{0,102,204}
+\definecolor{Turquoise}{RGB}{0,170,180}
+\definecolor{Coral}{RGB}{240,100,90}
+\definecolor{Purple}{RGB}{136,84,208}
+\definecolor{Emerald}{RGB}{0,158,96}
+\definecolor{Mint}{RGB}{110,215,180}
+\definecolor{Copper}{RGB}{184,115,51}
+\definecolor{Amber}{RGB}{245,190,40}
+\definecolor{Silver}{RGB}{180,190,200}
+\definecolor{Raspberry}{RGB}{200,50,100}
+\definecolor{Lavender}{RGB}{180,140,220}
+\definecolor{Brick}{RGB}{185,65,50}
+\definecolor{Lime}{RGB}{140,200,60}
+\definecolor{CyanBright}{RGB}{0,190,255}
+\definecolor{CyanBright}{RGB}{54,228,251}
+
+
+
+%%%% Trial 1
+% \colorlet{colorone}{SkyBlue}
+% \colorlet{colortwo}{Amber}
+% \colorlet{colorone}{Amber}
+% \colorlet{colortwo}{SkyBlue}
+%%%% Trial 2
+% \colorlet{colorone}{CyanBright}
+% \colorlet{colortwo}{Amber}
+% \colorlet{colorone}{Amber}
+% \colorlet{colortwo}{CyanBright}
+%%%% Trial 3
+\colorlet{colorone}{BurntOrange!80}
+\colorlet{colortwo}{SkyBlue}
+\colorlet{colorone}{SkyBlue}
+\colorlet{colortwo}{BurntOrange!80}
+%%%% Trial 4
+\colorlet{colorone}{SkyBlue}
+\colorlet{colortwo}{RoyalBlue}
+\colorlet{colorone}{RoyalBlue}
+\colorlet{colortwo}{SkyBlue}
+%%%% Trial 5
+\colorlet{colortwo}{Emerald}
+\colorlet{colorone}{Amber}
+\colorlet{colortwo}{Amber}
+\colorlet{colorone}{Emerald}
+%%% Trial 6
+\colorlet{colortwo}{Turquoise}
+\colorlet{colorone}{Coral}
+\colorlet{colortwo}{Coral}
+\colorlet{colorone}{Turquoise}
+%%%% Trial 7
+\colorlet{colorone}{Lavender}
+\colorlet{colortwo}{CyanBright}
+\colorlet{colorone}{CyanBright}
+\colorlet{colortwo}{Lavender}
+%%%%
+\colorlet{colorthree}{white}
+\colorlet{colorfour}{marine}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % \colorlet{colorthree}{white}
@@ -56,13 +133,13 @@
 \newcommand{\borderMM}{none}
 
 \begin{document}
-% \pagecolor{black}
+\pagecolor{colorfour}
 \centering
 \begin{tikzpicture}
     \pgfmathsetmacro{\drawMeshM}{0} % 0, 1
     \pgfmathsetmacro{\drawMeshE}{0} % 0, 1
     \pgfmathsetmacro{\drawMeshCorner}{1} % 0, 1, 2, 3, 4
-    \pgfmathsetmacro{\drawSierpinski}{2} % 0, 1, 2, 3
+    \pgfmathsetmacro{\drawSierpinski}{1} % 0, 1, 2, 3
     \pgfmathsetmacro{\drawINMA}{1} % 0, 1
     \pgfmathsetmacro{\drawMEMA}{1} % 0, 1
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -354,6 +431,9 @@
     \fi
 
     %%%%%%%%%%%%%%% Sierpinski %%%%%%%%%%%%%%%
+    \ifdim \drawSierpinski pt = 0pt
+      \fill[colortwo] (H5) -- (I5) -- (J5) -- cycle;
+    \fi
     \ifdim \drawSierpinski pt = 1pt
       \fill[colortwo] (H5) -- (I5) -- (J5) -- cycle (K5) -- (M5) -- (L5) -- cycle;
     \fi
