@@ -1,7 +1,8 @@
-\documentclass[border=10pt]{standalone}
+\documentclass[border=3cm]{standalone}
 \usepackage[dvipsnames]{xcolor}
 \usepackage{bm}
 \usepackage{tikz}
+\usepackage{lmodern}
 
 \usetikzlibrary{
   calc, patterns, positioning, angles, quotes,
@@ -10,16 +11,31 @@
   external
 }
 \usepackage{calc}  % Required for calculations
+\usepackage{graphicx}
+
+\newcommand{\Eulerian}{%
+  {\fontsize{80pt}{96pt}\selectfont
+    \textsf{%
+      \resizebox{!}{\heightof{\textsf{l}}}{$\textcolor{white}{e}$}%
+      \textcolor{white}{ulerian}%
+    }%
+  }%
+}
 
 
+\definecolor{marine}{RGB}{0, 30, 70}
 
 \begin{document}
+\pagecolor{marine}
 
-% {\LARGE$e$}uler
+\Eulerian
 
-\begin{tikzpicture}[scale=1]
-    \node[anchor=east] at (0.25,0) {\LARGE $e$};
-    \node[anchor=west] at (0.0,0) {ulerian};
-\end{tikzpicture}
+% \noindent
+% \textsf{{\Huge$e$}{\Large ulerian}}
+
+% \begin{tikzpicture}[scale=1]
+%     \node[anchor=east] at (0.00,+0.0) {\textsf{{\Huge$e$}{\Large ulerian}}};
+%     \node[anchor=east] at (0.00,-2.0) {\textrm{{\Huge$e$}{\Large ulerian}}};
+% \end{tikzpicture}
 
 \end{document}
