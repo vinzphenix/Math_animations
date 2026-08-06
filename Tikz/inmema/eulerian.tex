@@ -13,20 +13,32 @@
 \usepackage{calc}  % Required for calculations
 \usepackage{graphicx}
 
+
+\definecolor{marine}{RGB}{0, 30, 70}
+
+%%%%%%%
+\colorlet{fontcolor}{white}
+\colorlet{backcolor}{marine}
+%%%%%%%
+\colorlet{fontcolor}{black}
+\colorlet{backcolor}{white}
+%%%%%%%
+\colorlet{fontcolor}{white}
+% \colorlet{backcolor}{marine}
+
+
 \newcommand{\Eulerian}{%
   {\fontsize{80pt}{96pt}\selectfont
     \textsf{%
-      \resizebox{!}{\heightof{\textsf{l}}}{$\textcolor{white}{e}$}%
-      \textcolor{white}{ulerian}%
+      \resizebox{!}{\heightof{\textsf{l}}}{$\textcolor{fontcolor}{e}$}%
+      \textcolor{fontcolor}{ulerian}%
     }%
   }%
 }
 
 
-\definecolor{marine}{RGB}{0, 30, 70}
-
 \begin{document}
-\pagecolor{marine}
+% \pagecolor{backcolor}
 
 \Eulerian
 
