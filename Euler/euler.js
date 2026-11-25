@@ -37,7 +37,23 @@ const EPS = 1.e-14;
 let x_max = 8.;
 let qq_max = [0., 1., -1., 1., 0., 1.];
 let q_max = [-500., 500., 0., 2.2*1e5];  // [q1, q2] max values
+let q_max_reset = q_max.slice();  // limits restored with [o]
 let tsfm1A, tsfm1B, tsfm1C, tsfm2, tsfm3;
+
+// URL presets, e.g. euler.html?case=1
+// States [rho (kg/m3), u (m/s), p (Pa)], duration (s), optional u-p plane limits
+const PRESETS = {
+    1: {  // Sod with a transonic (sonic) 1-rarefaction, Toro's test 1
+        qL: [1.0, 237., 1.0e5], qR: [0.125, 0., 0.1e5], duration: 0.01,
+    },
+    2: {  // "123 problem": two strong rarefactions, near-vacuum middle state, Toro's test 2
+        qL: [1.0, -632., 0.4e5], qR: [1.0, 632., 0.4e5], duration: 0.008,
+        q_max: [-1000., 1000., 0., 0.6e5],
+    },
+    3: {  // Isolated stationary contact discontinuity
+        qL: [1.4, 0., 1.0e5], qR: [1.0, 0., 1.0e5], duration: 0.01,
+    },
+};
 
 // Interaction parameters
 let state_map = ["r", "u", "p"];
@@ -64,6 +80,7 @@ let min_e, max_e
 
 function main(canvas_axes, canvas_list, canvasParticles) {
 
+    apply_url_preset();
     set_transforms();
     set_backgrounds_1(canvas_axes[0], canvas_axes[1], canvas_axes[2])
     set_background_2(canvas_axes[3]);
@@ -73,6 +90,22 @@ function main(canvas_axes, canvas_list, canvasParticles) {
     update_all_plots(canvas_list);  // Initial figure display
     download();
     adjust_frame();
+}
+
+function apply_url_preset() {
+    // Regex on the full URL rather than URLSearchParams:
+    // through htmlpreview.github.io, "case" is nested inside the previewed URL
+    const match = window.location.href.match(/[?&]case=(\d+)/);
+    const preset = (match == null) ? undefined : PRESETS[match[1]];
+    if (preset == undefined) return;
+
+    qL.splice(0, 3, ...preset.qL);
+    qR.splice(0, 3, ...preset.qR);
+    duration = preset.duration;
+    if (preset.q_max != undefined) {
+        q_max = preset.q_max.slice();
+        q_max_reset = preset.q_max.slice();
+    }
 }
 
 function set_transforms() {
@@ -742,7 +775,7 @@ function zoom(e, canvas, canvas_axes) {
 }
 
 function reset_axes(canvas, canvas_axes) {
-    q_max = [-500., 500., 0., 2.2*1.e5];
+    q_max = q_max_reset.slice();
     set_transforms();
     set_background_2(canvas_axes);
     draw_loci(canvas, tsfm2);

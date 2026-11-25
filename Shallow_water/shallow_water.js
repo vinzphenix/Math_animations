@@ -48,6 +48,14 @@ let ql = [GRAVITY * 5., 0. * GRAVITY];  // left state
 let qr = [GRAVITY * 3., 0 * GRAVITY];  // right state
 let qm = [GRAVITY * 0., 0. * GRAVITY];  // middle state (just for initialization)
 
+// URL presets, e.g. shallow_water.html?case=1
+// Heights h, discharges hu (g = 9.81), duration (s)
+const PRESETS = {
+    1: {hL: 5., huL: 0., hR: 0.3, huR: 0., duration: 1.},       // transonic 1-rarefaction
+    2: {hL: 1., huL: 5.425, hR: 2., huR: 5.425, duration: 1.},  // stationary hydraulic jump (1-shock at rest)
+    3: {hL: 1., huL: -7., hR: 1., huR: 7., duration: 0.75},     // dry middle state
+};
+
 let f_LF = [0., 0.];  // Lax-Friedrichs flux
 
 let lambdas = [0., 0., 0., 0., 0., 0.];
@@ -72,8 +80,23 @@ const EPS = 1.e-10;
 
 // phi = qmax --> end
 
+function apply_url_preset() {
+    // Regex on the full URL rather than URLSearchParams:
+    // through htmlpreview.github.io, "case" is nested inside the previewed URL
+    const match = window.location.href.match(/[?&]case=(\d+)/);
+    const preset = (match == null) ? undefined : PRESETS[match[1]];
+    if (preset == undefined) return;
+
+    ql[0] = GRAVITY * preset.hL;
+    ql[1] = GRAVITY * preset.huL;
+    qr[0] = GRAVITY * preset.hR;
+    qr[1] = GRAVITY * preset.huR;
+    duration = preset.duration;
+}
+
 function main(canvas1A, canvas1, canvas2A, canvas2, canvas3A, canvas3, canvas4A, canvas4) {
 
+    apply_url_preset();
     y_max = canvas1.height * (2. * x_max) / canvas1.width * GRAVITY;
     tsfm1 = [
         canvas1.width / (2. * x_max), 0.,

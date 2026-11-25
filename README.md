@@ -14,21 +14,31 @@
 
 ## Riemann solvers
 ### 1D shallow water equations
-Interactive widget available <a href="https://htmlpreview.github.io/?https://github.com/vinzphenix/Math_animations/blob/main/javascript/Shallow_water/shallow_water.html" target="_blank">here</a>. It displays from left to right, top to bottom:
+Interactive widget available <a href="https://htmlpreview.github.io/?https://github.com/vinzphenix/Math_animations/blob/main/Shallow_water/shallow_water.html" target="_blank">here</a>. It displays from left to right, top to bottom:
 
 - The physical situation
 - The state space (height, and mass flow rate)
 - The space-time diagram with the characteristics
 - The mapping from the state space to the flux space
 
+Preset Riemann problems (append `?case=N` to the URL):
+<a href="https://htmlpreview.github.io/?https://github.com/vinzphenix/Math_animations/blob/main/Shallow_water/shallow_water.html?case=1" target="_blank">1. transonic rarefaction</a>,
+<a href="https://htmlpreview.github.io/?https://github.com/vinzphenix/Math_animations/blob/main/Shallow_water/shallow_water.html?case=2" target="_blank">2. stationary hydraulic jump</a>,
+<a href="https://htmlpreview.github.io/?https://github.com/vinzphenix/Math_animations/blob/main/Shallow_water/shallow_water.html?case=3" target="_blank">3. dry middle state</a>.
+
 ![Example 3 gif](Shallow_water/example.gif)
 
 ### 1D Euler equations of gas dynamics
-Interactive widget available <a href="https://htmlpreview.github.io/?https://github.com/vinzphenix/Math_animations/blob/main/javascript/Euler/euler.html" target="_blank">here</a>. It displays:
+Interactive widget available <a href="https://htmlpreview.github.io/?https://github.com/vinzphenix/Math_animations/blob/main/Euler/euler.html" target="_blank">here</a>. It displays:
 
 - In the left column: 3 state variables (primitive, conserved, or others)
 - A projection of the state space: velocity and pressure
 - The space-time diagram with the characteristics, shocks and rarefaction waves
+
+Preset Riemann problems (append `?case=N` to the URL):
+<a href="https://htmlpreview.github.io/?https://github.com/vinzphenix/Math_animations/blob/main/Euler/euler.html?case=1" target="_blank">1. Sod with sonic rarefaction</a>,
+<a href="https://htmlpreview.github.io/?https://github.com/vinzphenix/Math_animations/blob/main/Euler/euler.html?case=2" target="_blank">2. "123" near-vacuum problem</a>,
+<a href="https://htmlpreview.github.io/?https://github.com/vinzphenix/Math_animations/blob/main/Euler/euler.html?case=3" target="_blank">3. stationary contact</a>.
 
 ![Example 3 gif](Euler/example_particles.gif)
 
