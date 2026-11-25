@@ -834,7 +834,7 @@ function draw_loci(canvas, tsfm, canvas_flux, tsfm_flux) {
     // Compute approximate Lax-Friedrichs flux
     [l1l, l2l] = [lambdas[0], lambdas[1]];
     [l1r, l2r] = [lambdas[4], lambdas[5]];
-    let max_eig = Math.max(Math.abs(l1l), Math.abs(l2l), Math.abs(l2l), Math.abs(l2r));
+    let max_eig = Math.max(Math.abs(l1l), Math.abs(l1r), Math.abs(l2l), Math.abs(l2r));
     let f_ql = compute_flux(ql);
     let f_qr = compute_flux(qr);
     f_LF = [

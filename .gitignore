@@ -6,6 +6,8 @@ Analemma/data/
 Tikz/extra/**
 Digits/frames_**/**
 
+*.zip
+
 # Latex
 *.aux
 *.auxlock

@@ -1441,9 +1441,9 @@ function find_middle_state(qL, qR) {
     // Do Newton steps
     delta = 4 * x * tol;  // ensures enter loop
     while ((n < max_iter) && (tol < delta)) {
-        delta = f(x) / df(x);
-        x = Math.max(p_min, x - delta);  // avoids negative pressures... very very rare with such pressure guesses
-        delta = 0.5 * Math.abs(delta) / (2 * x - delta);  // 1/2*[p(n+1) - p(n)]/[p(n+1) + p(n)] = 1/2|delta|/[2p(n) - delta]
+        let x_old = x;
+        x = Math.max(p_min, x - f(x) / df(x));
+        delta = Math.abs(x - x_old) / (x + x_old);
         n ++;
         // console.log(x, delta);
     }
